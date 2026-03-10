@@ -54,8 +54,13 @@ export default function Home() {
     e.preventDefault();
     if (!url || !city) return;
     setLoading(true);
+    // Clean URL — accept any format dentist types
+    let cleanUrl = url.trim().toLowerCase();
+    if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+      cleanUrl = "https://" + cleanUrl;
+    }
     router.push(
-      `/dashboard?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
+      `/dashboard?url=${encodeURIComponent(cleanUrl)}&city=${encodeURIComponent(city)}`,
     );
   };
 
@@ -199,24 +204,26 @@ export default function Home() {
       {/* HERO */}
       <section className="rc-hero">
         <div>
-          <div className="rc-eyebrow">Get more patients from Google</div>
+          <div className="rc-eyebrow">
+            Free Google Ranking Report for Dental Clinics
+          </div>
           <h1 className="rc-h1">
-            Get More Patients
+            Find Out How Many Patients
             <br />
-            From <em>Google.</em>
+            Your Clinic Is <em>Losing.</em>
           </h1>
           <p className="rc-sub">
-            Find out exactly why your dental clinic isn&apos;t showing up on
-            Google — and fix it. RootCanal audits your website, tracks
-            competitors, and tells you what to do next. In plain English.
+            See your dental clinic&apos;s Google ranking, patient review
+            insights, and website problems — in 30 seconds. No tech knowledge
+            needed.
           </p>
 
           <form id="audit" onSubmit={handleSubmit} className="rc-form-wrap">
             <div className="rc-scan-box">
               <input
                 className="rc-input"
-                type="url"
-                placeholder="Enter your clinic website URL…"
+                type="text"
+                placeholder="e.g. smilesdental.com or www.smilesdental.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 required
@@ -253,7 +260,9 @@ export default function Home() {
               )}
             </div>
             <button className="rc-btn" type="submit" disabled={loading}>
-              {loading ? "⟳  Scanning your clinic..." : "Get My Free Audit →"}
+              {loading
+                ? "⟳  Checking your clinic..."
+                : "Check Your Clinic for Free →"}
             </button>
             <div className="rc-note">
               <span>100% Free</span>
@@ -561,13 +570,13 @@ export default function Home() {
         </p>
         <form className="rc-cta-form" onSubmit={handleSubmit}>
           <input
-            type="url"
-            placeholder="Enter your clinic website URL…"
+            type="text"
+            placeholder="e.g. smilesdental.com or www.smilesdental.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             required
           />
-          <button type="submit">Audit My Clinic →</button>
+          <button type="submit">Check Your Clinic for Free →</button>
         </form>
       </section>
 

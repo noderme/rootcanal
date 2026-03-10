@@ -2,30 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+  const clinicUrl = searchParams.get("url");
   const clinicName = searchParams.get("name");
   const city = searchParams.get("city");
-
-  if (!clinicName || !city) {
-    return NextResponse.json(
-      { error: "Clinic name and city required" },
-      { status: 400 },
-    );
-  }
 
   const googleKey = process.env.GOOGLE_API_KEY || "";
 
   try {
-    // ── 1. Find place_id from clinic name + city ──
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(clinicName + " " + city)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total&key=${googleKey}`;
+    // ── 1. Find place by URL or name ──
+    const query = clinicUrl ? `${clinicUrl}` : `${clinicName} ${city}`;
+
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total&key=${googleKey}`;
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
 
     const place = searchData.candidates?.[0];
     if (!place?.place_id) {
-      return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
+      return NextResponse.json({
+        rating: 0,
+        total: 0,
+        reviews: [],
+        sentimentBreakdown: null,
+        responseRate: 0,
+        analysis: null,
+      });
     }
 
-    // ── 2. Fetch reviews using place_id ──
+    // ── 2. Fetch reviews + details ──
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,rating,user_ratings_total,reviews&key=${googleKey}`;
     const detailsRes = await fetch(detailsUrl);
     const detailsData = await detailsRes.json();
@@ -40,11 +43,35 @@ export async function GET(request: NextRequest) {
         total,
         reviews: [],
         analysis: null,
-        message: "No reviews found for this clinic",
+        sentiment: null,
       });
     }
 
-    // ── 3. Format reviews for Claude ──
+    // ── 3. Calculate sentiment breakdown ──
+    const positive = reviews.filter(
+      (r: { rating: number }) => r.rating >= 4,
+    ).length;
+    const neutral = reviews.filter(
+      (r: { rating: number }) => r.rating === 3,
+    ).length;
+    const negative = reviews.filter(
+      (r: { rating: number }) => r.rating <= 2,
+    ).length;
+    const total_r = reviews.length;
+
+    const sentimentBreakdown = {
+      positive: Math.round((positive / total_r) * 100),
+      neutral: Math.round((neutral / total_r) * 100),
+      negative: Math.round((negative / total_r) * 100),
+    };
+
+    // ── 4. Calculate response rate ──
+    const responded = reviews.filter(
+      (r: { owner_response?: { text: string } }) => r.owner_response?.text,
+    ).length;
+    const responseRate = Math.round((responded / total_r) * 100);
+
+    // ── 5. Format reviews for Claude ──
     const reviewText = reviews
       .map(
         (r: { author_name: string; rating: number; text: string }) =>
@@ -52,7 +79,7 @@ export async function GET(request: NextRequest) {
       )
       .join("\n\n");
 
-    // ── 4. Analyze with Claude API ──
+    // ── 6. Analyze with Claude ──
     const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -77,7 +104,7 @@ Respond ONLY with valid JSON in this exact format, no other text:
   "complaints": ["complaint 1", "complaint 2", "complaint 3"],
   "fixNow": ["urgent fix 1", "urgent fix 2"],
   "promote": ["what to promote 1", "what to promote 2"],
-  "sentiment": "positive" | "mixed" | "negative",
+  "sentiment": "positive",
   "summary": "One sentence summary of overall patient experience"
 }`,
           },
@@ -86,18 +113,15 @@ Respond ONLY with valid JSON in this exact format, no other text:
     });
 
     const claudeData = await claudeRes.json();
-    console.log("Claude status:", claudeRes.status);
-    console.log("Claude response:", JSON.stringify(claudeData));
     const rawText = claudeData.content?.[0]?.text || "{}";
 
     let analysis;
     try {
-      analysis = JSON.parse(rawText.replace(/```json|```/g, "").trim());
+      analysis = JSON.parse(rawText.replace(/\`\`\`json|\`\`\`/g, "").trim());
     } catch {
       analysis = null;
     }
 
-    // ── 5. Return everything ──
     return NextResponse.json({
       rating,
       total,
@@ -114,6 +138,8 @@ Respond ONLY with valid JSON in this exact format, no other text:
           time: r.relative_time_description,
         }),
       ),
+      sentimentBreakdown,
+      responseRate,
       analysis,
     });
   } catch (error) {
