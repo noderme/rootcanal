@@ -293,7 +293,40 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // ── 3. COMPETITORS via Google Places ──────────────
+    // ── 3. GOOGLE BUSINESS PROFILE CHECK ────────────
+    try {
+      const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(url)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status&key=${apiKey}`;
+      const gbpRes = await fetch(gbpUrl);
+      const gbpData = await gbpRes.json();
+      const place = gbpData.candidates?.[0];
+
+      if (!place?.place_id) {
+        issues.push({
+          title: "Google Business Profile not found",
+          desc: "Your clinic doesn't appear on Google Maps. This is the #1 way patients find dentists near them.",
+          priority: "HIGH",
+          status: "fail",
+        });
+      } else if (!place.rating || place.user_ratings_total < 5) {
+        issues.push({
+          title: "Google Business Profile needs attention",
+          desc: "Your clinic is on Google Maps but has very few reviews. More reviews = higher ranking = more patients.",
+          priority: "MED",
+          status: "warn",
+        });
+      } else {
+        issues.push({
+          title: "Google Business Profile active ✅",
+          desc: `Your clinic appears on Google Maps with ${place.rating}⭐ rating and ${place.user_ratings_total} reviews.`,
+          priority: "GOOD",
+          status: "pass",
+        });
+      }
+    } catch (gbpError) {
+      console.error("GBP check error:", gbpError);
+    }
+
+    // ── 4. COMPETITORS via Google Places ──────────────
     let competitors: {
       name: string;
       rating: number;

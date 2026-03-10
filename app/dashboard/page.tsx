@@ -127,6 +127,74 @@ function DashboardContent() {
   const [leadSuccess, setLeadSuccess] = useState(false);
 
   const handleUpgradeClick = () => setShowUpgradePopup(true);
+  const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
+
+  const fixGuides: Record<string, string[]> = {
+    "Doesn't work on phones": [
+      "Contact your website developer and ask them to make your site 'mobile responsive'",
+      "If you use WordPress, install a mobile-friendly theme like Astra or GeneratePress",
+      "Test your site at google.com/test/mobile-friendly — share results with your developer",
+    ],
+    "Website is too slow": [
+      "Ask your web developer to compress all images on your website",
+      "Switch to faster web hosting — SiteGround or Cloudflare are good options",
+      "Install Cloudflare (free) — it speeds up any website automatically",
+      "Forward this to your developer: enable browser caching and minify CSS/JS files",
+    ],
+    "Website could be faster": [
+      "Ask your web developer to compress images — this alone can double your speed",
+      "Enable browser caching on your website",
+      "Consider upgrading your web hosting plan",
+    ],
+    "Google can't find your clinic": [
+      "Make sure your page title includes your city — e.g. 'Family Dentist in Austin TX'",
+      "Add your city name naturally throughout your homepage text",
+      "Create a Google Business Profile at business.google.com if you haven't already",
+      "List your clinic on Yelp, Healthgrades and Zocdoc — all free",
+    ],
+    "Google visibility needs work": [
+      "Add your city name to your homepage title and first paragraph",
+      "Create a separate page for each service you offer (teeth whitening, braces, etc.)",
+      "Ask satisfied patients to leave a Google review — more reviews = higher ranking",
+    ],
+    "Missing Google search preview": [
+      "This is called a 'meta description' — it's the text Google shows under your clinic name in search results",
+      "Ask your web developer to add a meta description to every page",
+      "Example: 'Family dental clinic in Austin TX. Accepting new patients. Call us today!'",
+      "Keep it under 160 characters and include your city name",
+    ],
+    "Missing clinic name on Google": [
+      "Ask your web developer to add a proper page title to your website",
+      "Good example: 'Austin Family Dental | Dentist in Austin TX'",
+      "This should include your clinic name and city",
+    ],
+    "Images not labeled": [
+      "Ask your web developer to add 'alt text' to all images on your website",
+      "Alt text describes what's in each image — e.g. 'Dental exam room at Austin Family Dental'",
+      "This helps Google understand your website better and improves ranking",
+    ],
+    "Google Business Profile not found": [
+      "Go to business.google.com and click 'Manage now'",
+      "Search for your clinic name — if it exists, claim it. If not, create it.",
+      "Fill in EVERYTHING — clinic name, address, phone, hours, photos, services",
+      "Add at least 10 photos — exterior, interior, staff, treatment rooms",
+      "Once verified, ask every patient to leave a Google review",
+      "This is the single most important thing you can do to get more patients from Google",
+    ],
+    "Google Business Profile needs attention": [
+      "Log in to your Google Business Profile at business.google.com",
+      "Make sure your clinic name, address and phone number are 100% correct",
+      "Add your opening hours, website link and list of services",
+      "Upload at least 10 photos — patients trust clinics with real photos",
+      "After every appointment, send patients a link to leave a Google review",
+      "Respond to every review — good or bad — within 24 hours",
+    ],
+    "Website not secure": [
+      "Contact your web hosting company and ask them to install a free SSL certificate",
+      "Most hosts (GoDaddy, Bluehost, SiteGround) offer free SSL — just ask support",
+      "This changes your website from http:// to https:// which Google prefers",
+    ],
+  };
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1330,19 +1398,19 @@ function DashboardContent() {
                     <strong
                       style={{
                         color:
-                          (reviews.analysis.responseRate ?? 0) < 50
+                          (reviews.responseRate ?? 0) < 50
                             ? "#E74C3C"
                             : "#2ECC71",
                       }}
                     >
-                      {reviews.analysis.responseRate ?? 0}%
+                      {reviews.responseRate ?? 0}%
                     </strong>{" "}
                     of patient reviews. Top clinics respond to{" "}
                     <strong style={{ color: "#2ECC71" }}>70%+</strong> —
                     responding improves trust and Google ranking.
                   </div>
                 </div>
-                {(reviews.analysis.responseRate ?? 0) < 50 && (
+                {(reviews.responseRate ?? 0) < 50 && (
                   <div
                     style={{
                       background: "rgba(231,76,60,0.1)",
@@ -1497,14 +1565,11 @@ function DashboardContent() {
         <div
           className="card"
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 24,
             marginBottom: 24,
             animationDelay: "0.3s",
           }}
         >
-          {/* Fails & Warnings */}
+          {/* Unified Checklist */}
           <div
             style={{
               background: "#151918",
@@ -1528,201 +1593,199 @@ function DashboardContent() {
                   fontWeight: 700,
                 }}
               >
-                Problems We Found
+                Your Clinic Health Checklist
               </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: "4px 12px",
-                  borderRadius: 20,
-                  background: "rgba(231,76,60,0.12)",
-                  color: "#E74C3C",
-                  fontFamily: "'DM Mono', monospace",
-                }}
-              >
-                {failIssues.length + warnIssues.length} Issues
-              </span>
-            </div>
-            {[...failIssues, ...warnIssues].map((issue, i) => (
-              <div
-                key={i}
-                className="issue-row"
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 14,
-                  padding: "14px 0",
-                  borderBottom: "1px solid #2A3330",
-                  transition: "background 0.2s",
-                  borderRadius: 4,
-                }}
-              >
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: issue.status === "fail" ? "#E74C3C" : "#F0A500",
-                    boxShadow: `0 0 8px ${issue.status === "fail" ? "#E74C3C" : "#F0A500"}`,
-                    flexShrink: 0,
-                    marginTop: 5,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}
-                  >
-                    {issue.title}
-                  </div>
-                  <div
-                    style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}
-                  >
-                    {issue.desc}
-                  </div>
-                </div>
+              <div style={{ display: "flex", gap: 8 }}>
                 <span
                   style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                    background:
-                      issue.priority === "HIGH"
-                        ? "rgba(231,76,60,0.12)"
-                        : issue.priority === "MED"
-                          ? "rgba(240,165,0,0.12)"
-                          : "rgba(46,204,113,0.12)",
-                    color:
-                      issue.priority === "HIGH"
-                        ? "#E74C3C"
-                        : issue.priority === "MED"
-                          ? "#F0A500"
-                          : "#2ECC71",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "4px 12px",
+                    borderRadius: 20,
+                    background: "rgba(231,76,60,0.12)",
+                    color: "#E74C3C",
                     fontFamily: "'DM Mono', monospace",
-                    flexShrink: 0,
                   }}
                 >
-                  {issue.priority}
+                  {failIssues.length} Failed
                 </span>
-              </div>
-            ))}
-            {failIssues.length + warnIssues.length === 0 && (
-              <div
-                style={{
-                  fontSize: 14,
-                  color: "#6B7B78",
-                  padding: "20px 0",
-                  textAlign: "center",
-                }}
-              >
-                🎉 No critical issues found!
-              </div>
-            )}
-          </div>
-
-          {/* Passing */}
-          <div
-            style={{
-              background: "#151918",
-              border: "1px solid #2A3330",
-              borderRadius: 16,
-              padding: 24,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 20,
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 20,
-                  fontWeight: 700,
-                }}
-              >
-                Things Working Well
-              </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: "4px 12px",
-                  borderRadius: 20,
-                  background: "rgba(46,204,113,0.12)",
-                  color: "#2ECC71",
-                  fontFamily: "'DM Mono', monospace",
-                }}
-              >
-                {passIssues.length} Passing
-              </span>
-            </div>
-            {passIssues.map((issue, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 14,
-                  padding: "14px 0",
-                  borderBottom: "1px solid #2A3330",
-                }}
-              >
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: "#2ECC71",
-                    boxShadow: "0 0 8px #2ECC71",
-                    flexShrink: 0,
-                    marginTop: 5,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}
-                  >
-                    {issue.title}
-                  </div>
-                  <div
-                    style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}
-                  >
-                    {issue.desc}
-                  </div>
-                </div>
                 <span
                   style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "3px 8px",
-                    borderRadius: 4,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "4px 12px",
+                    borderRadius: 20,
+                    background: "rgba(240,165,0,0.12)",
+                    color: "#F0A500",
+                    fontFamily: "'DM Mono', monospace",
+                  }}
+                >
+                  {warnIssues.length} Warning
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "4px 12px",
+                    borderRadius: 20,
                     background: "rgba(46,204,113,0.12)",
                     color: "#2ECC71",
                     fontFamily: "'DM Mono', monospace",
-                    flexShrink: 0,
                   }}
                 >
-                  GOOD
+                  {passIssues.length} Good
                 </span>
               </div>
-            ))}
-            {passIssues.length === 0 && (
-              <div
-                style={{
-                  fontSize: 14,
-                  color: "#6B7B78",
-                  padding: "20px 0",
-                  textAlign: "center",
-                }}
-              >
-                Keep working on those issues above! 💪
-              </div>
-            )}
+            </div>
+            {[...failIssues, ...warnIssues, ...passIssues].map((issue, i) => {
+              const icon =
+                issue.status === "fail"
+                  ? "❌"
+                  : issue.status === "warn"
+                    ? "⚠️"
+                    : "✅";
+              const dotColor =
+                issue.status === "fail"
+                  ? "#E74C3C"
+                  : issue.status === "warn"
+                    ? "#F0A500"
+                    : "#2ECC71";
+              const isExpanded = expandedIssue === i;
+              return (
+                <div
+                  key={i}
+                  className="issue-row"
+                  style={{
+                    padding: "14px 0",
+                    borderBottom: "1px solid #2A3330",
+                    borderRadius: 4,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 14,
+                    }}
+                  >
+                    <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>
+                      {icon}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          marginBottom: 4,
+                          color:
+                            issue.status === "pass" ? "#A0B0AD" : "#F0EBE3",
+                        }}
+                      >
+                        {issue.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#6B7B78",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {issue.desc}
+                      </div>
+                      {fixGuides[issue.title] && (
+                        <button
+                          onClick={() =>
+                            setExpandedIssue(isExpanded ? null : i)
+                          }
+                          style={{
+                            marginTop: 8,
+                            background: "transparent",
+                            border: `1px solid ${dotColor}40`,
+                            color: dotColor,
+                            padding: "4px 12px",
+                            borderRadius: 6,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "'DM Sans', sans-serif",
+                          }}
+                        >
+                          {isExpanded
+                            ? "▲ Hide fix guide"
+                            : "▼ How to fix this"}
+                        </button>
+                      )}
+                      {isExpanded && fixGuides[issue.title] && (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            background: "#0D0F0E",
+                            borderRadius: 8,
+                            padding: 16,
+                            borderLeft: `3px solid ${dotColor}`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#1ABC9C",
+                              fontWeight: 600,
+                              marginBottom: 10,
+                            }}
+                          >
+                            🛠️ HOW TO FIX THIS
+                          </div>
+                          {fixGuides[issue.title].map((step, j) => (
+                            <div
+                              key={j}
+                              style={{
+                                display: "flex",
+                                gap: 10,
+                                fontSize: 12,
+                                color: "#F0EBE3",
+                                marginBottom: 8,
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  color: "#1ABC9C",
+                                  fontWeight: 700,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {j + 1}.
+                              </span>
+                              {step}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {issue.status !== "pass" && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "3px 8px",
+                          borderRadius: 4,
+                          background:
+                            issue.priority === "HIGH"
+                              ? "rgba(231,76,60,0.12)"
+                              : "rgba(240,165,0,0.12)",
+                          color:
+                            issue.priority === "HIGH" ? "#E74C3C" : "#F0A500",
+                          fontFamily: "'DM Mono', monospace",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {issue.priority}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
 
             {/* Google Profile Checklist */}
             <div
