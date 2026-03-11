@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function Home() {
+function HomeInner() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -555,5 +555,13 @@ export default function Home() {
         }}
       />
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeInner />
+    </Suspense>
   );
 }
