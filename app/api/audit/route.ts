@@ -135,41 +135,50 @@ export async function GET(request: NextRequest) {
   // ── Auto-detect city from Google Places if not provided ──
   if (!city) {
     try {
-      // Search for the clinic by website URL in Google Places
-      // Use textquery with explicit US location bias
-      const clinicQuery = url
+      // Normalize URL: strip protocol + www
+      const normalizedUrl = url
         .replace(/https?:\/\//, "")
-        .replace(/www\./, "")
-        .split("/")[0]
-        .replace(/\.my\.canva\.site/, "")
-        .replace(/[-_.]/g, " ");
+        .replace(/^www\./, "");
 
-      const placeRes = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+${encodeURIComponent(clinicQuery)}&region=us&key=${apiKey}`,
+      // Strategy 1: Search by website URL directly — most accurate
+      const byWebsite = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(normalizedUrl)}&type=dentist&key=${apiKey}`,
       );
-      const placeData = await placeRes.json();
-      const address = placeData.results?.[0]?.formatted_address || "";
+      const websiteData = await byWebsite.json();
+      let address = websiteData.results?.[0]?.formatted_address || "";
 
-      console.log(
-        "🏙️ City detection - query:",
-        clinicQuery,
-        "address:",
-        address,
-      );
+      console.log("🏙️ Strategy 1 (by URL):", normalizedUrl, "→", address);
 
-      if (address) {
+      // Strategy 2 fallback: search domain words + dental + region=us
+      if (!address || address.toLowerCase().includes("india")) {
+        const clinicQuery = normalizedUrl
+          .split("/")[0]
+          .replace(/\.(com|net|org|io|us)$/, "")
+          .replace(/\.my\.canva\.site$/, "")
+          .replace(/[-_.]/g, " ");
+        const byName = await fetch(
+          `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(clinicQuery + " dental")}&region=us&type=dentist&key=${apiKey}`,
+        );
+        const nameData = await byName.json();
+        address = nameData.results?.[0]?.formatted_address || "";
+        console.log("🏙️ Strategy 2 (by name):", clinicQuery, "→", address);
+      }
+
+      // Parse "Street, City, State ZIP, USA" → "City, ST"
+      if (address && !address.toLowerCase().includes("india")) {
         const parts = address.split(",");
-        // Address format: "Street, City, State ZIP, USA"
-        // We want "City, State" = second to last, third to last parts
         if (parts.length >= 3) {
-          const statePart = parts[parts.length - 2].trim(); // "NY 10036"
-          const cityPart = parts[parts.length - 3].trim(); // "New York"
-          const stateCode = statePart.replace(/\s\d+/, "").trim(); // "NY"
-          city = `${cityPart}, ${stateCode}`;
+          const cityPart = parts[parts.length - 3].trim();
+          const statePart = parts[parts.length - 2].trim();
+          const stateCode = statePart.replace(/\s\d{5}.*/, "").trim();
+          if (/^[A-Z]{2}$/.test(stateCode)) {
+            city = `${cityPart}, ${stateCode}`;
+          }
         }
       }
 
       if (!city) city = "New York, NY";
+      console.log("🏙️ Final city:", city);
     } catch (e) {
       console.error("City detection error:", e);
       city = "New York, NY";

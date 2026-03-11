@@ -1593,7 +1593,9 @@ function DashboardContent() {
                             color: "#2ECC71",
                           }}
                         >
-                          {data.competitors[0]?.reviews ?? "?"}
+                          {Math.max(
+                            ...data.competitors.map((c) => c.reviews || 0),
+                          )}
                         </div>
                         <div style={{ fontSize: 11, color: "#6B7B78" }}>
                           Top clinic
