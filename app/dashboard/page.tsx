@@ -1113,7 +1113,7 @@ function DashboardContent() {
                       reviewGap > 0
                         ? `Get ${reviewGap} more Google reviews to match the top clinic in ${city}.`
                         : reviews.total > 0 &&
-                            (reviews.analysis?.responseRate ?? 100) < 70
+                            (reviews.responseRate ?? 100) < 70
                           ? `Start responding to patient reviews — top clinics respond to 70%+ of reviews.`
                           : `Improve your score by ${Math.max(...data.competitors.map((c) => c.score)) - data.overallScore} points to reach the #1 spot in ${city}.`;
                     return (
