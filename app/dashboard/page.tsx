@@ -987,7 +987,7 @@ function DashboardContent() {
 
               // Get competitors behind user
               const behindComps = data.competitors
-                .filter((c) => c.score <= data.overallScore)
+                .filter((c) => c.score < data.overallScore + 5)
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 2);
 
@@ -1201,7 +1201,7 @@ function DashboardContent() {
                           }}
                         >
                           Final Goal:{" "}
-                          {(typeof userRank === "number" ? userRank : 8) <= 2
+                          {(typeof userRank === "number" ? userRank : 8) <= 3
                             ? `Rank #1 in ${city}`
                             : `Top 3 in ${city}`}
                         </div>
@@ -1277,8 +1277,18 @@ function DashboardContent() {
                             }}
                           >
                             Score: {comp.score}{" "}
-                            <span style={{ color: "#2ECC71", marginLeft: 4 }}>
-                              ({data.overallScore - comp.score} behind)
+                            <span
+                              style={{
+                                color:
+                                  data.overallScore - comp.score === 0
+                                    ? "#F0A500"
+                                    : "#2ECC71",
+                                marginLeft: 4,
+                              }}
+                            >
+                              {data.overallScore - comp.score === 0
+                                ? "⚠️ Tied!"
+                                : `(${data.overallScore - comp.score} behind)`}
                             </span>
                           </div>
                         </div>

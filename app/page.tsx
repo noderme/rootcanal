@@ -1,11 +1,25 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // If ?url= is in the link, auto-fill and immediately redirect to dashboard
+  useEffect(() => {
+    const urlParam = searchParams.get("url");
+    if (urlParam) {
+      let cleanUrl = urlParam.trim().toLowerCase();
+      if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+        cleanUrl = "https://" + cleanUrl;
+      }
+      // Skip landing page entirely — go straight to their report
+      router.push(`/dashboard?url=${encodeURIComponent(cleanUrl)}`);
+    }
+  }, [searchParams, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
