@@ -1201,7 +1201,7 @@ function DashboardContent() {
                           }}
                         >
                           Final Goal:{" "}
-                          {yourRankNum === 2
+                          {(typeof userRank === "number" ? userRank : 8) <= 2
                             ? `Rank #1 in ${city}`
                             : `Top 3 in ${city}`}
                         </div>
