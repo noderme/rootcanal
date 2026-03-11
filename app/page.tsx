@@ -177,9 +177,9 @@ function HomeInner() {
             Free Google Ranking Report for Dental Clinics
           </div>
           <h1 className="rc-h1">
-            Find Out How Many Patients
+            Your Clinic's <em>Dental Growth</em>
             <br />
-            Your Clinic Is <em>Losing.</em>
+            Intelligence Report
           </h1>
           <p className="rc-sub">
             See your dental clinic&apos;s Google ranking, patient review
@@ -214,62 +214,149 @@ function HomeInner() {
 
         {/* SCORE CARD */}
         <div className="rc-hero-visual">
-          <div className="rc-score-card">
-            <div className="rc-score-header">
+          <div
+            style={{
+              background: "#0D0F0E",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 16,
+              padding: 28,
+              width: "100%",
+              maxWidth: 400,
+              boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
+              fontFamily: "DM Sans, sans-serif",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: 20,
+              }}
+            >
               <div>
-                <div className="rc-score-label">Google Ranking Report</div>
-                <div className="rc-clinic-name">Bright Smile Dental</div>
-                <div className="rc-clinic-loc">📍 Austin, Texas</div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: 2,
+                    color: "#1ABC9C",
+                    textTransform: "uppercase",
+                    marginBottom: 4,
+                  }}
+                >
+                  Live Report
+                </div>
+                <div
+                  style={{
+                    fontFamily: "Playfair Display, serif",
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: "#F7F3ED",
+                    marginBottom: 2,
+                  }}
+                >
+                  Downtown Dental Brooklyn
+                </div>
+                <div style={{ fontSize: 12, color: "rgba(247,243,237,0.45)" }}>
+                  📍 Brooklyn, NY
+                </div>
               </div>
-              <div className="rc-score-badge">43</div>
+              <div
+                style={{
+                  background: "#D4A843",
+                  borderRadius: 12,
+                  width: 52,
+                  height: 52,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 800,
+                    color: "#0D0F0E",
+                    lineHeight: 1,
+                  }}
+                >
+                  66
+                </div>
+                <div style={{ fontSize: 9, color: "#0D0F0E", fontWeight: 600 }}>
+                  /100
+                </div>
+              </div>
             </div>
+
+            {/* Metrics */}
             {[
               {
-                dot: "dot-red",
-                label: "Google Business Profile",
-                status: "Incomplete",
-                cls: "bad",
+                label: "🧑‍⚕️ New Patients from Google",
+                value: "Very Low",
+                color: "#C0392B",
               },
               {
-                dot: "dot-red",
-                label: "Local Keywords",
-                status: "Missing",
-                cls: "bad",
+                label: "⭐ Google Reviews",
+                value: "300 · 4.9 stars",
+                color: "#1ABC9C",
               },
               {
-                dot: "dot-gold",
-                label: "Website Speed",
-                status: "Needs Work",
-                cls: "warn",
+                label: "⚡ Website Speed",
+                value: "13/100 — Slow",
+                color: "#C0392B",
               },
               {
-                dot: "dot-red",
-                label: "Google Reviews",
-                status: "Only 8",
-                cls: "bad",
+                label: "🏆 Competitors Ahead",
+                value: "3 outranking you",
+                color: "#D4A843",
               },
               {
-                dot: "dot-green",
-                label: "Mobile Friendly",
-                status: "Great ✓",
-                cls: "good",
+                label: "📩 Review Requests",
+                value: "Automated ✓",
+                color: "#1ABC9C",
               },
             ].map((item) => (
-              <div key={item.label} className="rc-score-item">
-                <div className="rc-item-left">
-                  <div className={`rc-dot ${item.dot}`} />
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>
-                    {item.label}
-                  </span>
-                </div>
-                <span className={`rc-badge ${item.cls}`}>{item.status}</span>
+              <div
+                key={item.label}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "10px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.06)",
+                }}
+              >
+                <span style={{ fontSize: 13, color: "rgba(247,243,237,0.6)" }}>
+                  {item.label}
+                </span>
+                <span
+                  style={{ fontSize: 13, fontWeight: 700, color: item.color }}
+                >
+                  {item.value}
+                </span>
               </div>
             ))}
-            <div className="rc-card-footer">
-              Competitor <strong>Dr. Smith</strong> ranks #1 in Austin.
-              <br />
-              You&apos;re ranked <strong>#7</strong>. Here&apos;s how to catch
-              up →
+
+            {/* Footer */}
+            <div
+              style={{
+                marginTop: 16,
+                background: "rgba(192,57,43,0.12)",
+                border: "1px solid rgba(192,57,43,0.3)",
+                borderRadius: 8,
+                padding: "12px 14px",
+              }}
+            >
+              <div style={{ fontSize: 12, color: "#F7F3ED", lineHeight: 1.6 }}>
+                🏆 Top clinic has{" "}
+                <strong style={{ color: "#C0392B" }}>712 more reviews</strong>.
+                <br />
+                You&apos;re ranked{" "}
+                <strong style={{ color: "#C0392B" }}>#5</strong> — top 3 gets
+                70% of clicks.
+              </div>
             </div>
           </div>
         </div>
@@ -371,48 +458,523 @@ function HomeInner() {
       {/* FEATURES */}
       <section className="rc-section" id="features">
         <div className="rc-sec-label">What you get</div>
-        <h2 className="rc-sec-title">
-          Everything your clinic needs to get more patients
-        </h2>
-        <div className="rc-features-grid">
-          {[
-            {
-              icon: "🔍",
-              title: "Google Ranking Check",
-              desc: "We check 30+ things Google looks at: speed, mobile, keywords, and more. Score out of 100 in plain English.",
-            },
-            {
-              icon: "📍",
-              title: "Google Profile Checker",
-              desc: "We check if your Google Business Profile is complete and tell you exactly what to add to rank higher in local searches.",
-            },
-            {
-              icon: "👁️",
-              title: "See Who's Beating You",
-              desc: "See how you stack up against 3 nearby dental clinics. Get alerted when a competitor overtakes you so you can act fast.",
-            },
-            {
-              icon: "⭐",
-              title: "Get More Reviews Automatically",
-              desc: "Automatically send happy patients a review request via SMS or email after their appointment. More reviews = higher ranking.",
-            },
-            {
-              icon: "📊",
-              title: "Monthly Progress Updates",
-              desc: "A simple one-page report every month showing your score improvement, new reviews, and ranking changes. No jargon.",
-            },
-            {
-              icon: "🔧",
-              title: "Simple Fix Instructions",
-              desc: "For every problem we find, we give you simple steps to fix it — or share with your web developer.",
-            },
-          ].map((f) => (
-            <div key={f.title} className="rc-feature-card fade-in">
-              <span className="rc-feature-icon">{f.icon}</span>
-              <h4>{f.title}</h4>
-              <p>{f.desc}</p>
+        <h2 className="rc-sec-title">Everything inside your free report</h2>
+        <p
+          style={{
+            textAlign: "center",
+            color: "var(--muted)",
+            maxWidth: 560,
+            margin: "0 auto 60px",
+            fontSize: 16,
+            lineHeight: 1.7,
+          }}
+        >
+          No jargon. No fluff. Just the data your clinic needs to rank higher
+          and get more patients.
+        </p>
+
+        {/* FEATURE 1 — Competitor Gap */}
+        <div
+          style={{
+            display: "flex",
+            gap: 48,
+            alignItems: "center",
+            marginBottom: 80,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <div className="rc-sec-label" style={{ display: "inline-flex" }}>
+              🏆 Competitor Intelligence
             </div>
-          ))}
+            <h3
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                margin: "12px 0 16px",
+                fontFamily: "Playfair Display, serif",
+              }}
+            >
+              Find out exactly who's stealing your patients
+            </h3>
+            <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
+              We identify the top 3 clinics outranking you, show their exact
+              review count, rating, and score — then give you the single most
+              important action to close the gap.{" "}
+              <strong style={{ color: "var(--dark)" }}>
+                Pro members get this updated every month.
+              </strong>
+            </p>
+          </div>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 280,
+              background: "#0D0F0E",
+              borderRadius: 16,
+              padding: 24,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: "#1ABC9C",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}
+            >
+              You vs. Top Competitor
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto 1fr",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  background: "rgba(26,188,156,0.1)",
+                  border: "1px solid rgba(26,188,156,0.3)",
+                  borderRadius: 10,
+                  padding: 16,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(247,243,237,0.5)",
+                    marginBottom: 8,
+                  }}
+                >
+                  YOUR CLINIC
+                </div>
+                <div
+                  style={{ fontSize: 22, fontWeight: 800, color: "#1ABC9C" }}
+                >
+                  4.9 ⭐
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "rgba(247,243,237,0.5)",
+                    marginTop: 4,
+                  }}
+                >
+                  300 reviews
+                </div>
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "rgba(247,243,237,0.3)",
+                  fontWeight: 700,
+                }}
+              >
+                VS
+              </div>
+              <div
+                style={{
+                  background: "rgba(192,57,43,0.1)",
+                  border: "1px solid rgba(192,57,43,0.3)",
+                  borderRadius: 10,
+                  padding: 16,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(247,243,237,0.5)",
+                    marginBottom: 8,
+                  }}
+                >
+                  TOP CLINIC
+                </div>
+                <div
+                  style={{ fontSize: 22, fontWeight: 800, color: "#C0392B" }}
+                >
+                  5.0 ⭐
+                </div>
+                <div style={{ fontSize: 12, color: "#C0392B", marginTop: 4 }}>
+                  712 more
+                </div>
+              </div>
+            </div>
+            <div
+              style={{
+                marginTop: 16,
+                background: "rgba(192,57,43,0.1)",
+                borderRadius: 8,
+                padding: "10px 14px",
+                fontSize: 13,
+                color: "#F7F3ED",
+              }}
+            >
+              🎯 <strong>Biggest opportunity:</strong> Get 412 more reviews to
+              match the top clinic in Brooklyn, NY.
+            </div>
+          </div>
+        </div>
+
+        {/* FEATURE 2 — Growth Roadmap */}
+        <div
+          style={{
+            display: "flex",
+            gap: 48,
+            alignItems: "center",
+            marginBottom: 80,
+            flexWrap: "wrap",
+            flexDirection: "row-reverse",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <div className="rc-sec-label" style={{ display: "inline-flex" }}>
+              🗺️ Growth Roadmap
+            </div>
+            <h3
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                margin: "12px 0 16px",
+                fontFamily: "Playfair Display, serif",
+              }}
+            >
+              Your personal GPS to the #1 spot in your city
+            </h3>
+            <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
+              We name the exact competitors to overtake, in order, with
+              estimated timelines. You'll know your next move every single
+              month. No agency needed, no guesswork — just a clear path from
+              where you are to #1.
+            </p>
+          </div>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 280,
+              background: "#0D0F0E",
+              borderRadius: 16,
+              padding: 24,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: "#D4A843",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}
+            >
+              Your Growth Roadmap
+            </div>
+            {[
+              {
+                step: 1,
+                name: "Overtake Expert Dental",
+                tag: "NEXT TARGET",
+                score: 79,
+                weeks: "3–4 weeks",
+                active: true,
+              },
+              {
+                step: 2,
+                name: "Overtake Sky Dental",
+                tag: null,
+                score: 88,
+                weeks: null,
+                active: false,
+              },
+              {
+                step: 3,
+                name: "Overtake 209 NYC Dental",
+                tag: null,
+                score: 95,
+                weeks: null,
+                active: false,
+              },
+            ].map((r) => (
+              <div
+                key={r.step}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "12px 14px",
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  background: r.active
+                    ? "rgba(212,168,67,0.1)"
+                    : "rgba(255,255,255,0.03)",
+                  border: `1px solid ${r.active ? "rgba(212,168,67,0.3)" : "rgba(255,255,255,0.06)"}`,
+                  opacity: r.active ? 1 : 0.5,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      background: r.active
+                        ? "#D4A843"
+                        : "rgba(255,255,255,0.1)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: r.active ? "#0D0F0E" : "rgba(255,255,255,0.3)",
+                    }}
+                  >
+                    {r.active ? r.step : "🔒"}
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#F7F3ED",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {r.name}
+                    </div>
+                    {r.active && (
+                      <div
+                        style={{ fontSize: 11, color: "#D4A843", marginTop: 2 }}
+                      >
+                        est. {r.weeks}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: r.active ? "#D4A843" : "rgba(255,255,255,0.3)",
+                  }}
+                >
+                  Score: {r.score}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FEATURE 3 — Reviews */}
+        <div
+          style={{
+            display: "flex",
+            gap: 48,
+            alignItems: "center",
+            marginBottom: 80,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <div className="rc-sec-label" style={{ display: "inline-flex" }}>
+              ⭐ Review Automation
+            </div>
+            <h3
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                margin: "12px 0 16px",
+                fontFamily: "Playfair Display, serif",
+              }}
+            >
+              Get more 5-star reviews — on autopilot
+            </h3>
+            <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
+              Our AI reads every Google review and tells you what patients love,
+              what they complain about, and what to fix first. Then send a
+              direct Google review link to any patient in 2 clicks — no login
+              required for them, no chasing required for you.
+            </p>
+          </div>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 280,
+              background: "#0D0F0E",
+              borderRadius: 16,
+              padding: 24,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: "#D4A843",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}
+            >
+              AI Review Analysis
+            </div>
+            {[
+              {
+                label: "💚 Patients Love",
+                items: [
+                  "Gentle & painless treatment",
+                  "Friendly staff",
+                  "Easy scheduling",
+                ],
+              },
+              {
+                label: "🔴 Top Complaint",
+                items: ["Long wait times at front desk"],
+              },
+              {
+                label: "⚡ Fix This First",
+                items: ["Add online check-in to reduce wait times"],
+              },
+            ].map((section) => (
+              <div key={section.label} style={{ marginBottom: 14 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "rgba(247,243,237,0.7)",
+                    marginBottom: 6,
+                  }}
+                >
+                  {section.label}
+                </div>
+                {section.items.map((item) => (
+                  <div
+                    key={item}
+                    style={{
+                      fontSize: 13,
+                      color: "rgba(247,243,237,0.5)",
+                      padding: "4px 0",
+                      paddingLeft: 12,
+                      borderLeft: "2px solid rgba(26,188,156,0.4)",
+                    }}
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            ))}
+            <div
+              style={{
+                marginTop: 16,
+                background: "rgba(26,188,156,0.1)",
+                borderRadius: 8,
+                padding: "10px 14px",
+                fontSize: 13,
+                color: "#1ABC9C",
+                fontWeight: 600,
+              }}
+            >
+              ⭐ Send a review request to a patient in 2 clicks →
+            </div>
+          </div>
+        </div>
+
+        {/* FEATURE 4 — Health Checklist */}
+        <div
+          style={{
+            display: "flex",
+            gap: 48,
+            alignItems: "center",
+            flexWrap: "wrap",
+            flexDirection: "row-reverse",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <div className="rc-sec-label" style={{ display: "inline-flex" }}>
+              🔧 Website Health
+            </div>
+            <h3
+              style={{
+                fontSize: 26,
+                fontWeight: 700,
+                margin: "12px 0 16px",
+                fontFamily: "Playfair Display, serif",
+              }}
+            >
+              Every issue found. Every fix explained.
+            </h3>
+            <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
+              We scan your website for every factor Google uses to rank dentists
+              — speed, SEO, mobile, accessibility. For each problem we find, we
+              explain exactly how to fix it in plain English. Forward it to your
+              web developer and it's done.
+            </p>
+          </div>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 280,
+              background: "#0D0F0E",
+              borderRadius: 16,
+              padding: 24,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: "#1ABC9C",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}
+            >
+              Website Health Checklist
+            </div>
+            {[
+              {
+                icon: "❌",
+                label: "Page speed critically slow (13/100)",
+                color: "#C0392B",
+              },
+              {
+                icon: "❌",
+                label: "Missing title tags on 3 pages",
+                color: "#C0392B",
+              },
+              {
+                icon: "⚠️",
+                label: "Google Business hours incomplete",
+                color: "#D4A843",
+              },
+              {
+                icon: "✅",
+                label: "Mobile friendly — Great",
+                color: "#1ABC9C",
+              },
+              { icon: "✅", label: "SSL certificate active", color: "#1ABC9C" },
+              {
+                icon: "✅",
+                label: "Google Business profile found",
+                color: "#1ABC9C",
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "8px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
+                  fontSize: 13,
+                }}
+              >
+                <span>{item.icon}</span>
+                <span style={{ color: item.color }}>{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
