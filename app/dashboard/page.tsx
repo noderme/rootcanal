@@ -111,9 +111,9 @@ function ScoreRing({ score }: { score: number }) {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const url = searchParams.get("url") || "";
-  const city = searchParams.get("city") || "";
 
   const [data, setData] = useState<AuditData | null>(null);
+  const city = searchParams.get("city") || data?.city || "";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showUpgradePopup, setShowUpgradePopup] = useState(false);
@@ -172,6 +172,19 @@ function DashboardContent() {
       "Ask your web developer to add 'alt text' to all images on your website",
       "Alt text describes what's in each image — e.g. 'Dental exam room at Austin Family Dental'",
       "This helps Google understand your website better and improves ranking",
+    ],
+    "Not listed on Healthgrades": [
+      "Go to healthgrades.com and search for your clinic",
+      "If your clinic appears but is unclaimed, click 'Is this you?' and claim it",
+      "If it doesn't appear, go to healthgrades.com/dentists and add your practice",
+      "Fill in everything — address, phone, hours, services, and a photo",
+      "Ask satisfied patients to leave a review on Healthgrades too",
+    ],
+    "Not listed on Zocdoc": [
+      "Go to zocdoc.com/join and sign up as a provider — it's free to list",
+      "Fill in your profile completely — specialty, insurance accepted, location",
+      "Enable online booking — patients love clinics they can book instantly",
+      "Zocdoc sends you patients directly — many dentists get 10-20 new patients/month from it",
     ],
     "Google Business Profile not found": [
       "Go to business.google.com and click 'Manage now'",
@@ -521,7 +534,7 @@ function DashboardContent() {
             fontFamily: "'DM Mono', monospace",
           }}
         >
-          {url} · Competitors in {city}
+          {url} · {city}
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
@@ -633,9 +646,9 @@ function DashboardContent() {
           >
             {[
               {
-                icon: "📍",
+                icon: "🏆",
                 value: `#${userRank}`,
-                label: `Competitors in ${city}`,
+                label: `Google Search Position`,
                 color: "#E74C3C",
                 bg: "rgba(231,76,60,0.12)",
               },
@@ -670,7 +683,7 @@ function DashboardContent() {
                     : "rgba(240,165,0,0.12)",
               },
               {
-                icon: "♿",
+                icon: "👆",
                 value: data.accessibilityScore,
                 label: "How Easy Your Website Is",
                 color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500",
@@ -899,7 +912,7 @@ function DashboardContent() {
                   fontWeight: 700,
                 }}
               >
-                {city} Dental Rankings 📍
+                Your Growth Roadmap 🗺️
               </div>
               <span
                 style={{
@@ -912,141 +925,366 @@ function DashboardContent() {
                   fontFamily: "'DM Mono', monospace",
                 }}
               >
-                {data.competitors.length} Clinics Found
+                You are #{userRank}
               </span>
             </div>
 
-            {/* Header */}
+            {/* You are here */}
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "32px 1fr 140px 100px 80px",
-                gap: 16,
-                padding: "8px 0",
-                fontSize: 11,
-                color: "#6B7B78",
-                fontWeight: 600,
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                borderBottom: "1px solid #2A3330",
-                marginBottom: 4,
-                fontFamily: "'DM Mono', monospace",
+                background: "rgba(26,188,156,0.06)",
+                border: "1px solid rgba(26,188,156,0.3)",
+                borderRadius: 12,
+                padding: "14px 16px",
+                marginBottom: 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
               }}
             >
-              <div>#</div>
-              <div>Clinic</div>
-              <div>Google Score</div>
-              <div>Reviews</div>
-              <div>Status</div>
-            </div>
-
-            {data.competitors.map((comp, i) => {
-              const isAhead = comp.score > data.overallScore;
-              const scoreColor =
-                comp.score >= 70
-                  ? "#2ECC71"
-                  : comp.score >= 40
-                    ? "#F0A500"
-                    : "#E74C3C";
-              const fillClass =
-                comp.score >= 70
-                  ? "#2ECC71"
-                  : comp.score >= 40
-                    ? "#F0A500"
-                    : "#E74C3C";
-
-              return (
+              <span style={{ fontSize: 20 }}>📍</span>
+              <div style={{ flex: 1 }}>
                 <div
-                  key={i}
-                  className="comp-row"
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "32px 1fr 140px 100px 80px",
-                    gap: 16,
-                    alignItems: "center",
-                    padding: "14px 0",
-                    borderBottom: "1px solid #2A3330",
-                    transition: "background 0.2s",
+                    fontSize: 13,
+                    color: "#1ABC9C",
+                    fontWeight: 700,
+                    marginBottom: 2,
                   }}
                 >
-                  <div
-                    style={{
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 13,
-                      color: i === 0 ? "#F0A500" : "#6B7B78",
-                      fontWeight: i === 0 ? 700 : 400,
-                      textAlign: "center",
-                    }}
-                  >
-                    {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>
-                      {comp.name}
-                    </div>
-                    <div
-                      style={{ fontSize: 11, color: "#6B7B78", marginTop: 2 }}
-                    >
-                      {comp.address.split(",")[0]}
-                    </div>
-                  </div>
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
+                  YOU ARE HERE
+                </div>
+                <div
+                  style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3" }}
+                >
+                  {new URL(url).hostname.replace("www.", "")}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: 22,
+                    fontWeight: 700,
+                    color: "#1ABC9C",
+                  }}
+                >
+                  #{userRank}
+                </div>
+                <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                  Google Search Position
+                </div>
+              </div>
+            </div>
+
+            {/* Closest competitors to overtake */}
+            {(() => {
+              // Get competitors ahead of user, sorted by closest score first
+              const aheadComps = data.competitors
+                .filter((c) => c.score > data.overallScore)
+                .sort((a, b) => a.score - b.score)
+                .slice(0, 3);
+
+              // Get competitors behind user
+              const behindComps = data.competitors
+                .filter((c) => c.score <= data.overallScore)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 2);
+
+              const stepsToShow = [...aheadComps].slice(0, 3);
+
+              return (
+                <div>
+                  {stepsToShow.length === 0 && (
                     <div
                       style={{
-                        flex: 1,
-                        height: 6,
-                        background: "#2A3330",
-                        borderRadius: 3,
-                        overflow: "hidden",
+                        textAlign: "center",
+                        padding: "24px 0",
+                        color: "#1ABC9C",
+                        fontSize: 15,
+                        fontWeight: 600,
+                      }}
+                    >
+                      🏆 You are already leading! Keep it up.
+                    </div>
+                  )}
+
+                  {stepsToShow.map((comp, i) => {
+                    const gap = comp.score - data.overallScore;
+                    const reviewGap =
+                      (comp.reviews || 0) - (reviews?.total || 0);
+                    const weeks =
+                      i === 0
+                        ? "3–4 weeks"
+                        : i === 1
+                          ? "6–8 weeks"
+                          : "3–4 months";
+                    const isLocked = i > 0;
+
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          position: "relative",
+                          marginBottom: 12,
+                          opacity: isLocked ? 0.6 : 1,
+                        }}
+                      >
+                        {/* Connector line */}
+                        {i < stepsToShow.length - 1 && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              left: 20,
+                              top: "100%",
+                              width: 2,
+                              height: 12,
+                              background: "#2A3330",
+                              zIndex: 0,
+                            }}
+                          />
+                        )}
+
+                        <div
+                          style={{
+                            background: isLocked
+                              ? "#0D0F0E"
+                              : "rgba(240,165,0,0.04)",
+                            border: `1px solid ${isLocked ? "#2A3330" : "rgba(240,165,0,0.2)"}`,
+                            borderRadius: 12,
+                            padding: "14px 16px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 14,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: "50%",
+                              background: isLocked
+                                ? "#1A1F1E"
+                                : "rgba(240,165,0,0.12)",
+                              border: `2px solid ${isLocked ? "#2A3330" : "#F0A500"}`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: 14,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {isLocked ? "🔒" : `${i + 1}`}
+                          </div>
+
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                marginBottom: 4,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  color: isLocked ? "#6B7B78" : "#F0EBE3",
+                                }}
+                              >
+                                Step {i + 1}: Overtake{" "}
+                                {comp.name.length > 25
+                                  ? comp.name.slice(0, 25) + "..."
+                                  : comp.name}
+                              </div>
+                              {!isLocked && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    padding: "2px 8px",
+                                    borderRadius: 4,
+                                    background: "rgba(240,165,0,0.12)",
+                                    color: "#F0A500",
+                                    fontFamily: "'DM Mono', monospace",
+                                  }}
+                                >
+                                  NEXT TARGET
+                                </span>
+                              )}
+                            </div>
+
+                            {!isLocked ? (
+                              <div
+                                style={{
+                                  fontSize: 12,
+                                  color: "#6B7B78",
+                                  lineHeight: 1.6,
+                                }}
+                              >
+                                {reviewGap > 0
+                                  ? `Get ${reviewGap} more reviews + improve score by ${gap} points`
+                                  : `Improve your score by ${gap} points`}{" "}
+                                — estimated{" "}
+                                <span
+                                  style={{ color: "#F0A500", fontWeight: 600 }}
+                                >
+                                  {weeks}
+                                </span>
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                                🔒 Unlock with Pro to see full roadmap
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <div
+                              style={{
+                                fontFamily: "'DM Mono', monospace",
+                                fontSize: 16,
+                                fontWeight: 700,
+                                color: isLocked ? "#6B7B78" : "#F0A500",
+                              }}
+                            >
+                              Score: {comp.score}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                              {gap > 0 ? `+${gap} ahead` : "same level"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Final goal */}
+                  {stepsToShow.length > 0 && (
+                    <div
+                      style={{
+                        background: "rgba(46,204,113,0.04)",
+                        border: "1px solid rgba(46,204,113,0.15)",
+                        borderRadius: 12,
+                        padding: "14px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        marginTop: 12,
+                        opacity: 0.5,
                       }}
                     >
                       <div
                         style={{
-                          height: "100%",
-                          width: `${comp.score}%`,
-                          background: fillClass,
-                          borderRadius: 3,
-                          transition: "width 1s ease",
+                          width: 36,
+                          height: 36,
+                          borderRadius: "50%",
+                          background: "rgba(46,204,113,0.1)",
+                          border: "2px solid #2ECC71",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 16,
+                          flexShrink: 0,
                         }}
-                      />
+                      >
+                        🏆
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "#2ECC71",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Final Goal: Top 3 in {city}
+                        </div>
+                        <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                          🔒 Get Pro to unlock your full step-by-step growth
+                          plan
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleUpgradeClick}
+                        style={{
+                          background: "#2ECC71",
+                          color: "#000",
+                          border: "none",
+                          padding: "8px 16px",
+                          borderRadius: 8,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontFamily: "'DM Sans', sans-serif",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Get Pro →
+                      </button>
                     </div>
-                    <span
+                  )}
+
+                  {/* Clinics behind you */}
+                  {behindComps.length > 0 && (
+                    <div
                       style={{
-                        fontFamily: "'DM Mono', monospace",
-                        fontSize: 13,
-                        color: scoreColor,
-                        width: 28,
-                        textAlign: "right",
+                        marginTop: 20,
+                        paddingTop: 16,
+                        borderTop: "1px solid #2A3330",
                       }}
                     >
-                      {comp.score}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 13, color: "#6B7B78" }}>
-                    <strong style={{ color: "#F0EBE3" }}>{comp.reviews}</strong>{" "}
-                    ⭐{comp.rating}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: "4px 10px",
-                      borderRadius: 6,
-                      background: isAhead
-                        ? "rgba(231,76,60,0.12)"
-                        : "rgba(46,204,113,0.12)",
-                      color: isAhead ? "#E74C3C" : "#2ECC71",
-                      fontFamily: "'DM Mono', monospace",
-                      textAlign: "center",
-                    }}
-                  >
-                    {isAhead ? "AHEAD" : "BEHIND"}
-                  </span>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "#6B7B78",
+                          fontWeight: 600,
+                          marginBottom: 10,
+                          letterSpacing: 1,
+                          textTransform: "uppercase",
+                          fontFamily: "'DM Mono', monospace",
+                        }}
+                      >
+                        Clinics Behind You — Don&apos;t Let Them Catch Up!
+                      </div>
+                      {behindComps.map((comp, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            padding: "10px 0",
+                            borderBottom: "1px solid #1A1F1E",
+                          }}
+                        >
+                          <span style={{ fontSize: 14 }}>👇</span>
+                          <div
+                            style={{ flex: 1, fontSize: 13, color: "#6B7B78" }}
+                          >
+                            {comp.name}
+                          </div>
+                          <div
+                            style={{
+                              fontFamily: "'DM Mono', monospace",
+                              fontSize: 13,
+                              color: "#6B7B78",
+                            }}
+                          >
+                            Score: {comp.score}{" "}
+                            <span style={{ color: "#2ECC71", marginLeft: 4 }}>
+                              ({data.overallScore - comp.score} behind)
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
-            })}
+            })()}
           </div>
         )}
 

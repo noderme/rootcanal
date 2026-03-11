@@ -124,16 +124,32 @@ async function fetchPageSpeed(
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url");
-  const city = searchParams.get("city");
+  let city = searchParams.get("city") || "";
 
-  if (!url || !city) {
-    return NextResponse.json(
-      { error: "URL and city are required" },
-      { status: 400 },
-    );
+  if (!url) {
+    return NextResponse.json({ error: "URL is required" }, { status: 400 });
   }
 
   const apiKey = process.env.GOOGLE_API_KEY || "";
+
+  // ── Auto-detect city from Google Places if not provided ──
+  if (!city) {
+    try {
+      const placeRes = await fetch(
+        `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(url)}&inputtype=textquery&fields=formatted_address&key=${apiKey}`,
+      );
+      const placeData = await placeRes.json();
+      const address = placeData.candidates?.[0]?.formatted_address || "";
+      // Extract city from address like "123 Main St, Austin, TX 78701, USA"
+      const parts = address.split(",");
+      if (parts.length >= 2) {
+        city = parts.slice(-3, -1).join(",").trim(); // e.g. "Austin, TX"
+      }
+    } catch {
+      city = "USA";
+    }
+  }
+
   const cacheKey = `${url}__${city}`.toLowerCase();
 
   // ── Check cache first ──
@@ -326,7 +342,75 @@ export async function GET(request: NextRequest) {
       console.error("GBP check error:", gbpError);
     }
 
-    // ── 4. COMPETITORS via Google Places ──────────────
+    // ── 4. HEALTHGRADES & ZOCDOC CHECK ──────────────
+    try {
+      // Extract clinic name from domain for searching
+      const domainName = url
+        .replace(/https?:\/\//, "")
+        .replace(/www\./, "")
+        .split(".")[0];
+      const clinicSearchName = domainName.replace(/-/g, " ");
+
+      // Check Healthgrades
+      const hgRes = await fetch(
+        `https://www.healthgrades.com/search?what=${encodeURIComponent(clinicSearchName + " dentist")}&where=${encodeURIComponent(city)}`,
+        {
+          headers: { "User-Agent": "Mozilla/5.0" },
+        },
+      );
+      const hgText = await hgRes.text();
+      const onHealthgrades =
+        hgText.includes(clinicSearchName.split(" ")[0].toLowerCase()) ||
+        hgText.includes("dentist");
+
+      if (onHealthgrades) {
+        issues.push({
+          title: "Listed on Healthgrades ✅",
+          desc: "Your clinic appears on Healthgrades — one of the top sites patients use to find and review dentists.",
+          priority: "GOOD",
+          status: "pass",
+        });
+      } else {
+        issues.push({
+          title: "Not listed on Healthgrades",
+          desc: "Healthgrades is one of the most trusted sites for finding dentists. Patients check it before booking.",
+          priority: "MED",
+          status: "warn",
+        });
+      }
+
+      // Check Zocdoc
+      const zdRes = await fetch(
+        `https://www.zocdoc.com/search?dr_specialty=12&address=${encodeURIComponent(city)}&q=${encodeURIComponent(clinicSearchName)}`,
+        {
+          headers: { "User-Agent": "Mozilla/5.0" },
+        },
+      );
+      const zdText = await zdRes.text();
+      const onZocdoc = zdText.includes(
+        clinicSearchName.split(" ")[0].toLowerCase(),
+      );
+
+      if (onZocdoc) {
+        issues.push({
+          title: "Listed on Zocdoc ✅",
+          desc: "Your clinic is on Zocdoc — patients can find and book appointments with you directly.",
+          priority: "GOOD",
+          status: "pass",
+        });
+      } else {
+        issues.push({
+          title: "Not listed on Zocdoc",
+          desc: "Zocdoc lets patients book dental appointments online. Missing from Zocdoc means missing bookings.",
+          priority: "MED",
+          status: "warn",
+        });
+      }
+    } catch (listingError) {
+      console.error("Listings check error:", listingError);
+    }
+
+    // ── 5. COMPETITORS via Google Places ──────────────
     let competitors: {
       name: string;
       rating: number;

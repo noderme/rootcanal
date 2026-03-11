@@ -1,67 +1,22 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [url, setUrl] = useState("");
-  const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const cityRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  // Close suggestions when clicking outside
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (cityRef.current && !cityRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  // Fetch city suggestions from Google Places API
-  const fetchCitySuggestions = async (input: string) => {
-    if (input.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    try {
-      const res = await fetch(`/api/cities?input=${encodeURIComponent(input)}`);
-      const data = await res.json();
-      setSuggestions(data.suggestions || []);
-      setShowSuggestions(true);
-    } catch {
-      setSuggestions([]);
-    }
-  };
-
-  const handleCityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setCity(val);
-    fetchCitySuggestions(val);
-  };
-
-  const selectCity = (suggestion: string) => {
-    setCity(suggestion);
-    setSuggestions([]);
-    setShowSuggestions(false);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url || !city) return;
+    if (!url) return;
     setLoading(true);
     // Clean URL — accept any format dentist types
     let cleanUrl = url.trim().toLowerCase();
     if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
       cleanUrl = "https://" + cleanUrl;
     }
-    router.push(
-      `/dashboard?url=${encodeURIComponent(cleanUrl)}&city=${encodeURIComponent(city)}`,
-    );
+    router.push(`/dashboard?url=${encodeURIComponent(cleanUrl)}`);
   };
 
   return (
@@ -229,36 +184,7 @@ export default function Home() {
                 required
               />
             </div>
-            <div className="rc-city-wrap" ref={cityRef}>
-              <div className="rc-scan-box">
-                <input
-                  className="rc-input"
-                  type="text"
-                  placeholder="Your city (e.g. Austin, Texas)…"
-                  value={city}
-                  onChange={handleCityChange}
-                  onFocus={() =>
-                    suggestions.length > 0 && setShowSuggestions(true)
-                  }
-                  autoComplete="off"
-                  required
-                />
-              </div>
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="rc-suggestions">
-                  {suggestions.map((s, i) => (
-                    <div
-                      key={i}
-                      className="rc-suggestion-item"
-                      onClick={() => selectCity(s)}
-                    >
-                      <span className="rc-suggestion-pin">📍</span>
-                      {s}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
             <button className="rc-btn" type="submit" disabled={loading}>
               {loading
                 ? "⟳  Checking your clinic..."
