@@ -200,8 +200,8 @@ function HomeInner() {
               padding: "12px 16px",
             }}
           >
-            Get more Google reviews, track competitors, and improve your
-            clinic&apos;s visibility — all in one simple dashboard.
+            Get more Google reviews, Get more patients, track competitors, and
+            improve your clinic&apos;s visibility — all in one simple dashboard.
           </p>
 
           <form id="audit" onSubmit={handleSubmit} className="rc-form-wrap">
@@ -209,7 +209,7 @@ function HomeInner() {
               <input
                 className="rc-input"
                 type="text"
-                placeholder="e.g. smilesdental.com or www.smilesdental.com"
+                placeholder="Enter your clinic website e.g. smilesdental.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 required
@@ -1303,7 +1303,7 @@ function HomeInner() {
         <form className="rc-cta-form" onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="e.g. smilesdental.com or www.smilesdental.com"
+            placeholder="Enter your clinic website e.g. smilesdental.com"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             required
