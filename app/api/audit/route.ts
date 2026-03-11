@@ -133,6 +133,62 @@ export async function GET(request: NextRequest) {
 
   const apiKey = process.env.GOOGLE_API_KEY || "";
 
+  // ── Dental clinic check — reject non-dental websites ──
+  try {
+    const dentalKeywords = [
+      "dental",
+      "dentist",
+      "orthodont",
+      "endodont",
+      "periodon",
+      "implant",
+      "teeth",
+      "tooth",
+      "oral",
+      "smile",
+      "clinic",
+      "dds",
+      "dmd",
+      "dr.",
+    ];
+    const normalizedDomain = url
+      .replace(/https?:\/\//, "")
+      .replace(/^www\./, "")
+      .toLowerCase();
+
+    // Check 1: domain name contains dental keywords
+    const domainIsDental = dentalKeywords.some((kw) =>
+      normalizedDomain.includes(kw),
+    );
+
+    // Check 2: fetch homepage and check for dental keywords in page content
+    let pageIsDental = false;
+    if (!domainIsDental) {
+      try {
+        const pageRes = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        const pageText = (await pageRes.text()).toLowerCase().slice(0, 5000);
+        pageIsDental = dentalKeywords.some((kw) => pageText.includes(kw));
+        console.log("🦷 Page dental check:", pageIsDental, "for", url);
+      } catch {
+        /* ignore fetch errors */
+      }
+    }
+
+    if (!domainIsDental && !pageIsDental) {
+      console.log("❌ Not a dental website:", url);
+      return NextResponse.json(
+        {
+          error: "not_dental",
+          message:
+            "This doesn't appear to be a dental clinic website. Please enter your clinic's URL (e.g. bestsmilesdental.com).",
+        },
+        { status: 400 },
+      );
+    }
+  } catch (e) {
+    console.error("Dental check error:", e);
+  }
+
   // ── Auto-detect city from Google Places if not provided ──
   if (!city) {
     try {
@@ -188,11 +244,13 @@ export async function GET(request: NextRequest) {
 
   const cacheKey = `${url}__${city}`.toLowerCase();
 
-  // ── Check cache first ──
+  // ── Check cache first (skip if placeId missing — re-fetch to get it) ──
   const cached = getCached(cacheKey);
-  if (cached) {
+  if (cached && cached.placeId) {
     console.log("Cache hit:", cacheKey);
     return NextResponse.json(cached);
+  } else if (cached) {
+    console.log("Cache hit but no placeId — re-fetching:", cacheKey);
   }
 
   try {
@@ -351,7 +409,6 @@ export async function GET(request: NextRequest) {
     // ── 3. GOOGLE BUSINESS PROFILE CHECK ────────────
     let clinicPlaceId = "";
     try {
-      // Search by clinic name + city for more reliable match
       const clinicSearchName = url
         .replace(/https?:\/\//, "")
         .replace(/^www\./, "")
@@ -360,18 +417,90 @@ export async function GET(request: NextRequest) {
         .replace(/\.(com|net|org|io|us)$/, "")
         .replace(/[-_.]/g, " ")
         .trim();
+
+      // Helper: check if address is in India
+      const isIndia = (p: { formatted_address?: string }) =>
+        p?.formatted_address?.toLowerCase().includes("india") ||
+        p?.formatted_address?.toLowerCase().includes("hyderabad");
+
+      // Helper: verify GBP website matches scanned URL
+      const normalizedInputUrl = url
+        .replace(/https?:\/\//, "")
+        .replace(/^www\./, "")
+        .split("/")[0]
+        .toLowerCase();
+      const websiteMatches = async (placeId: string): Promise<boolean> => {
+        try {
+          const detailRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=website&key=${apiKey}`,
+          );
+          const detailData = await detailRes.json();
+          const gbpWebsite = (detailData.result?.website || "")
+            .replace(/https?:\/\//, "")
+            .replace(/^www\./, "")
+            .split("/")[0]
+            .toLowerCase();
+          if (!gbpWebsite) return true; // no website listed — assume ok
+          const match =
+            gbpWebsite.includes(normalizedInputUrl) ||
+            normalizedInputUrl.includes(gbpWebsite);
+          console.log(
+            `🔗 Website match check: ${normalizedInputUrl} vs ${gbpWebsite} → ${match}`,
+          );
+          return match;
+        } catch {
+          return true;
+        }
+      };
+
+      // Strategy 1: search by "clinic name dentist city"
       const gbpQuery = `${clinicSearchName} dentist ${city}`;
       const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(gbpQuery)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status,formatted_address&key=${apiKey}`;
       const gbpRes = await fetch(gbpUrl);
       const gbpData = await gbpRes.json();
-      const place = gbpData.candidates?.[0];
-      // Only use if address doesn't contain India
-      if (
-        place?.place_id &&
-        !place.formatted_address?.toLowerCase().includes("india")
-      ) {
-        clinicPlaceId = place.place_id;
+      let place = gbpData.candidates?.[0];
+
+      if (place?.place_id && !isIndia(place)) {
+        const matched = await websiteMatches(place.place_id);
+        if (matched) {
+          clinicPlaceId = place.place_id;
+          console.log(
+            "✅ GBP found (strategy 1):",
+            place.name,
+            place.formatted_address,
+          );
+        } else {
+          console.log("⚠️ GBP website mismatch — skipping strategy 1 result");
+          place = null;
+        }
       }
+
+      // Strategy 2: fallback — search by website URL via textsearch
+      if (!clinicPlaceId) {
+        const normalizedUrl = url
+          .replace(/https?:\/\//, "")
+          .replace(/^www\./, "");
+        const gbpUrl2 = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(normalizedUrl + " dentist")}&type=dentist&key=${apiKey}`;
+        const gbpRes2 = await fetch(gbpUrl2);
+        const gbpData2 = await gbpRes2.json();
+        place = gbpData2.results?.[0];
+        if (place?.place_id && !isIndia(place)) {
+          const matched = await websiteMatches(place.place_id);
+          if (matched) {
+            clinicPlaceId = place.place_id;
+            console.log(
+              "✅ GBP found (strategy 2):",
+              place.name,
+              place.formatted_address,
+            );
+          } else {
+            console.log("⚠️ GBP website mismatch — skipping strategy 2 result");
+            place = null;
+          }
+        }
+      }
+
+      console.log("🔑 Final placeId:", clinicPlaceId || "NOT FOUND");
 
       if (!place?.place_id) {
         issues.push({

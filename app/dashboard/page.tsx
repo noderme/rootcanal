@@ -385,6 +385,11 @@ function DashboardContent() {
     )
       .then((res) => res.json())
       .then((d) => {
+        if (d.error === "not_dental") {
+          setError(d.message);
+          setLoading(false);
+          return;
+        }
         setData(d);
         setLoading(false);
         // Fetch reviews for the SCANNED clinic
@@ -543,17 +548,30 @@ function DashboardContent() {
           justifyContent: "center",
           flexDirection: "column",
           gap: 16,
+          padding: 32,
+          textAlign: "center",
         }}
       >
-        <div style={{ fontSize: 48 }}>⚠️</div>
+        <div style={{ fontSize: 56 }}>🦷</div>
         <div
           style={{
-            fontSize: 20,
+            fontSize: 22,
             color: "#F0EBE3",
             fontFamily: "'Playfair Display', serif",
+            maxWidth: 480,
           }}
         >
           {error}
+        </div>
+        <div
+          style={{
+            fontSize: 14,
+            color: "rgba(247,243,237,0.45)",
+            maxWidth: 400,
+          }}
+        >
+          RootCanal is built for dental clinics. Enter your clinic&apos;s
+          website URL to get your free Google ranking report.
         </div>
         <a
           href="/"
@@ -565,9 +583,10 @@ function DashboardContent() {
             fontWeight: 700,
             textDecoration: "none",
             fontSize: 14,
+            marginTop: 8,
           }}
         >
-          ← Try Again
+          ← Enter Your Clinic URL
         </a>
       </div>
     );
@@ -795,9 +814,16 @@ function DashboardContent() {
                 {
                   icon: "🏆",
                   value: `#${userRank}`,
-                  label: `Google Search Position`,
-                  color: "#E74C3C",
-                  bg: "rgba(231,76,60,0.12)",
+                  label: "Google Search Position",
+                  sublabel: "Estimated — actual rank varies by location",
+                  color:
+                    typeof userRank === "number" && userRank <= 3
+                      ? "#1ABC9C"
+                      : "#E74C3C",
+                  bg:
+                    typeof userRank === "number" && userRank <= 3
+                      ? "rgba(26,188,156,0.12)"
+                      : "rgba(231,76,60,0.12)",
                 },
                 {
                   icon: "⚡",
@@ -890,6 +916,18 @@ function DashboardContent() {
                     >
                       {m.label}
                     </div>
+                    {(m as any).sublabel && (
+                      <div
+                        style={{
+                          fontSize: 10,
+                          color: "rgba(107,123,120,0.6)",
+                          marginTop: 2,
+                          fontStyle: "italic",
+                        }}
+                      >
+                        {(m as any).sublabel}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -936,7 +974,7 @@ function DashboardContent() {
                           >
                             {inTopThree
                               ? `You're in the top 3 in ${city}!`
-                              : `You're ranked #${yourRankNum} — outside the top 3`}
+                              : `You're outside the top 3 — most patients never scroll that far`}
                           </div>
                           <div
                             style={{
@@ -1694,7 +1732,7 @@ function DashboardContent() {
                   #{userRank}
                 </div>
                 <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                  Google Search Position
+                  Local Rank (est.)
                 </div>
               </div>
             </div>
