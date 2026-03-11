@@ -4,20 +4,49 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const clinicUrl = searchParams.get("url");
   const clinicName = searchParams.get("name");
-  const city = searchParams.get("city");
+  const city = searchParams.get("city") || "";
 
   const googleKey = process.env.GOOGLE_API_KEY || "";
 
   try {
-    // ── 1. Find place by URL or name ──
-    const query = clinicUrl ? `${clinicUrl}` : `${clinicName} ${city}`;
+    // ── 1. Find place by URL + city to avoid wrong location matches ──
+    const domain = clinicUrl
+      ? clinicUrl
+          .replace(/https?:\/\//, "")
+          .replace(/www\./, "")
+          .split("/")[0]
+      : "";
 
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total&key=${googleKey}`;
+    // Always include city in query to avoid matching wrong location
+    const query = city
+      ? `${domain || clinicName} dentist ${city}`
+      : `${domain || clinicName}`;
+
+    // Use locationbias to restrict to USA
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,formatted_address&locationbias=rectangle:-125,24,-66,50&key=${googleKey}`;
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
 
+    // Validate result is in correct location (not India or wrong country)
     const place = searchData.candidates?.[0];
     if (!place?.place_id) {
+      return NextResponse.json({
+        rating: 0,
+        total: 0,
+        reviews: [],
+        sentimentBreakdown: null,
+        responseRate: 0,
+        analysis: null,
+      });
+    }
+
+    // Check address doesn't contain India/wrong country
+    const placeAddress = place.formatted_address || "";
+    if (
+      placeAddress.toLowerCase().includes("india") ||
+      placeAddress.toLowerCase().includes("hyderabad") ||
+      placeAddress.toLowerCase().includes("telangana")
+    ) {
       return NextResponse.json({
         rating: 0,
         total: 0,
