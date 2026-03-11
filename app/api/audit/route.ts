@@ -461,8 +461,25 @@ export async function GET(request: NextRequest) {
 
       console.log("Places status:", placesData.status);
 
-      if (placesData.results?.length > 0) {
-        competitors = placesData.results.slice(0, 7).map(
+      // Filter out non-clinic results (universities, hospitals, schools)
+      const NON_CLINIC_KEYWORDS = [
+        "university",
+        "college",
+        "school",
+        "hospital",
+        "nyu",
+        "columbia",
+        "institute",
+        "academy",
+        "clinic at",
+      ];
+      const filteredPlaces = (placesData.results || []).filter(
+        (p: { name: string }) =>
+          !NON_CLINIC_KEYWORDS.some((kw) => p.name.toLowerCase().includes(kw)),
+      );
+
+      if (filteredPlaces.length > 0) {
+        competitors = filteredPlaces.slice(0, 7).map(
           (
             place: {
               name: string;

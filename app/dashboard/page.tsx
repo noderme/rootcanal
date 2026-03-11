@@ -1200,7 +1200,10 @@ function DashboardContent() {
                             marginBottom: 4,
                           }}
                         >
-                          Final Goal: Top 3 in {city}
+                          Final Goal:{" "}
+                          {yourRankNum === 2
+                            ? `Rank #1 in ${city}`
+                            : `Top 3 in ${city}`}
                         </div>
                         <div style={{ fontSize: 12, color: "#6B7B78" }}>
                           🔒 Get Pro to unlock your full step-by-step growth
@@ -1711,20 +1714,37 @@ function DashboardContent() {
                 >
                   🚨 What Patients Complain About
                 </div>
-                {reviews.analysis.complaints?.map((item, i) => (
+                {reviews.analysis.complaints?.length > 0 ? (
+                  reviews.analysis.complaints.map((item: string, i: number) => (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: 13,
+                        color: "#F0EBE3",
+                        marginBottom: 8,
+                        display: "flex",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ color: "#E74C3C" }}>✗</span> {item}
+                    </div>
+                  ))
+                ) : (
                   <div
-                    key={i}
                     style={{
                       fontSize: 13,
-                      color: "#F0EBE3",
-                      marginBottom: 8,
+                      color: "#2ECC71",
                       display: "flex",
+                      alignItems: "center",
                       gap: 8,
                     }}
                   >
-                    <span style={{ color: "#E74C3C" }}>✗</span> {item}
+                    <span>🎉</span>
+                    <span>
+                      No significant complaints found — your patients are happy!
+                    </span>
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Fix now */}
@@ -1741,20 +1761,38 @@ function DashboardContent() {
                 >
                   ⚡ What You Should Fix
                 </div>
-                {reviews.analysis.fixNow?.map((item, i) => (
+                {reviews.analysis.fixNow?.length > 0 ? (
+                  reviews.analysis.fixNow.map((item: string, i: number) => (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: 13,
+                        color: "#F0EBE3",
+                        marginBottom: 8,
+                        display: "flex",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ color: "#F0A500" }}>→</span> {item}
+                    </div>
+                  ))
+                ) : (
                   <div
-                    key={i}
                     style={{
                       fontSize: 13,
-                      color: "#F0EBE3",
-                      marginBottom: 8,
+                      color: "#2ECC71",
                       display: "flex",
+                      alignItems: "center",
                       gap: 8,
                     }}
                   >
-                    <span style={{ color: "#F0A500" }}>→</span> {item}
+                    <span>✅</span>
+                    <span>
+                      Nothing urgent — focus on getting more reviews to stay
+                      ahead!
+                    </span>
                   </div>
-                ))}
+                )}
               </div>
 
               {/* Promote */}
