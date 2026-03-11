@@ -831,7 +831,11 @@ function DashboardContent() {
                     data.performanceScore === 0 && data.seoScore === 0
                       ? "—"
                       : data.performanceScore,
-                  label: "How Fast Your Website Loads",
+                  label: "Website Speed",
+                  sublabel:
+                    data.performanceScore < 60
+                      ? "Slow site = patients leave before booking"
+                      : "Fast site keeps patients engaged",
                   color:
                     data.performanceScore >= 70
                       ? "#2ECC71"
@@ -849,7 +853,11 @@ function DashboardContent() {
                     data.performanceScore === 0 && data.seoScore === 0
                       ? "—"
                       : data.seoScore,
-                  label: "How Easy You Are to Find",
+                  label: "Google Findability",
+                  sublabel:
+                    data.seoScore < 60
+                      ? "Low score = fewer calls from Google Maps"
+                      : "Patients can find you easily on Google",
                   color:
                     data.seoScore >= 70
                       ? "#2ECC71"
@@ -867,7 +875,11 @@ function DashboardContent() {
                     data.performanceScore === 0 && data.seoScore === 0
                       ? "—"
                       : data.accessibilityScore,
-                  label: "How Easy Your Website Is",
+                  label: "Website Usability",
+                  sublabel:
+                    data.accessibilityScore < 70
+                      ? "Hard to use = patients call competitors instead"
+                      : "Easy to navigate = more appointment calls",
                   color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500",
                   bg: "rgba(240,165,0,0.12)",
                 },
@@ -1086,6 +1098,255 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* ── HERO REVIEW BLOCK ── */}
+        <div
+          className="card no-print"
+          style={{
+            background: "linear-gradient(135deg, #0f2a20, #0D1F18)",
+            border: "1px solid rgba(26,188,156,0.4)",
+            borderRadius: 16,
+            padding: 28,
+            marginBottom: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 24,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: "#1ABC9C",
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}
+            >
+              ⭐ Biggest Growth Lever
+            </div>
+            <div
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 22,
+                fontWeight: 800,
+                color: "#F0EBE3",
+                marginBottom: 6,
+              }}
+            >
+              Get More Reviews This Week
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "rgba(247,243,237,0.5)",
+                lineHeight: 1.6,
+              }}
+            >
+              More Google reviews = higher ranking = more patient bookings.
+              <br />
+              Send a direct review link to a recent patient in 2 seconds.
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              minWidth: 280,
+            }}
+          >
+            <div style={{ display: "flex", gap: 10 }}>
+              <input
+                type="text"
+                value={reviewContact}
+                onChange={(e) => {
+                  setReviewContact(e.target.value);
+                  setReviewError("");
+                }}
+                placeholder="patient@email.com"
+                style={{
+                  flex: 1,
+                  background: "rgba(0,0,0,0.3)",
+                  border: "1px solid rgba(26,188,156,0.3)",
+                  borderRadius: 8,
+                  padding: "12px 16px",
+                  color: "#F0EBE3",
+                  fontSize: 14,
+                  fontFamily: "'DM Sans', sans-serif",
+                  outline: "none",
+                }}
+              />
+              <button
+                onClick={async () => {
+                  if (!reviewContact.trim() || !data.placeId) return;
+                  setReviewSending(true);
+                  setReviewError("");
+                  const isEmail = reviewContact.includes("@");
+                  try {
+                    const res = await fetch("/api/request-review", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        contact: reviewContact.trim(),
+                        type: isEmail ? "email" : "phone",
+                        clinicName: data.url
+                          .replace(/https?:\/\//, "")
+                          .replace(/www\./, "")
+                          .split("/")[0],
+                        clinicUrl: data.url,
+                        placeId: data.placeId,
+                      }),
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                      setReviewSent(true);
+                      setReviewContact("");
+                    } else setReviewError("Failed to send. Please try again.");
+                  } catch {
+                    setReviewError("Something went wrong.");
+                  } finally {
+                    setReviewSending(false);
+                  }
+                }}
+                disabled={
+                  reviewSending || !reviewContact.trim() || !data.placeId
+                }
+                style={{
+                  background:
+                    reviewContact.trim() && data.placeId
+                      ? "#1ABC9C"
+                      : "#1A2320",
+                  color:
+                    reviewContact.trim() && data.placeId ? "#000" : "#6B7B78",
+                  border: "none",
+                  padding: "12px 20px",
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {reviewSending ? "Sending..." : "Send ⭐ Request →"}
+              </button>
+            </div>
+            {reviewSent && (
+              <div style={{ fontSize: 12, color: "#2ECC71" }}>
+                🎉 Review request sent! Your patient will receive a direct
+                Google review link.
+              </div>
+            )}
+            {reviewError && (
+              <div style={{ fontSize: 12, color: "#E74C3C" }}>
+                {reviewError}
+              </div>
+            )}
+            {!data.placeId && (
+              <div style={{ fontSize: 12, color: "#F0A500" }}>
+                ⚠️ Set up your Google Business Profile first to enable review
+                requests.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── TOP 3 PRIORITIES ── */}
+        {(() => {
+          const priorities: string[] = [];
+          const reviewCount = reviews?.total ?? 0;
+          const topReviews =
+            data.competitors.length > 0
+              ? Math.max(...data.competitors.map((c) => c.reviews ?? 0))
+              : 0;
+          const reviewGap = Math.max(0, topReviews - reviewCount);
+          if (reviewGap > 0)
+            priorities.push(
+              `Get ${Math.min(reviewGap, 20)} more Google reviews to close the gap with top competitors`,
+            );
+          if (data.performanceScore > 0 && data.performanceScore < 60)
+            priorities.push(
+              `Speed up your website — it loads at ${data.performanceScore}/100, which is hurting your ranking`,
+            );
+          if (reviews && reviews.responseRate < 70)
+            priorities.push(
+              `Respond to recent patient reviews — top clinics respond to 70%+ of reviews`,
+            );
+          if (data.seoScore > 0 && data.seoScore < 70)
+            priorities.push(
+              `Improve your Google findability score — currently ${data.seoScore}/100`,
+            );
+          const top3 = priorities.slice(0, 3);
+          if (top3.length === 0) return null;
+          return (
+            <div
+              className="card"
+              style={{
+                background: "#151918",
+                border: "1px solid #2A3330",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  marginBottom: 16,
+                  color: "#F0EBE3",
+                }}
+              >
+                📋 Your Focus This Month
+              </div>
+              {top3.map((p, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    gap: 14,
+                    alignItems: "flex-start",
+                    padding: "12px 0",
+                    borderBottom:
+                      i < top3.length - 1 ? "1px solid #1A2320" : "none",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: "50%",
+                      flexShrink: 0,
+                      background:
+                        i === 0 ? "#C0392B" : i === 1 ? "#D4A843" : "#2A3330",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      color: "#fff",
+                    }}
+                  >
+                    {i + 1}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 14,
+                      color: "rgba(247,243,237,0.8)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {p}
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* ── TAB NAV ── */}
         <div
           style={{
@@ -1136,65 +1397,6 @@ function DashboardContent() {
           <>
             {data.competitors.length > 0 && (
               <>
-                {/* ── BIGGEST OPPORTUNITY CARD ── */}
-                {reviews &&
-                  data.competitors.length > 0 &&
-                  (() => {
-                    const topReviews = Math.max(
-                      ...data.competitors.map((c) => c.reviews || 0),
-                    );
-                    const reviewGap = topReviews - (reviews.total || 0);
-                    const topRating = Math.max(
-                      ...data.competitors.map((c) => c.rating || 0),
-                    );
-                    const opportunity =
-                      reviewGap > 0
-                        ? `Get ${reviewGap} more Google reviews to match the top clinic in ${city}.`
-                        : reviews.total > 0 &&
-                            (reviews.responseRate ?? 100) < 70
-                          ? `Start responding to patient reviews — top clinics respond to 70%+ of reviews.`
-                          : `Improve your score by ${Math.max(...data.competitors.map((c) => c.score)) - data.overallScore} points to reach the #1 spot in ${city}.`;
-                    return (
-                      <div
-                        className="card"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, rgba(26,188,156,0.08), rgba(26,188,156,0.03))",
-                          border: "1px solid rgba(26,188,156,0.25)",
-                          borderRadius: 16,
-                          padding: 24,
-                          marginBottom: 24,
-                          animationDelay: "0.3s",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: "#1ABC9C",
-                            letterSpacing: 1.5,
-                            textTransform: "uppercase",
-                            fontFamily: "'DM Mono', monospace",
-                            marginBottom: 12,
-                          }}
-                        >
-                          🎯 Your Biggest Opportunity This Month
-                        </div>
-                        <div
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: 20,
-                            fontWeight: 700,
-                            color: "#F0EBE3",
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {opportunity}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
                 {/* ── COMPETITOR GAP CARD ── */}
                 {reviews &&
                   data.competitors.length > 0 &&
@@ -1412,233 +1614,6 @@ function DashboardContent() {
                       </div>
                     );
                   })()}
-
-                {/* ── GET MORE REVIEWS CARD ── */}
-                {true && (
-                  <div
-                    className="card"
-                    style={{
-                      background: "#151918",
-                      border: "1px solid #2A3330",
-                      borderRadius: 16,
-                      padding: 24,
-                      marginBottom: 24,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        marginBottom: 16,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontFamily: "'Playfair Display', serif",
-                          fontSize: 18,
-                          fontWeight: 700,
-                        }}
-                      >
-                        ⭐ Ask a Patient for a Review
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          padding: "4px 12px",
-                          borderRadius: 20,
-                          background: "rgba(26,188,156,0.1)",
-                          color: "#1ABC9C",
-                          fontFamily: "'DM Mono', monospace",
-                        }}
-                      >
-                        FREE
-                      </span>
-                    </div>
-                    <p
-                      style={{
-                        fontSize: 13,
-                        color: "#6B7B78",
-                        marginBottom: 20,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      Enter a patient&apos;s email or phone number — we&apos;ll
-                      send them a direct link to leave a Google review for your
-                      clinic. Takes 2 seconds.
-                    </p>
-                    {!data.placeId ? (
-                      <div
-                        style={{
-                          background: "rgba(240,165,0,0.08)",
-                          border: "1px solid rgba(240,165,0,0.2)",
-                          borderRadius: 12,
-                          padding: 16,
-                          fontSize: 13,
-                          color: "#F0A500",
-                        }}
-                      >
-                        ⚠️ We couldn&apos;t find your clinic on Google Maps.
-                        Make sure your Google Business Profile is set up, then
-                        re-scan your website.
-                      </div>
-                    ) : reviewSent ? (
-                      <div
-                        style={{
-                          background: "rgba(46,204,113,0.1)",
-                          border: "1px solid rgba(46,204,113,0.3)",
-                          borderRadius: 12,
-                          padding: 20,
-                          textAlign: "center",
-                        }}
-                      >
-                        <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-                        <div
-                          style={{
-                            fontSize: 15,
-                            fontWeight: 700,
-                            color: "#2ECC71",
-                            marginBottom: 4,
-                          }}
-                        >
-                          Review request sent!
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 13,
-                            color: "#6B7B78",
-                            marginBottom: 16,
-                          }}
-                        >
-                          Your patient will receive a direct link to leave a
-                          Google review.
-                        </div>
-                        <button
-                          onClick={() => {
-                            setReviewSent(false);
-                            setReviewContact("");
-                          }}
-                          style={{
-                            background: "transparent",
-                            border: "1px solid #2A3330",
-                            color: "#6B7B78",
-                            padding: "8px 20px",
-                            borderRadius: 8,
-                            fontSize: 13,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontFamily: "'DM Sans', sans-serif",
-                          }}
-                        >
-                          Send Another →
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", gap: 12 }}>
-                        <input
-                          type="text"
-                          value={reviewContact}
-                          onChange={(e) => {
-                            setReviewContact(e.target.value);
-                            setReviewError("");
-                          }}
-                          placeholder="patient@email.com or +1 (555) 000-0000"
-                          style={{
-                            flex: 1,
-                            background: "#0D0F0E",
-                            border: "1px solid #2A3330",
-                            borderRadius: 8,
-                            padding: "12px 16px",
-                            color: "#F0EBE3",
-                            fontSize: 14,
-                            fontFamily: "'DM Sans', sans-serif",
-                            outline: "none",
-                          }}
-                        />
-                        <button
-                          onClick={async () => {
-                            if (!reviewContact.trim()) return;
-                            setReviewSending(true);
-                            setReviewError("");
-                            const isEmail = reviewContact.includes("@");
-                            try {
-                              const res = await fetch("/api/request-review", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                  contact: reviewContact.trim(),
-                                  type: isEmail ? "email" : "phone",
-                                  clinicName: data.url
-                                    .replace(/https?:\/\//, "")
-                                    .replace(/www\./, "")
-                                    .split("/")[0],
-                                  clinicUrl: data.url,
-                                  placeId: data.placeId,
-                                }),
-                              });
-                              const result = await res.json();
-                              if (result.success) {
-                                setReviewSent(true);
-                              } else {
-                                setReviewError(
-                                  "Failed to send. Please try again.",
-                                );
-                              }
-                            } catch {
-                              setReviewError(
-                                "Something went wrong. Please try again.",
-                              );
-                            } finally {
-                              setReviewSending(false);
-                            }
-                          }}
-                          disabled={reviewSending || !reviewContact.trim()}
-                          style={{
-                            background: reviewContact.trim()
-                              ? "#1ABC9C"
-                              : "#1A2320",
-                            color: reviewContact.trim() ? "#000" : "#6B7B78",
-                            border: "none",
-                            padding: "12px 24px",
-                            borderRadius: 8,
-                            fontSize: 14,
-                            fontWeight: 700,
-                            cursor: reviewContact.trim()
-                              ? "pointer"
-                              : "default",
-                            fontFamily: "'DM Sans', sans-serif",
-                            whiteSpace: "nowrap",
-                            transition: "all 0.2s",
-                          }}
-                        >
-                          {reviewSending ? "Sending..." : "Send Request →"}
-                        </button>
-                      </div>
-                    )}
-                    {reviewError && (
-                      <div
-                        style={{ fontSize: 12, color: "#E74C3C", marginTop: 8 }}
-                      >
-                        {reviewError}
-                      </div>
-                    )}
-                    {data.placeId && (
-                      <div
-                        style={{
-                          marginTop: 12,
-                          fontSize: 12,
-                          color: "#6B7B78",
-                        }}
-                      >
-                        💡 Direct link goes to:{" "}
-                        <span style={{ color: "#1ABC9C" }}>
-                          Google Maps review page for your clinic
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
               </>
             )}
           </>
@@ -3220,7 +3195,7 @@ function DashboardContent() {
               marginBottom: 12,
             }}
           >
-            See exactly why nearby clinics outrank you.
+            Don't lose patients to nearby competitors.
           </div>
           <div
             style={{
@@ -3231,9 +3206,9 @@ function DashboardContent() {
               margin: "0 auto 32px",
             }}
           >
-            This report is a one-time snapshot. With Pro, we watch your clinic
-            every month — alerting you when a competitor overtakes your ranking
-            and when a patient leaves a bad review.
+            Stay ahead of nearby clinics and keep attracting new patients.
+            Monitor reviews, rankings and competitor moves every month — so
+            you're always one step ahead.
           </div>
           <div
             style={{

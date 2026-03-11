@@ -186,6 +186,23 @@ function HomeInner() {
             insights, and website problems — in 30 seconds. No tech knowledge
             needed.
           </p>
+          <p
+            style={{
+              fontSize: 15,
+              color: "var(--dark)",
+              fontWeight: 600,
+              marginBottom: 32,
+              maxWidth: 480,
+              lineHeight: 1.6,
+              background: "rgba(212,168,67,0.12)",
+              border: "1px solid rgba(212,168,67,0.3)",
+              borderRadius: 10,
+              padding: "12px 16px",
+            }}
+          >
+            Get more Google reviews, track competitors, and improve your
+            clinic&apos;s visibility — all in one simple dashboard.
+          </p>
 
           <form id="audit" onSubmit={handleSubmit} className="rc-form-wrap">
             <div className="rc-scan-box">
@@ -379,6 +396,207 @@ function HomeInner() {
           </div>
         ))}
       </div>
+
+      {/* PROOF STATEMENT */}
+      <div
+        style={{
+          textAlign: "center",
+          padding: "20px 24px 0",
+          maxWidth: 640,
+          margin: "0 auto",
+        }}
+      >
+        <p
+          style={{
+            fontSize: 16,
+            color: "var(--muted)",
+            lineHeight: 1.8,
+            fontStyle: "italic",
+          }}
+        >
+          &ldquo;Clinics with more Google reviews appear higher on Google Maps
+          and attract more new patient calls.&rdquo;
+        </p>
+      </div>
+
+      {/* REVIEW AUTOMATION HIGHLIGHT */}
+      <section
+        style={{
+          background: "var(--dark)",
+          padding: "72px 24px",
+          margin: "60px 0 0",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 960,
+            margin: "0 auto",
+            display: "flex",
+            gap: 60,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 280 }}>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: "#1ABC9C",
+                textTransform: "uppercase",
+                marginBottom: 16,
+              }}
+            >
+              Review Automation
+            </div>
+            <h2
+              style={{
+                fontFamily: "Playfair Display, serif",
+                fontSize: 32,
+                fontWeight: 800,
+                color: "#F7F3ED",
+                marginBottom: 16,
+                lineHeight: 1.3,
+              }}
+            >
+              Turn happy patients into
+              <br />
+              5-star reviews automatically
+            </h2>
+            <p
+              style={{
+                fontSize: 15,
+                color: "rgba(247,243,237,0.55)",
+                lineHeight: 1.8,
+                marginBottom: 28,
+              }}
+            >
+              Most dentists lose reviews because they never ask. RootCanal makes
+              it effortless — send a direct Google review link to any patient in
+              seconds.
+            </p>
+            {[
+              "Send review request links to patients in seconds",
+              "Track how many new reviews you gain each month",
+              "Stay ahead of nearby clinics with more 5-star reviews",
+              "Direct link opens Google review box instantly — no friction",
+            ].map((item) => (
+              <div
+                key={item}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    background: "#1ABC9C",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 11,
+                    fontWeight: 800,
+                    color: "#000",
+                    flexShrink: 0,
+                  }}
+                >
+                  ✓
+                </div>
+                <span style={{ fontSize: 14, color: "rgba(247,243,237,0.75)" }}>
+                  {item}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              flex: 1,
+              minWidth: 280,
+              background: "#151918",
+              borderRadius: 16,
+              padding: 28,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: 2,
+                color: "#1ABC9C",
+                textTransform: "uppercase",
+                marginBottom: 20,
+              }}
+            >
+              Review Request
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "rgba(247,243,237,0.5)",
+                  marginBottom: 6,
+                }}
+              >
+                Patient email or phone
+              </div>
+              <div
+                style={{
+                  background: "#0D0F0E",
+                  border: "1px solid rgba(26,188,156,0.3)",
+                  borderRadius: 8,
+                  padding: "12px 16px",
+                  fontSize: 14,
+                  color: "rgba(247,243,237,0.4)",
+                }}
+              >
+                patient@email.com
+              </div>
+            </div>
+            <div
+              style={{
+                background: "#1ABC9C",
+                borderRadius: 8,
+                padding: "14px",
+                textAlign: "center",
+                fontWeight: 700,
+                fontSize: 14,
+                color: "#000",
+                marginBottom: 20,
+              }}
+            >
+              ⭐ Send Review Request →
+            </div>
+            <div
+              style={{
+                background: "rgba(46,204,113,0.08)",
+                border: "1px solid rgba(46,204,113,0.2)",
+                borderRadius: 8,
+                padding: "12px 14px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#2ECC71",
+                  fontWeight: 600,
+                  marginBottom: 4,
+                }}
+              >
+                🎉 Request sent!
+              </div>
+              <div style={{ fontSize: 12, color: "rgba(247,243,237,0.5)" }}>
+                Patient receives a direct link to your Google review page. One
+                click and they&apos;re writing a review.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* HOW IT WORKS */}
       <section className="rc-section" id="how">
