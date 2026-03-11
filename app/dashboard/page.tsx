@@ -23,6 +23,7 @@ interface AuditData {
     address: string;
     score: number;
   }[];
+  placeId: string;
   scannedAt: string;
 }
 
@@ -52,57 +53,193 @@ function ScoreRing({ score }: { score: number }) {
   const offset = circumference - (score / 100) * circumference;
   const color = score >= 70 ? "#2ECC71" : score >= 40 ? "#F0A500" : "#E74C3C";
 
+  const toothLabel =
+    score >= 80
+      ? "Perfect Health"
+      : score >= 60
+        ? "Minor Cavities"
+        : score >= 40
+          ? "Needs Filling"
+          : "Critical";
+
+  // SVG tooth that degrades based on score
+  const ToothSVG = () => {
+    if (score >= 80) {
+      // Perfect — clean white tooth
+      return (
+        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
+          <path
+            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
+            fill="white"
+            stroke="#E0D9D0"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M14 8 C14 6 17 5 22 5 C27 5 30 6 30 8"
+            stroke="#F0EBE3"
+            strokeWidth="1"
+            fill="none"
+          />
+        </svg>
+      );
+    } else if (score >= 60) {
+      // Minor cavities — small brown spots
+      return (
+        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
+          <path
+            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
+            fill="#F5F0E8"
+            stroke="#C8B89A"
+            strokeWidth="1.5"
+          />
+          <circle cx="15" cy="18" r="3" fill="#8B6914" opacity="0.6" />
+          <circle cx="29" cy="22" r="2.5" fill="#8B6914" opacity="0.5" />
+          <circle cx="20" cy="28" r="2" fill="#7A5C10" opacity="0.4" />
+        </svg>
+      );
+    } else if (score >= 40) {
+      // Needs filling — big cavities, yellowed
+      return (
+        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
+          <path
+            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
+            fill="#E8D5A0"
+            stroke="#A07830"
+            strokeWidth="2"
+          />
+          <ellipse
+            cx="14"
+            cy="17"
+            rx="5"
+            ry="4"
+            fill="#5C3A0A"
+            opacity="0.75"
+          />
+          <ellipse cx="30" cy="20" rx="4" ry="5" fill="#5C3A0A" opacity="0.7" />
+          <ellipse
+            cx="20"
+            cy="30"
+            rx="5"
+            ry="3.5"
+            fill="#4A2E08"
+            opacity="0.65"
+          />
+          <path
+            d="M16 12 Q22 10 28 13"
+            stroke="#8B6020"
+            strokeWidth="1.5"
+            fill="none"
+          />
+        </svg>
+      );
+    } else {
+      // Critical — cracked, broken, dark
+      return (
+        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
+          <path
+            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
+            fill="#6B4A2A"
+            stroke="#3D2810"
+            strokeWidth="2"
+          />
+          <path
+            d="M22 2 L19 14 L24 20 L18 36"
+            stroke="#2A1A08"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10 10 L14 18"
+            stroke="#2A1A08"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M32 12 L28 22"
+            stroke="#2A1A08"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <ellipse cx="14" cy="22" rx="5" ry="4" fill="#1A0A00" opacity="0.9" />
+          <ellipse cx="30" cy="26" rx="4" ry="5" fill="#1A0A00" opacity="0.9" />
+        </svg>
+      );
+    }
+  };
+
   return (
-    <div style={{ position: "relative", width: 140, height: 140 }}>
-      <svg
-        width="140"
-        height="140"
-        viewBox="0 0 120 120"
-        style={{ transform: "rotate(-90deg)" }}
-      >
-        <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="none"
-          stroke="#2A3330"
-          strokeWidth="8"
-        />
-        <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 1.5s ease" }}
-        />
-      </svg>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <ToothSVG />
+      <div style={{ position: "relative", width: 140, height: 140 }}>
+        <svg
+          width="140"
+          height="140"
+          viewBox="0 0 120 120"
+          style={{ transform: "rotate(-90deg)" }}
+        >
+          <circle
+            cx="60"
+            cy="60"
+            r={radius}
+            fill="none"
+            stroke="#2A3330"
+            strokeWidth="8"
+          />
+          <circle
+            cx="60"
+            cy="60"
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            style={{ transition: "stroke-dashoffset 1.5s ease" }}
+          />
+        </svg>
         <div
           style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 48,
-            fontWeight: 900,
-            color,
-            lineHeight: 1,
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {score}
+          <div
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 48,
+              fontWeight: 900,
+              color,
+              lineHeight: 1,
+            }}
+          >
+            {score}
+          </div>
+          <div style={{ fontSize: 13, color: "#6B7B78" }}>/ 100</div>
         </div>
-        <div style={{ fontSize: 13, color: "#6B7B78" }}>/ 100</div>
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          color,
+          fontFamily: "'DM Mono', monospace",
+        }}
+      >
+        {toothLabel}
       </div>
     </div>
   );
@@ -125,6 +262,13 @@ function DashboardContent() {
   const [leadPhone, setLeadPhone] = useState("");
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadSuccess, setLeadSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    "competitors" | "roadmap" | "reviews" | "score" | "health"
+  >("competitors");
+  const [reviewContact, setReviewContact] = useState("");
+  const [reviewSending, setReviewSending] = useState(false);
+  const [reviewSent, setReviewSent] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   const handleUpgradeClick = () => setShowUpgradePopup(true);
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
@@ -431,11 +575,13 @@ function DashboardContent() {
   if (!data) return null;
 
   const gradeLabel =
-    data.overallScore >= 70
-      ? "✅ Good"
-      : data.overallScore >= 40
-        ? "⚠️ Needs Work"
-        : "🚨 Critical";
+    data.overallScore >= 80
+      ? "🦷 Perfect Health"
+      : data.overallScore >= 60
+        ? "🦷 Minor Cavities"
+        : data.overallScore >= 40
+          ? "🦷 Needs Filling"
+          : "🦷 Critical";
   const gradeColor =
     data.overallScore >= 70
       ? "#2ECC71"
@@ -585,243 +731,252 @@ function DashboardContent() {
               letterSpacing: -1,
             }}
           >
-            Your Google Report
+            Your Dental Growth Report
           </h1>
           <p style={{ fontSize: 14, color: "#6B7B78", marginTop: 4 }}>
             Scanned {new Date(data.scannedAt).toLocaleString()} · {city}
           </p>
         </div>
 
-        {/* SCORE HERO */}
-        <div
-          className="card"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "260px 1fr",
-            gap: 24,
-            marginBottom: 24,
-            animationDelay: "0.1s",
-          }}
-        >
-          {/* Score ring */}
+        {/* SCORE HERO — always visible at top */}
+        {(() => (
           <div
-            style={{
-              background: "#151918",
-              border: "1px solid #2A3330",
-              borderRadius: 16,
-              padding: 32,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              textAlign: "center",
-            }}
-          >
-            <ScoreRing score={data.overallScore} />
-            <div
-              style={{
-                marginTop: 16,
-                fontSize: 13,
-                fontWeight: 600,
-                color: gradeColor,
-                background: gradeBg,
-                padding: "4px 14px",
-                borderRadius: 20,
-              }}
-            >
-              {gradeLabel}
-            </div>
-            <div style={{ fontSize: 13, color: "#6B7B78", marginTop: 8 }}>
-              Your Google Score
-            </div>
-          </div>
-
-          {/* Metrics */}
-          <div
+            className="card"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(2, 1fr)",
-              gap: 16,
+              gridTemplateColumns: "260px 1fr",
+              gap: 24,
+              marginBottom: 24,
+              animationDelay: "0.1s",
             }}
           >
-            {[
-              {
-                icon: "🏆",
-                value: `#${userRank}`,
-                label: `Google Search Position`,
-                color: "#E74C3C",
-                bg: "rgba(231,76,60,0.12)",
-              },
-              {
-                icon: "⚡",
-                value:
-                  data.performanceScore === 0 && data.seoScore === 0
-                    ? "—"
-                    : data.performanceScore,
-                label: "How Fast Your Website Loads",
-                color:
-                  data.performanceScore >= 70
-                    ? "#2ECC71"
-                    : data.performanceScore >= 40
-                      ? "#F0A500"
-                      : "#E74C3C",
-                bg:
-                  data.performanceScore >= 70
-                    ? "rgba(46,204,113,0.12)"
-                    : "rgba(240,165,0,0.12)",
-              },
-              {
-                icon: "🔍",
-                value:
-                  data.performanceScore === 0 && data.seoScore === 0
-                    ? "—"
-                    : data.seoScore,
-                label: "How Easy You Are to Find",
-                color:
-                  data.seoScore >= 70
-                    ? "#2ECC71"
-                    : data.seoScore >= 40
-                      ? "#F0A500"
-                      : "#E74C3C",
-                bg:
-                  data.seoScore >= 70
-                    ? "rgba(46,204,113,0.12)"
-                    : "rgba(240,165,0,0.12)",
-              },
-              {
-                icon: "👆",
-                value:
-                  data.performanceScore === 0 && data.seoScore === 0
-                    ? "—"
-                    : data.accessibilityScore,
-                label: "How Easy Your Website Is",
-                color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500",
-                bg: "rgba(240,165,0,0.12)",
-              },
-            ].map((m, i) => (
+            {/* Score ring */}
+            <div
+              style={{
+                background: "#151918",
+                border: "1px solid #2A3330",
+                borderRadius: 16,
+                padding: 32,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+              }}
+            >
+              <ScoreRing score={data.overallScore} />
               <div
-                key={i}
                 style={{
-                  background: "#151918",
-                  border: "1px solid #2A3330",
-                  borderRadius: 12,
-                  padding: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
+                  marginTop: 16,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: gradeColor,
+                  background: gradeBg,
+                  padding: "4px 14px",
+                  borderRadius: 20,
                 }}
               >
+                {gradeLabel}
+              </div>
+              <div style={{ fontSize: 13, color: "#6B7B78", marginTop: 8 }}>
+                Your Google Score
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 16,
+              }}
+            >
+              {[
+                {
+                  icon: "🏆",
+                  value: `#${userRank}`,
+                  label: `Google Search Position`,
+                  color: "#E74C3C",
+                  bg: "rgba(231,76,60,0.12)",
+                },
+                {
+                  icon: "⚡",
+                  value:
+                    data.performanceScore === 0 && data.seoScore === 0
+                      ? "—"
+                      : data.performanceScore,
+                  label: "How Fast Your Website Loads",
+                  color:
+                    data.performanceScore >= 70
+                      ? "#2ECC71"
+                      : data.performanceScore >= 40
+                        ? "#F0A500"
+                        : "#E74C3C",
+                  bg:
+                    data.performanceScore >= 70
+                      ? "rgba(46,204,113,0.12)"
+                      : "rgba(240,165,0,0.12)",
+                },
+                {
+                  icon: "🔍",
+                  value:
+                    data.performanceScore === 0 && data.seoScore === 0
+                      ? "—"
+                      : data.seoScore,
+                  label: "How Easy You Are to Find",
+                  color:
+                    data.seoScore >= 70
+                      ? "#2ECC71"
+                      : data.seoScore >= 40
+                        ? "#F0A500"
+                        : "#E74C3C",
+                  bg:
+                    data.seoScore >= 70
+                      ? "rgba(46,204,113,0.12)"
+                      : "rgba(240,165,0,0.12)",
+                },
+                {
+                  icon: "👆",
+                  value:
+                    data.performanceScore === 0 && data.seoScore === 0
+                      ? "—"
+                      : data.accessibilityScore,
+                  label: "How Easy Your Website Is",
+                  color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500",
+                  bg: "rgba(240,165,0,0.12)",
+                },
+              ].map((m, i) => (
                 <div
+                  key={i}
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 10,
-                    background: m.bg,
+                    background: "#151918",
+                    border: "1px solid #2A3330",
+                    borderRadius: 12,
+                    padding: 20,
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 22,
-                    flexShrink: 0,
+                    gap: 16,
                   }}
                 >
-                  {m.icon}
-                </div>
-                <div>
                   <div
                     style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 32,
-                      fontWeight: 900,
-                      color: m.color,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {m.value}
-                  </div>
-                  <div style={{ fontSize: 13, color: "#6B7B78", marginTop: 4 }}>
-                    {m.label}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Visibility banner — spans full width */}
-            {data.competitors.length > 0 &&
-              (() => {
-                const yourRankNum = typeof userRank === "number" ? userRank : 8;
-                const inTopThree = yourRankNum <= 3;
-                return (
-                  <div
-                    style={{
-                      gridColumn: "1 / -1",
-                      background: inTopThree
-                        ? "rgba(46,204,113,0.08)"
-                        : "rgba(231,76,60,0.08)",
-                      border: `1px solid ${inTopThree ? "rgba(46,204,113,0.25)" : "rgba(231,76,60,0.25)"}`,
-                      borderRadius: 12,
-                      padding: "16px 20px",
+                      width: 48,
+                      height: 48,
+                      borderRadius: 10,
+                      background: m.bg,
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 16,
+                      justifyContent: "center",
+                      fontSize: 22,
+                      flexShrink: 0,
                     }}
                   >
+                    {m.icon}
+                  </div>
+                  <div>
                     <div
-                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: 32,
+                        fontWeight: 900,
+                        color: m.color,
+                        lineHeight: 1,
+                      }}
                     >
-                      <span style={{ fontSize: 24 }}>
-                        {inTopThree ? "🏆" : "📉"}
-                      </span>
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: "#F0EBE3",
-                          }}
-                        >
-                          {inTopThree
-                            ? `You're in the top 3 in ${city}!`
-                            : `You're ranked #${yourRankNum} — outside the top 3`}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: "#6B7B78",
-                            marginTop: 2,
-                          }}
-                        >
-                          {inTopThree
-                            ? "Top 3 clinics receive ~70% of all patient clicks on Google."
-                            : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
-                        </div>
-                      </div>
+                      {m.value}
                     </div>
-                    {!inTopThree && (
-                      <button
-                        onClick={handleUpgradeClick}
+                    <div
+                      style={{ fontSize: 13, color: "#6B7B78", marginTop: 4 }}
+                    >
+                      {m.label}
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Visibility banner — spans full width */}
+              {data.competitors.length > 0 &&
+                (() => {
+                  const yourRankNum =
+                    typeof userRank === "number" ? userRank : 8;
+                  const inTopThree = yourRankNum <= 3;
+                  return (
+                    <div
+                      style={{
+                        gridColumn: "1 / -1",
+                        background: inTopThree
+                          ? "rgba(46,204,113,0.08)"
+                          : "rgba(231,76,60,0.08)",
+                        border: `1px solid ${inTopThree ? "rgba(46,204,113,0.25)" : "rgba(231,76,60,0.25)"}`,
+                        borderRadius: 12,
+                        padding: "16px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 16,
+                      }}
+                    >
+                      <div
                         style={{
-                          background: "#E74C3C",
-                          color: "#fff",
-                          border: "none",
-                          padding: "10px 20px",
-                          borderRadius: 8,
-                          fontSize: 13,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          fontFamily: "'DM Sans', sans-serif",
-                          whiteSpace: "nowrap",
-                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
                         }}
                       >
-                        Get Into Top 3 →
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
+                        <span style={{ fontSize: 24 }}>
+                          {inTopThree ? "🏆" : "📉"}
+                        </span>
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: "#F0EBE3",
+                            }}
+                          >
+                            {inTopThree
+                              ? `You're in the top 3 in ${city}!`
+                              : `You're ranked #${yourRankNum} — outside the top 3`}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#6B7B78",
+                              marginTop: 2,
+                            }}
+                          >
+                            {inTopThree
+                              ? "Top 3 clinics receive ~70% of all patient clicks on Google."
+                              : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
+                          </div>
+                        </div>
+                      </div>
+                      {!inTopThree && (
+                        <button
+                          onClick={handleUpgradeClick}
+                          style={{
+                            background: "#E74C3C",
+                            color: "#fff",
+                            border: "none",
+                            padding: "10px 20px",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            fontFamily: "'DM Sans', sans-serif",
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
+                          }}
+                        >
+                          Get Into Top 3 →
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
+            </div>
           </div>
-        </div>
+        ))()}
 
         {/* UPGRADE BANNER */}
         {data.overallScore < 70 && (
@@ -893,8 +1048,566 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* COMPETITORS */}
-        {data.competitors.length > 0 && (
+        {/* ── TAB NAV ── */}
+        <div
+          style={{
+            display: "flex",
+            gap: 0,
+            marginBottom: 24,
+            background: "#151918",
+            borderRadius: 12,
+            padding: 4,
+            border: "1px solid #2A3330",
+            overflowX: "auto",
+          }}
+        >
+          {(
+            [
+              { id: "competitors", label: "🏆 Competitors" },
+              { id: "roadmap", label: "🗺️ Growth Plan" },
+              { id: "reviews", label: "⭐ Reviews" },
+              { id: "score", label: "🧠 Intelligence" },
+              { id: "health", label: "🔧 Health" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                flex: 1,
+                padding: "10px 16px",
+                border: "none",
+                cursor: "pointer",
+                borderRadius: 9,
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "'DM Sans', sans-serif",
+                whiteSpace: "nowrap",
+                transition: "all 0.2s",
+                background: activeTab === tab.id ? "#1ABC9C" : "transparent",
+                color: activeTab === tab.id ? "#000" : "#6B7B78",
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* COMPETITORS TAB CONTENT */}
+        {activeTab === "competitors" && (
+          <>
+            {data.competitors.length > 0 && (
+              <>
+                {/* ── BIGGEST OPPORTUNITY CARD ── */}
+                {reviews &&
+                  data.competitors.length > 0 &&
+                  (() => {
+                    const topReviews = Math.max(
+                      ...data.competitors.map((c) => c.reviews || 0),
+                    );
+                    const reviewGap = topReviews - (reviews.total || 0);
+                    const topRating = Math.max(
+                      ...data.competitors.map((c) => c.rating || 0),
+                    );
+                    const opportunity =
+                      reviewGap > 0
+                        ? `Get ${reviewGap} more Google reviews to match the top clinic in ${city}.`
+                        : reviews.total > 0 &&
+                            (reviews.analysis?.responseRate ?? 100) < 70
+                          ? `Start responding to patient reviews — top clinics respond to 70%+ of reviews.`
+                          : `Improve your score by ${Math.max(...data.competitors.map((c) => c.score)) - data.overallScore} points to reach the #1 spot in ${city}.`;
+                    return (
+                      <div
+                        className="card"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(26,188,156,0.08), rgba(26,188,156,0.03))",
+                          border: "1px solid rgba(26,188,156,0.25)",
+                          borderRadius: 16,
+                          padding: 24,
+                          marginBottom: 24,
+                          animationDelay: "0.3s",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#1ABC9C",
+                            letterSpacing: 1.5,
+                            textTransform: "uppercase",
+                            fontFamily: "'DM Mono', monospace",
+                            marginBottom: 12,
+                          }}
+                        >
+                          🎯 Your Biggest Opportunity This Month
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: 20,
+                            fontWeight: 700,
+                            color: "#F0EBE3",
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {opportunity}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                {/* ── COMPETITOR GAP CARD ── */}
+                {reviews &&
+                  data.competitors.length > 0 &&
+                  (() => {
+                    const topComp = [...data.competitors].sort(
+                      (a, b) => b.score - a.score,
+                    )[0];
+                    const ratingGap = (
+                      (topComp.rating || 0) - (reviews.rating || 0)
+                    ).toFixed(1);
+                    const reviewGap =
+                      (topComp.reviews || 0) - (reviews.total || 0);
+                    return (
+                      <div
+                        className="card"
+                        style={{
+                          background: "#151918",
+                          border: "1px solid #2A3330",
+                          borderRadius: 16,
+                          padding: 24,
+                          marginBottom: 24,
+                          animationDelay: "0.35s",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginBottom: 20,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: "'Playfair Display', serif",
+                              fontSize: 18,
+                              fontWeight: 700,
+                            }}
+                          >
+                            You vs. Top Competitor
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "4px 12px",
+                              borderRadius: 20,
+                              background: "rgba(231,76,60,0.1)",
+                              color: "#E74C3C",
+                              fontFamily: "'DM Mono', monospace",
+                            }}
+                          >
+                            GAP ANALYSIS
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr auto 1fr",
+                            gap: 16,
+                            alignItems: "center",
+                          }}
+                        >
+                          {/* Your stats */}
+                          <div
+                            style={{
+                              background: "rgba(26,188,156,0.06)",
+                              border: "1px solid rgba(26,188,156,0.2)",
+                              borderRadius: 12,
+                              padding: 16,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "#6B7B78",
+                                fontWeight: 600,
+                                marginBottom: 12,
+                                textTransform: "uppercase",
+                                letterSpacing: 1,
+                              }}
+                            >
+                              Your Clinic
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 10,
+                              }}
+                            >
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 22,
+                                    fontWeight: 900,
+                                    color: "#1ABC9C",
+                                    fontFamily: "'Playfair Display', serif",
+                                  }}
+                                >
+                                  {reviews.rating?.toFixed(1) ?? "—"} ⭐
+                                </div>
+                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                                  Google Rating
+                                </div>
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 22,
+                                    fontWeight: 900,
+                                    color: "#1ABC9C",
+                                    fontFamily: "'Playfair Display', serif",
+                                  }}
+                                >
+                                  {reviews.total ?? "—"}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                                  Reviews
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          {/* VS divider */}
+                          <div style={{ textAlign: "center" }}>
+                            <div
+                              style={{
+                                fontSize: 16,
+                                fontWeight: 900,
+                                color: "#2A3330",
+                              }}
+                            >
+                              VS
+                            </div>
+                          </div>
+                          {/* Top competitor stats */}
+                          <div
+                            style={{
+                              background: "rgba(231,76,60,0.06)",
+                              border: "1px solid rgba(231,76,60,0.2)",
+                              borderRadius: 12,
+                              padding: 16,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: "#6B7B78",
+                                fontWeight: 600,
+                                marginBottom: 12,
+                                textTransform: "uppercase",
+                                letterSpacing: 1,
+                              }}
+                            >
+                              Top Clinic
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 10,
+                              }}
+                            >
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 22,
+                                    fontWeight: 900,
+                                    color: "#E74C3C",
+                                    fontFamily: "'Playfair Display', serif",
+                                  }}
+                                >
+                                  {(topComp.rating || 0).toFixed(1)} ⭐
+                                </div>
+                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                                  Google Rating{" "}
+                                  {Number(ratingGap) > 0 ? (
+                                    <span style={{ color: "#E74C3C" }}>
+                                      ({ratingGap} ahead)
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: "#2ECC71" }}>
+                                      ✓ You lead
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 22,
+                                    fontWeight: 900,
+                                    color: "#E74C3C",
+                                    fontFamily: "'Playfair Display', serif",
+                                  }}
+                                >
+                                  {topComp.reviews || "—"}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                                  Reviews{" "}
+                                  {reviewGap > 0 ? (
+                                    <span style={{ color: "#E74C3C" }}>
+                                      ({reviewGap} more)
+                                    </span>
+                                  ) : (
+                                    <span style={{ color: "#2ECC71" }}>
+                                      ✓ You lead
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                {/* ── GET MORE REVIEWS CARD ── */}
+                {true && (
+                  <div
+                    className="card"
+                    style={{
+                      background: "#151918",
+                      border: "1px solid #2A3330",
+                      borderRadius: 16,
+                      padding: 24,
+                      marginBottom: 24,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 16,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: 18,
+                          fontWeight: 700,
+                        }}
+                      >
+                        ⭐ Ask a Patient for a Review
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "4px 12px",
+                          borderRadius: 20,
+                          background: "rgba(26,188,156,0.1)",
+                          color: "#1ABC9C",
+                          fontFamily: "'DM Mono', monospace",
+                        }}
+                      >
+                        FREE
+                      </span>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "#6B7B78",
+                        marginBottom: 20,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Enter a patient&apos;s email or phone number — we&apos;ll
+                      send them a direct link to leave a Google review for your
+                      clinic. Takes 2 seconds.
+                    </p>
+                    {!data.placeId ? (
+                      <div
+                        style={{
+                          background: "rgba(240,165,0,0.08)",
+                          border: "1px solid rgba(240,165,0,0.2)",
+                          borderRadius: 12,
+                          padding: 16,
+                          fontSize: 13,
+                          color: "#F0A500",
+                        }}
+                      >
+                        ⚠️ We couldn&apos;t find your clinic on Google Maps.
+                        Make sure your Google Business Profile is set up, then
+                        re-scan your website.
+                      </div>
+                    ) : reviewSent ? (
+                      <div
+                        style={{
+                          background: "rgba(46,204,113,0.1)",
+                          border: "1px solid rgba(46,204,113,0.3)",
+                          borderRadius: 12,
+                          padding: 20,
+                          textAlign: "center",
+                        }}
+                      >
+                        <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
+                        <div
+                          style={{
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: "#2ECC71",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Review request sent!
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: "#6B7B78",
+                            marginBottom: 16,
+                          }}
+                        >
+                          Your patient will receive a direct link to leave a
+                          Google review.
+                        </div>
+                        <button
+                          onClick={() => {
+                            setReviewSent(false);
+                            setReviewContact("");
+                          }}
+                          style={{
+                            background: "transparent",
+                            border: "1px solid #2A3330",
+                            color: "#6B7B78",
+                            padding: "8px 20px",
+                            borderRadius: 8,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "'DM Sans', sans-serif",
+                          }}
+                        >
+                          Send Another →
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <input
+                          type="text"
+                          value={reviewContact}
+                          onChange={(e) => {
+                            setReviewContact(e.target.value);
+                            setReviewError("");
+                          }}
+                          placeholder="patient@email.com or +1 (555) 000-0000"
+                          style={{
+                            flex: 1,
+                            background: "#0D0F0E",
+                            border: "1px solid #2A3330",
+                            borderRadius: 8,
+                            padding: "12px 16px",
+                            color: "#F0EBE3",
+                            fontSize: 14,
+                            fontFamily: "'DM Sans', sans-serif",
+                            outline: "none",
+                          }}
+                        />
+                        <button
+                          onClick={async () => {
+                            if (!reviewContact.trim()) return;
+                            setReviewSending(true);
+                            setReviewError("");
+                            const isEmail = reviewContact.includes("@");
+                            try {
+                              const res = await fetch("/api/request-review", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  contact: reviewContact.trim(),
+                                  type: isEmail ? "email" : "phone",
+                                  clinicName: data.url
+                                    .replace(/https?:\/\//, "")
+                                    .replace(/www\./, "")
+                                    .split("/")[0],
+                                  clinicUrl: data.url,
+                                  placeId: data.placeId,
+                                }),
+                              });
+                              const result = await res.json();
+                              if (result.success) {
+                                setReviewSent(true);
+                              } else {
+                                setReviewError(
+                                  "Failed to send. Please try again.",
+                                );
+                              }
+                            } catch {
+                              setReviewError(
+                                "Something went wrong. Please try again.",
+                              );
+                            } finally {
+                              setReviewSending(false);
+                            }
+                          }}
+                          disabled={reviewSending || !reviewContact.trim()}
+                          style={{
+                            background: reviewContact.trim()
+                              ? "#1ABC9C"
+                              : "#1A2320",
+                            color: reviewContact.trim() ? "#000" : "#6B7B78",
+                            border: "none",
+                            padding: "12px 24px",
+                            borderRadius: 8,
+                            fontSize: 14,
+                            fontWeight: 700,
+                            cursor: reviewContact.trim()
+                              ? "pointer"
+                              : "default",
+                            fontFamily: "'DM Sans', sans-serif",
+                            whiteSpace: "nowrap",
+                            transition: "all 0.2s",
+                          }}
+                        >
+                          {reviewSending ? "Sending..." : "Send Request →"}
+                        </button>
+                      </div>
+                    )}
+                    {reviewError && (
+                      <div
+                        style={{ fontSize: 12, color: "#E74C3C", marginTop: 8 }}
+                      >
+                        {reviewError}
+                      </div>
+                    )}
+                    {data.placeId && (
+                      <div
+                        style={{
+                          marginTop: 12,
+                          fontSize: 12,
+                          color: "#6B7B78",
+                        }}
+                      >
+                        💡 Direct link goes to:{" "}
+                        <span style={{ color: "#1ABC9C" }}>
+                          Google Maps review page for your clinic
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* ROADMAP TAB */}
+        {activeTab === "roadmap" && (
           <div
             className="card"
             style={{
@@ -1310,569 +2023,17 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* REVIEW ANALYSIS */}
-        <div
-          className="card"
-          style={{
-            background: "#151918",
-            border: "1px solid #2A3330",
-            borderRadius: 16,
-            padding: 24,
-            marginBottom: 24,
-            animationDelay: "0.5s",
-          }}
-        >
+        {/* REVIEWS TAB */}
+        {activeTab === "reviews" && (
           <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 20,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 20,
-                fontWeight: 700,
-              }}
-            >
-              ⭐ What Patients Are Saying About You
-            </div>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                padding: "4px 12px",
-                borderRadius: 20,
-                background: "rgba(26,188,156,0.12)",
-                color: "#1ABC9C",
-                fontFamily: "'DM Mono', monospace",
-              }}
-            >
-              AI Powered
-            </span>
-          </div>
-
-          {reviewsLoading ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "40px 0",
-                color: "#6B7B78",
-              }}
-            >
-              <div style={{ fontSize: 24, marginBottom: 12 }}>🔍</div>
-              Analyzing patient reviews...
-            </div>
-          ) : !reviews || (!reviews.analysis && reviews.total === 0) ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "40px 24px",
-                background: "rgba(240,165,0,0.05)",
-                border: "1px solid rgba(240,165,0,0.15)",
-                borderRadius: 12,
-              }}
-            >
-              <div style={{ fontSize: 40, marginBottom: 16 }}>⭐</div>
-              <div
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: "#F0EBE3",
-                  marginBottom: 10,
-                }}
-              >
-                No Google reviews found for your clinic
-              </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  color: "#6B7B78",
-                  lineHeight: 1.7,
-                  maxWidth: 420,
-                  marginTop: 0,
-                  marginBottom: 20,
-                  marginLeft: "auto",
-                  marginRight: "auto",
-                }}
-              >
-                Clinics with more reviews rank higher on Google and attract more
-                patients. In fact,{" "}
-                <span style={{ color: "#F0A500", fontWeight: 600 }}>
-                  85% of patients
-                </span>{" "}
-                read Google reviews before choosing a dentist.
-              </div>
-              <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 24 }}>
-                With Pro, we automatically ask your patients for reviews after
-                every visit — so your clinic builds trust while you focus on
-                care.
-              </div>
-              <button
-                onClick={handleUpgradeClick}
-                style={{
-                  background: "#F0A500",
-                  color: "#000",
-                  border: "none",
-                  padding: "12px 28px",
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Get More Reviews with Pro →
-              </button>
-            </div>
-          ) : reviews?.analysis ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 20,
-              }}
-            >
-              {/* Summary + Sentiment Breakdown */}
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 16,
-                }}
-              >
-                {/* Summary */}
-                <div
-                  style={{
-                    background: "#0D0F0E",
-                    borderRadius: 12,
-                    padding: 20,
-                    borderLeft: "4px solid #1ABC9C",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#1ABC9C",
-                      fontWeight: 600,
-                      marginBottom: 8,
-                    }}
-                  >
-                    OVERALL IMPRESSION
-                  </div>
-                  <div
-                    style={{ fontSize: 15, color: "#F0EBE3", lineHeight: 1.6 }}
-                  >
-                    {reviews.analysis.summary}
-                  </div>
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      marginTop: 12,
-                      fontSize: 12,
-                      fontWeight: 700,
-                      padding: "4px 12px",
-                      borderRadius: 20,
-                      background:
-                        reviews.analysis.sentiment === "positive"
-                          ? "rgba(46,204,113,0.12)"
-                          : reviews.analysis.sentiment === "negative"
-                            ? "rgba(231,76,60,0.12)"
-                            : "rgba(240,165,0,0.12)",
-                      color:
-                        reviews.analysis.sentiment === "positive"
-                          ? "#2ECC71"
-                          : reviews.analysis.sentiment === "negative"
-                            ? "#E74C3C"
-                            : "#F0A500",
-                    }}
-                  >
-                    {reviews.analysis.sentiment?.toUpperCase()}
-                  </div>
-                </div>
-
-                {/* Sentiment Breakdown */}
-                <div
-                  style={{
-                    background: "#0D0F0E",
-                    borderRadius: 12,
-                    padding: 20,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#6B7B78",
-                      fontWeight: 600,
-                      marginBottom: 16,
-                    }}
-                  >
-                    HOW PATIENTS FEEL
-                  </div>
-                  {[
-                    {
-                      label: "Positive",
-                      pct: reviews.sentimentBreakdown?.positive ?? 0,
-                      color: "#2ECC71",
-                    },
-                    {
-                      label: "Neutral",
-                      pct: reviews.sentimentBreakdown?.neutral ?? 0,
-                      color: "#F0A500",
-                    },
-                    {
-                      label: "Negative",
-                      pct: reviews.sentimentBreakdown?.negative ?? 0,
-                      color: "#E74C3C",
-                    },
-                  ].map(({ label, pct, color }) => (
-                    <div key={label} style={{ marginBottom: 12 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          marginBottom: 4,
-                        }}
-                      >
-                        <span style={{ fontSize: 13, color: "#F0EBE3" }}>
-                          {label}
-                        </span>
-                        <span style={{ fontSize: 13, color, fontWeight: 700 }}>
-                          {pct}%
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          height: 6,
-                          background: "#2A3330",
-                          borderRadius: 3,
-                        }}
-                      >
-                        <div
-                          style={{
-                            height: 6,
-                            background: color,
-                            borderRadius: 3,
-                            width: `${pct}%`,
-                            transition: "width 1s ease",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Review count comparison */}
-                  <div
-                    style={{
-                      marginTop: 16,
-                      paddingTop: 16,
-                      borderTop: "1px solid #2A3330",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#6B7B78",
-                        fontWeight: 600,
-                        marginBottom: 8,
-                      }}
-                    >
-                      REVIEW COUNT
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div style={{ textAlign: "center" }}>
-                        <div
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: 28,
-                            fontWeight: 900,
-                            color: "#F0A500",
-                          }}
-                        >
-                          {reviews.total}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                          Your reviews
-                        </div>
-                      </div>
-                      <div style={{ fontSize: 20, color: "#2A3330" }}>vs</div>
-                      <div style={{ textAlign: "center" }}>
-                        <div
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: 28,
-                            fontWeight: 900,
-                            color: "#2ECC71",
-                          }}
-                        >
-                          {Math.max(
-                            ...data.competitors.map((c) => c.reviews || 0),
-                          )}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                          Top clinic
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Response Rate */}
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  background: "#0D0F0E",
-                  borderRadius: 12,
-                  padding: 20,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: 16,
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#6B7B78",
-                      fontWeight: 600,
-                      marginBottom: 4,
-                    }}
-                  >
-                    REVIEW YOU REPLY TO REVIEWS
-                  </div>
-                  <div
-                    style={{ fontSize: 14, color: "#F0EBE3", lineHeight: 1.6 }}
-                  >
-                    You respond to{" "}
-                    <strong
-                      style={{
-                        color:
-                          (reviews.responseRate ?? 0) < 50
-                            ? "#E74C3C"
-                            : "#2ECC71",
-                      }}
-                    >
-                      {reviews.responseRate ?? 0}%
-                    </strong>{" "}
-                    of patient reviews. Top clinics respond to{" "}
-                    <strong style={{ color: "#2ECC71" }}>70%+</strong> —
-                    responding improves trust and Google ranking.
-                  </div>
-                </div>
-                {(reviews.responseRate ?? 0) < 50 && (
-                  <div
-                    style={{
-                      background: "rgba(231,76,60,0.1)",
-                      border: "1px solid rgba(231,76,60,0.2)",
-                      borderRadius: 8,
-                      padding: "8px 16px",
-                      fontSize: 13,
-                      color: "#E74C3C",
-                      fontWeight: 600,
-                    }}
-                  >
-                    ⚠️ Respond to more reviews!
-                  </div>
-                )}
-              </div>
-
-              {/* What patients love */}
-              <div
-                style={{ background: "#0D0F0E", borderRadius: 12, padding: 20 }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#2ECC71",
-                    fontWeight: 600,
-                    marginBottom: 12,
-                  }}
-                >
-                  💚 What Patients Love About You
-                </div>
-                {reviews.analysis.loves?.map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      fontSize: 13,
-                      color: "#F0EBE3",
-                      marginBottom: 8,
-                      display: "flex",
-                      gap: 8,
-                    }}
-                  >
-                    <span style={{ color: "#2ECC71" }}>✓</span> {item}
-                  </div>
-                ))}
-              </div>
-
-              {/* Complaints */}
-              <div
-                style={{ background: "#0D0F0E", borderRadius: 12, padding: 20 }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#E74C3C",
-                    fontWeight: 600,
-                    marginBottom: 12,
-                  }}
-                >
-                  🚨 What Patients Complain About
-                </div>
-                {reviews.analysis.complaints?.length > 0 ? (
-                  reviews.analysis.complaints.map((item: string, i: number) => (
-                    <div
-                      key={i}
-                      style={{
-                        fontSize: 13,
-                        color: "#F0EBE3",
-                        marginBottom: 8,
-                        display: "flex",
-                        gap: 8,
-                      }}
-                    >
-                      <span style={{ color: "#E74C3C" }}>✗</span> {item}
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#2ECC71",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <span>🎉</span>
-                    <span>
-                      No significant complaints found — your patients are happy!
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Fix now */}
-              <div
-                style={{ background: "#0D0F0E", borderRadius: 12, padding: 20 }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#F0A500",
-                    fontWeight: 600,
-                    marginBottom: 12,
-                  }}
-                >
-                  ⚡ What You Should Fix
-                </div>
-                {reviews.analysis.fixNow?.length > 0 ? (
-                  reviews.analysis.fixNow.map((item: string, i: number) => (
-                    <div
-                      key={i}
-                      style={{
-                        fontSize: 13,
-                        color: "#F0EBE3",
-                        marginBottom: 8,
-                        display: "flex",
-                        gap: 8,
-                      }}
-                    >
-                      <span style={{ color: "#F0A500" }}>→</span> {item}
-                    </div>
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "#2ECC71",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <span>✅</span>
-                    <span>
-                      Nothing urgent — focus on getting more reviews to stay
-                      ahead!
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Promote */}
-              <div
-                style={{ background: "#0D0F0E", borderRadius: 12, padding: 20 }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#1ABC9C",
-                    fontWeight: 600,
-                    marginBottom: 12,
-                  }}
-                >
-                  📈 What You Should Promote
-                </div>
-                {reviews.analysis.promote?.map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      fontSize: 13,
-                      color: "#F0EBE3",
-                      marginBottom: 8,
-                      display: "flex",
-                      gap: 8,
-                    }}
-                  >
-                    <span style={{ color: "#1ABC9C" }}>→</span> {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "40px 0",
-                color: "#6B7B78",
-              }}
-            >
-              <div style={{ fontSize: 24, marginBottom: 12 }}>⭐</div>
-              No review data available for this clinic
-            </div>
-          )}
-        </div>
-
-        {/* ISSUES */}
-        <div
-          className="card"
-          style={{
-            marginBottom: 24,
-            animationDelay: "0.3s",
-          }}
-        >
-          {/* Unified Checklist */}
-          <div
+            className="card"
             style={{
               background: "#151918",
               border: "1px solid #2A3330",
               borderRadius: 16,
               padding: 24,
+              marginBottom: 24,
+              animationDelay: "0.5s",
             }}
           >
             <div
@@ -1890,247 +2051,1116 @@ function DashboardContent() {
                   fontWeight: 700,
                 }}
               >
-                Your Clinic Health Checklist
+                ⭐ What Patients Are Saying About You
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "4px 12px",
-                    borderRadius: 20,
-                    background: "rgba(231,76,60,0.12)",
-                    color: "#E74C3C",
-                    fontFamily: "'DM Mono', monospace",
-                  }}
-                >
-                  {failIssues.length} Failed
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "4px 12px",
-                    borderRadius: 20,
-                    background: "rgba(240,165,0,0.12)",
-                    color: "#F0A500",
-                    fontFamily: "'DM Mono', monospace",
-                  }}
-                >
-                  {warnIssues.length} Warning
-                </span>
-                <span
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "4px 12px",
-                    borderRadius: 20,
-                    background: "rgba(46,204,113,0.12)",
-                    color: "#2ECC71",
-                    fontFamily: "'DM Mono', monospace",
-                  }}
-                >
-                  {passIssues.length} Good
-                </span>
-              </div>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "4px 12px",
+                  borderRadius: 20,
+                  background: "rgba(26,188,156,0.12)",
+                  color: "#1ABC9C",
+                  fontFamily: "'DM Mono', monospace",
+                }}
+              >
+                AI Powered
+              </span>
             </div>
-            {[...failIssues, ...warnIssues, ...passIssues].map((issue, i) => {
-              const icon =
-                issue.status === "fail"
-                  ? "❌"
-                  : issue.status === "warn"
-                    ? "⚠️"
-                    : "✅";
-              const dotColor =
-                issue.status === "fail"
-                  ? "#E74C3C"
-                  : issue.status === "warn"
-                    ? "#F0A500"
-                    : "#2ECC71";
-              const isExpanded = expandedIssue === i;
-              return (
+
+            {reviewsLoading ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px 0",
+                  color: "#6B7B78",
+                }}
+              >
+                <div style={{ fontSize: 24, marginBottom: 12 }}>🔍</div>
+                Analyzing patient reviews...
+              </div>
+            ) : !reviews || (!reviews.analysis && reviews.total === 0) ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px 24px",
+                  background: "rgba(240,165,0,0.05)",
+                  border: "1px solid rgba(240,165,0,0.15)",
+                  borderRadius: 12,
+                }}
+              >
+                <div style={{ fontSize: 40, marginBottom: 16 }}>⭐</div>
                 <div
-                  key={i}
-                  className="issue-row"
                   style={{
-                    padding: "14px 0",
-                    borderBottom: "1px solid #2A3330",
-                    borderRadius: 4,
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: "#F0EBE3",
+                    marginBottom: 10,
                   }}
                 >
+                  No Google reviews found for your clinic
+                </div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    color: "#6B7B78",
+                    lineHeight: 1.7,
+                    maxWidth: 420,
+                    marginTop: 0,
+                    marginBottom: 20,
+                    marginLeft: "auto",
+                    marginRight: "auto",
+                  }}
+                >
+                  Clinics with more reviews rank higher on Google and attract
+                  more patients. In fact,{" "}
+                  <span style={{ color: "#F0A500", fontWeight: 600 }}>
+                    85% of patients
+                  </span>{" "}
+                  read Google reviews before choosing a dentist.
+                </div>
+                <div
+                  style={{ fontSize: 13, color: "#6B7B78", marginBottom: 24 }}
+                >
+                  With Pro, we automatically ask your patients for reviews after
+                  every visit — so your clinic builds trust while you focus on
+                  care.
+                </div>
+                <button
+                  onClick={handleUpgradeClick}
+                  style={{
+                    background: "#F0A500",
+                    color: "#000",
+                    border: "none",
+                    padding: "12px 28px",
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  Get More Reviews with Pro →
+                </button>
+              </div>
+            ) : reviews?.analysis ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 20,
+                }}
+              >
+                {/* Summary + Sentiment Breakdown */}
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                  }}
+                >
+                  {/* Summary */}
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 14,
+                      background: "#0D0F0E",
+                      borderRadius: 12,
+                      padding: 20,
+                      borderLeft: "4px solid #1ABC9C",
                     }}
                   >
-                    <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>
-                      {icon}
-                    </span>
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          marginBottom: 4,
-                          color:
-                            issue.status === "pass" ? "#A0B0AD" : "#F0EBE3",
-                        }}
-                      >
-                        {issue.title}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#6B7B78",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {issue.desc}
-                      </div>
-                      {fixGuides[issue.title] && (
-                        <button
-                          onClick={() =>
-                            setExpandedIssue(isExpanded ? null : i)
-                          }
-                          style={{
-                            marginTop: 8,
-                            background: "transparent",
-                            border: `1px solid ${dotColor}40`,
-                            color: dotColor,
-                            padding: "4px 12px",
-                            borderRadius: 6,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            fontFamily: "'DM Sans', sans-serif",
-                          }}
-                        >
-                          {isExpanded
-                            ? "▲ Hide fix guide"
-                            : "▼ How to fix this"}
-                        </button>
-                      )}
-                      {isExpanded && fixGuides[issue.title] && (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#1ABC9C",
+                        fontWeight: 600,
+                        marginBottom: 8,
+                      }}
+                    >
+                      OVERALL IMPRESSION
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        color: "#F0EBE3",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {reviews.analysis.summary}
+                    </div>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        marginTop: 12,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        background:
+                          reviews.analysis.sentiment === "positive"
+                            ? "rgba(46,204,113,0.12)"
+                            : reviews.analysis.sentiment === "negative"
+                              ? "rgba(231,76,60,0.12)"
+                              : "rgba(240,165,0,0.12)",
+                        color:
+                          reviews.analysis.sentiment === "positive"
+                            ? "#2ECC71"
+                            : reviews.analysis.sentiment === "negative"
+                              ? "#E74C3C"
+                              : "#F0A500",
+                      }}
+                    >
+                      {reviews.analysis.sentiment?.toUpperCase()}
+                    </div>
+                  </div>
+
+                  {/* Sentiment Breakdown */}
+                  <div
+                    style={{
+                      background: "#0D0F0E",
+                      borderRadius: 12,
+                      padding: 20,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#6B7B78",
+                        fontWeight: 600,
+                        marginBottom: 16,
+                      }}
+                    >
+                      HOW PATIENTS FEEL
+                    </div>
+                    {[
+                      {
+                        label: "Positive",
+                        pct: reviews.sentimentBreakdown?.positive ?? 0,
+                        color: "#2ECC71",
+                      },
+                      {
+                        label: "Neutral",
+                        pct: reviews.sentimentBreakdown?.neutral ?? 0,
+                        color: "#F0A500",
+                      },
+                      {
+                        label: "Negative",
+                        pct: reviews.sentimentBreakdown?.negative ?? 0,
+                        color: "#E74C3C",
+                      },
+                    ].map(({ label, pct, color }) => (
+                      <div key={label} style={{ marginBottom: 12 }}>
                         <div
                           style={{
-                            marginTop: 12,
-                            background: "#0D0F0E",
-                            borderRadius: 8,
-                            padding: 16,
-                            borderLeft: `3px solid ${dotColor}`,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: 4,
+                          }}
+                        >
+                          <span style={{ fontSize: 13, color: "#F0EBE3" }}>
+                            {label}
+                          </span>
+                          <span
+                            style={{ fontSize: 13, color, fontWeight: 700 }}
+                          >
+                            {pct}%
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            height: 6,
+                            background: "#2A3330",
+                            borderRadius: 3,
                           }}
                         >
                           <div
                             style={{
-                              fontSize: 12,
-                              color: "#1ABC9C",
-                              fontWeight: 600,
-                              marginBottom: 10,
+                              height: 6,
+                              background: color,
+                              borderRadius: 3,
+                              width: `${pct}%`,
+                              transition: "width 1s ease",
                             }}
-                          >
-                            🛠️ HOW TO FIX THIS
-                          </div>
-                          {fixGuides[issue.title].map((step, j) => (
-                            <div
-                              key={j}
-                              style={{
-                                display: "flex",
-                                gap: 10,
-                                fontSize: 12,
-                                color: "#F0EBE3",
-                                marginBottom: 8,
-                                lineHeight: 1.6,
-                              }}
-                            >
-                              <span
-                                style={{
-                                  color: "#1ABC9C",
-                                  fontWeight: 700,
-                                  flexShrink: 0,
-                                }}
-                              >
-                                {j + 1}.
-                              </span>
-                              {step}
-                            </div>
-                          ))}
+                          />
                         </div>
-                      )}
-                    </div>
-                    {issue.status !== "pass" && (
-                      <span
+                      </div>
+                    ))}
+
+                    {/* Review count comparison */}
+                    <div
+                      style={{
+                        marginTop: 16,
+                        paddingTop: 16,
+                        borderTop: "1px solid #2A3330",
+                      }}
+                    >
+                      <div
                         style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          padding: "3px 8px",
-                          borderRadius: 4,
-                          background:
-                            issue.priority === "HIGH"
-                              ? "rgba(231,76,60,0.12)"
-                              : "rgba(240,165,0,0.12)",
-                          color:
-                            issue.priority === "HIGH" ? "#E74C3C" : "#F0A500",
-                          fontFamily: "'DM Mono', monospace",
-                          flexShrink: 0,
+                          fontSize: 13,
+                          color: "#6B7B78",
+                          fontWeight: 600,
+                          marginBottom: 8,
                         }}
                       >
-                        {issue.priority}
-                      </span>
-                    )}
+                        REVIEW COUNT
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ textAlign: "center" }}>
+                          <div
+                            style={{
+                              fontFamily: "'Playfair Display', serif",
+                              fontSize: 28,
+                              fontWeight: 900,
+                              color: "#F0A500",
+                            }}
+                          >
+                            {reviews.total}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                            Your reviews
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 20, color: "#2A3330" }}>vs</div>
+                        <div style={{ textAlign: "center" }}>
+                          <div
+                            style={{
+                              fontFamily: "'Playfair Display', serif",
+                              fontSize: 28,
+                              fontWeight: 900,
+                              color: "#2ECC71",
+                            }}
+                          >
+                            {Math.max(
+                              ...data.competitors.map((c) => c.reviews || 0),
+                            )}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                            Top clinic
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
 
-            {/* Google Profile Checklist */}
+                {/* Response Rate */}
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    background: "#0D0F0E",
+                    borderRadius: 12,
+                    padding: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 16,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#6B7B78",
+                        fontWeight: 600,
+                        marginBottom: 4,
+                      }}
+                    >
+                      REVIEW YOU REPLY TO REVIEWS
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: "#F0EBE3",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      You respond to{" "}
+                      <strong
+                        style={{
+                          color:
+                            (reviews.responseRate ?? 0) < 50
+                              ? "#E74C3C"
+                              : "#2ECC71",
+                        }}
+                      >
+                        {reviews.responseRate ?? 0}%
+                      </strong>{" "}
+                      of patient reviews. Top clinics respond to{" "}
+                      <strong style={{ color: "#2ECC71" }}>70%+</strong> —
+                      responding improves trust and Google ranking.
+                    </div>
+                  </div>
+                  {(reviews.responseRate ?? 0) < 50 && (
+                    <div
+                      style={{
+                        background: "rgba(231,76,60,0.1)",
+                        border: "1px solid rgba(231,76,60,0.2)",
+                        borderRadius: 8,
+                        padding: "8px 16px",
+                        fontSize: 13,
+                        color: "#E74C3C",
+                        fontWeight: 600,
+                      }}
+                    >
+                      ⚠️ Respond to more reviews!
+                    </div>
+                  )}
+                </div>
+
+                {/* What patients love */}
+                <div
+                  style={{
+                    background: "#0D0F0E",
+                    borderRadius: 12,
+                    padding: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#2ECC71",
+                      fontWeight: 600,
+                      marginBottom: 12,
+                    }}
+                  >
+                    💚 What Patients Love About You
+                  </div>
+                  {reviews.analysis.loves?.map((item, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: 13,
+                        color: "#F0EBE3",
+                        marginBottom: 8,
+                        display: "flex",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ color: "#2ECC71" }}>✓</span> {item}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Complaints */}
+                <div
+                  style={{
+                    background: "#0D0F0E",
+                    borderRadius: 12,
+                    padding: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#E74C3C",
+                      fontWeight: 600,
+                      marginBottom: 12,
+                    }}
+                  >
+                    🚨 What Patients Complain About
+                  </div>
+                  {reviews.analysis.complaints?.length > 0 ? (
+                    reviews.analysis.complaints.map(
+                      (item: string, i: number) => (
+                        <div
+                          key={i}
+                          style={{
+                            fontSize: 13,
+                            color: "#F0EBE3",
+                            marginBottom: 8,
+                            display: "flex",
+                            gap: 8,
+                          }}
+                        >
+                          <span style={{ color: "#E74C3C" }}>✗</span> {item}
+                        </div>
+                      ),
+                    )
+                  ) : (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#2ECC71",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span>🎉</span>
+                      <span>
+                        No significant complaints found — your patients are
+                        happy!
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Fix now */}
+                <div
+                  style={{
+                    background: "#0D0F0E",
+                    borderRadius: 12,
+                    padding: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#F0A500",
+                      fontWeight: 600,
+                      marginBottom: 12,
+                    }}
+                  >
+                    ⚡ What You Should Fix
+                  </div>
+                  {reviews.analysis.fixNow?.length > 0 ? (
+                    reviews.analysis.fixNow.map((item: string, i: number) => (
+                      <div
+                        key={i}
+                        style={{
+                          fontSize: 13,
+                          color: "#F0EBE3",
+                          marginBottom: 8,
+                          display: "flex",
+                          gap: 8,
+                        }}
+                      >
+                        <span style={{ color: "#F0A500" }}>→</span> {item}
+                      </div>
+                    ))
+                  ) : (
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#2ECC71",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span>✅</span>
+                      <span>
+                        Nothing urgent — focus on getting more reviews to stay
+                        ahead!
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Promote */}
+                <div
+                  style={{
+                    background: "#0D0F0E",
+                    borderRadius: 12,
+                    padding: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#1ABC9C",
+                      fontWeight: 600,
+                      marginBottom: 12,
+                    }}
+                  >
+                    📈 What You Should Promote
+                  </div>
+                  {reviews.analysis.promote?.map((item, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        fontSize: 13,
+                        color: "#F0EBE3",
+                        marginBottom: 8,
+                        display: "flex",
+                        gap: 8,
+                      }}
+                    >
+                      <span style={{ color: "#1ABC9C" }}>→</span> {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "40px 0",
+                  color: "#6B7B78",
+                }}
+              >
+                <div style={{ fontSize: 24, marginBottom: 12 }}>⭐</div>
+                No review data available for this clinic
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* HEALTH TAB */}
+
+        {/* SCORE TAB */}
+        {activeTab === "score" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Score breakdown cards */}
             <div
+              className="card"
               style={{
-                marginTop: 20,
-                paddingTop: 20,
-                borderTop: "1px solid #2A3330",
+                background: "#151918",
+                border: "1px solid #2A3330",
+                borderRadius: 16,
+                padding: 24,
               }}
             >
               <div
                 style={{
-                  fontSize: 14,
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 20,
                   fontWeight: 700,
-                  marginBottom: 16,
-                  color: "#F0A500",
+                  marginBottom: 20,
                 }}
               >
-                ⚡ Easy Wins — Do These This Week
+                📊 Your Score Breakdown
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 16,
+                }}
+              >
+                {[
+                  {
+                    label: "Website Speed",
+                    value:
+                      data.performanceScore === 0 && data.seoScore === 0
+                        ? null
+                        : data.performanceScore,
+                    desc: "How fast your site loads for patients",
+                    icon: "⚡",
+                  },
+                  {
+                    label: "Google Findability",
+                    value:
+                      data.performanceScore === 0 && data.seoScore === 0
+                        ? null
+                        : data.seoScore,
+                    desc: "How easily Google can find your clinic",
+                    icon: "🔍",
+                  },
+                  {
+                    label: "Website Usability",
+                    value:
+                      data.performanceScore === 0 && data.seoScore === 0
+                        ? null
+                        : data.accessibilityScore,
+                    desc: "How easy your site is for patients to use",
+                    icon: "👆",
+                  },
+                  {
+                    label: "Overall Score",
+                    value: data.overallScore,
+                    desc: "Your combined Google presence score",
+                    icon: "🏆",
+                  },
+                ].map((item, i) => {
+                  const val = item.value;
+                  const color =
+                    val === null
+                      ? "#6B7B78"
+                      : val >= 70
+                        ? "#2ECC71"
+                        : val >= 40
+                          ? "#F0A500"
+                          : "#E74C3C";
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        background: "#0D0F0E",
+                        borderRadius: 12,
+                        padding: 20,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <span style={{ fontSize: 20 }}>{item.icon}</span>
+                        <span
+                          style={{
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: 32,
+                            fontWeight: 900,
+                            color,
+                          }}
+                        >
+                          {val === null ? "—" : val}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: "#F0EBE3",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                        {item.desc}
+                      </div>
+                      {val !== null && (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            height: 4,
+                            background: "#1A2320",
+                            borderRadius: 2,
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: 4,
+                              width: `${val}%`,
+                              background: color,
+                              borderRadius: 2,
+                              transition: "width 1s ease",
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* What your score means */}
+            <div
+              className="card"
+              style={{
+                background: "#151918",
+                border: "1px solid #2A3330",
+                borderRadius: 16,
+                padding: 24,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  marginBottom: 16,
+                }}
+              >
+                What Your Score Means
               </div>
               {[
-                "Add 'dentist + your city' to your homepage title",
-                "Complete your Google Business Profile",
-                "Ask your last 10 patients for a Google review",
-                "Add your clinic hours to Google",
-                "Upload 10+ photos to Google Business",
-              ].map((tip, i) => (
+                {
+                  range: "80–100",
+                  label: "Top Performer",
+                  desc: "You're ahead of most clinics. Focus on reviews and maintaining your position.",
+                  color: "#2ECC71",
+                },
+                {
+                  range: "60–79",
+                  label: "Good Standing",
+                  desc: "Solid foundation. A few targeted fixes can push you into the top 3.",
+                  color: "#F0A500",
+                },
+                {
+                  range: "40–59",
+                  label: "Needs Work",
+                  desc: "Competitors are likely outranking you. Address the issues in the Health tab.",
+                  color: "#E67E22",
+                },
+                {
+                  range: "0–39",
+                  label: "Critical",
+                  desc: "Patients searching Google can barely find you. Immediate action needed.",
+                  color: "#E74C3C",
+                },
+              ].map((tier, i) => (
                 <div
                   key={i}
                   style={{
                     display: "flex",
-                    gap: 10,
-                    alignItems: "flex-start",
-                    padding: "8px 0",
-                    fontSize: 13,
-                    color: "#6B7B78",
+                    alignItems: "center",
+                    gap: 16,
+                    padding: "12px 0",
+                    borderBottom: i < 3 ? "1px solid #1A2320" : "none",
                   }}
                 >
-                  <span
-                    style={{ color: "#1ABC9C", fontWeight: 700, flexShrink: 0 }}
+                  <div
+                    style={{
+                      width: 60,
+                      textAlign: "center",
+                      fontFamily: "'DM Mono', monospace",
+                      fontSize: 11,
+                      color: tier.color,
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
                   >
-                    →
-                  </span>
-                  {tip}
+                    {tier.range}
+                  </div>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: tier.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color:
+                          data.overallScore >= parseInt(tier.range)
+                            ? tier.color
+                            : "#F0EBE3",
+                      }}
+                    >
+                      {tier.label}
+                    </div>
+                    <div
+                      style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}
+                    >
+                      {tier.desc}
+                    </div>
+                  </div>
+                  {data.overallScore >= parseInt(tier.range.split("–")[0]) &&
+                    data.overallScore <= parseInt(tier.range.split("–")[1]) && (
+                      <span
+                        style={{
+                          marginLeft: "auto",
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: tier.color,
+                          background: `${tier.color}18`,
+                          padding: "3px 10px",
+                          borderRadius: 20,
+                          flexShrink: 0,
+                        }}
+                      >
+                        YOU ARE HERE
+                      </span>
+                    )}
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === "health" && (
+          <>
+            {/* ISSUES */}
+            <div
+              className="card"
+              style={{
+                marginBottom: 24,
+                animationDelay: "0.3s",
+              }}
+            >
+              {/* Unified Checklist */}
+              <div
+                style={{
+                  background: "#151918",
+                  border: "1px solid #2A3330",
+                  borderRadius: 16,
+                  padding: 24,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 20,
+                      fontWeight: 700,
+                    }}
+                  >
+                    Your Clinic Health Checklist
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        background: "rgba(231,76,60,0.12)",
+                        color: "#E74C3C",
+                        fontFamily: "'DM Mono', monospace",
+                      }}
+                    >
+                      {failIssues.length} Failed
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        background: "rgba(240,165,0,0.12)",
+                        color: "#F0A500",
+                        fontFamily: "'DM Mono', monospace",
+                      }}
+                    >
+                      {warnIssues.length} Warning
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        background: "rgba(46,204,113,0.12)",
+                        color: "#2ECC71",
+                        fontFamily: "'DM Mono', monospace",
+                      }}
+                    >
+                      {passIssues.length} Good
+                    </span>
+                  </div>
+                </div>
+                {[...failIssues, ...warnIssues, ...passIssues].map(
+                  (issue, i) => {
+                    const icon =
+                      issue.status === "fail"
+                        ? "❌"
+                        : issue.status === "warn"
+                          ? "⚠️"
+                          : "✅";
+                    const dotColor =
+                      issue.status === "fail"
+                        ? "#E74C3C"
+                        : issue.status === "warn"
+                          ? "#F0A500"
+                          : "#2ECC71";
+                    const isExpanded = expandedIssue === i;
+                    return (
+                      <div
+                        key={i}
+                        className="issue-row"
+                        style={{
+                          padding: "14px 0",
+                          borderBottom: "1px solid #2A3330",
+                          borderRadius: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 14,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 18,
+                              flexShrink: 0,
+                              marginTop: 1,
+                            }}
+                          >
+                            {icon}
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                                marginBottom: 4,
+                                color:
+                                  issue.status === "pass"
+                                    ? "#A0B0AD"
+                                    : "#F0EBE3",
+                              }}
+                            >
+                              {issue.title}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "#6B7B78",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {issue.desc}
+                            </div>
+                            {fixGuides[issue.title] && (
+                              <button
+                                onClick={() =>
+                                  setExpandedIssue(isExpanded ? null : i)
+                                }
+                                style={{
+                                  marginTop: 8,
+                                  background: "transparent",
+                                  border: `1px solid ${dotColor}40`,
+                                  color: dotColor,
+                                  padding: "4px 12px",
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontFamily: "'DM Sans', sans-serif",
+                                }}
+                              >
+                                {isExpanded
+                                  ? "▲ Hide fix guide"
+                                  : "▼ How to fix this"}
+                              </button>
+                            )}
+                            {isExpanded && fixGuides[issue.title] && (
+                              <div
+                                style={{
+                                  marginTop: 12,
+                                  background: "#0D0F0E",
+                                  borderRadius: 8,
+                                  padding: 16,
+                                  borderLeft: `3px solid ${dotColor}`,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 12,
+                                    color: "#1ABC9C",
+                                    fontWeight: 600,
+                                    marginBottom: 10,
+                                  }}
+                                >
+                                  🛠️ HOW TO FIX THIS
+                                </div>
+                                {fixGuides[issue.title].map((step, j) => (
+                                  <div
+                                    key={j}
+                                    style={{
+                                      display: "flex",
+                                      gap: 10,
+                                      fontSize: 12,
+                                      color: "#F0EBE3",
+                                      marginBottom: 8,
+                                      lineHeight: 1.6,
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        color: "#1ABC9C",
+                                        fontWeight: 700,
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      {j + 1}.
+                                    </span>
+                                    {step}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {issue.status !== "pass" && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                padding: "3px 8px",
+                                borderRadius: 4,
+                                background:
+                                  issue.priority === "HIGH"
+                                    ? "rgba(231,76,60,0.12)"
+                                    : "rgba(240,165,0,0.12)",
+                                color:
+                                  issue.priority === "HIGH"
+                                    ? "#E74C3C"
+                                    : "#F0A500",
+                                fontFamily: "'DM Mono', monospace",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {issue.priority}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  },
+                )}
+
+                {/* Google Profile Checklist */}
+                <div
+                  style={{
+                    marginTop: 20,
+                    paddingTop: 20,
+                    borderTop: "1px solid #2A3330",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      marginBottom: 16,
+                      color: "#F0A500",
+                    }}
+                  >
+                    ⚡ Easy Wins — Do These This Week
+                  </div>
+                  {[
+                    "Add 'dentist + your city' to your homepage title",
+                    "Complete your Google Business Profile",
+                    "Ask your last 10 patients for a Google review",
+                    "Add your clinic hours to Google",
+                    "Upload 10+ photos to Google Business",
+                  ].map((tip, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        gap: 10,
+                        alignItems: "flex-start",
+                        padding: "8px 0",
+                        fontSize: 13,
+                        color: "#6B7B78",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#1ABC9C",
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        →
+                      </span>
+                      {tip}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* BOTTOM CTA */}
         <div
@@ -2152,7 +3182,7 @@ function DashboardContent() {
               marginBottom: 12,
             }}
           >
-            Get more patients — starting this month
+            See exactly why nearby clinics outrank you.
           </div>
           <div
             style={{
@@ -2164,8 +3194,8 @@ function DashboardContent() {
             }}
           >
             This report is a one-time snapshot. With Pro, we watch your clinic
-            every month — alerting you when your score drops, when a competitor
-            overtakes you, and when a patient leaves a bad review.
+            every month — alerting you when a competitor overtakes your ranking
+            and when a patient leaves a bad review.
           </div>
           <div
             style={{
@@ -2178,9 +3208,9 @@ function DashboardContent() {
               marginRight: "auto",
             }}
           >
-            Analyze reviews, competitor rankings, and discover what&apos;s
-            holding your clinic back. Unlock insights that show exactly what to
-            improve to reach the top.
+            Unlock competitor tracking, monthly growth insights, and review
+            automation — everything you need to reach and hold the #1 spot in
+            your city.
           </div>
 
           <div

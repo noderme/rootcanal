@@ -1,0 +1,84 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function POST(request: NextRequest) {
+  try {
+    const { contact, type, clinicName, clinicUrl, placeId } =
+      await request.json();
+
+    if (!contact || !placeId) {
+      return NextResponse.json(
+        { error: "Contact and placeId required" },
+        { status: 400 },
+      );
+    }
+
+    const reviewLink = `https://search.google.com/local/writereview?placeid=${placeId}`;
+
+    // ── 1. Save to Supabase ──
+    const { error: dbError } = await supabase.from("review_requests").insert({
+      contact,
+      contact_type: type,
+      clinic_name: clinicName,
+      clinic_url: clinicUrl,
+      place_id: placeId,
+      review_link: reviewLink,
+      status: "sent",
+      created_at: new Date().toISOString(),
+    });
+    if (dbError) console.error("DB error:", dbError);
+
+    // ── 2. Send email via Resend ──
+    if (type === "email") {
+      const { error: emailError } = await resend.emails.send({
+        from: `${clinicName} <hello@rootcanal.us>`,
+        to: contact,
+        subject: `How was your visit to ${clinicName}?`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 32px; background: #ffffff;">
+            <div style="text-align: center; margin-bottom: 32px;">
+              <div style="font-size: 48px;">🦷</div>
+              <h1 style="color: #1a1a1a; font-size: 24px; font-weight: 700; margin: 12px 0 4px;">Thank you for visiting us!</h1>
+              <p style="color: #888; font-size: 14px; margin: 0;">${clinicName}</p>
+            </div>
+            <p style="color: #444; font-size: 15px; line-height: 1.7; margin-bottom: 24px;">
+              We hope your experience was a great one. If you have a moment, we'd love to hear your feedback — it helps other patients find us and helps us keep improving our care.
+            </p>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="${reviewLink}" style="background: #1ABC9C; color: #000000; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">
+                ⭐ Leave a Google Review
+              </a>
+            </div>
+            <p style="color: #bbb; font-size: 12px; text-align: center; margin-top: 32px;">Takes less than 1 minute · Your feedback means the world to us</p>
+            <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 24px 0;" />
+            <p style="color: #ddd; font-size: 11px; text-align: center;">Sent via <a href="https://rootcanal.us" style="color: #1ABC9C; text-decoration: none;">RootCanal.us</a></p>
+          </div>
+        `,
+      });
+
+      if (emailError) {
+        console.error("Resend error:", emailError);
+        return NextResponse.json(
+          { error: "Failed to send email" },
+          { status: 500 },
+        );
+      }
+    }
+
+    return NextResponse.json({ success: true, reviewLink });
+  } catch (error) {
+    console.error("Review request error:", error);
+    return NextResponse.json(
+      { error: "Failed to send review request" },
+      { status: 500 },
+    );
+  }
+}

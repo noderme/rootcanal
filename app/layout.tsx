@@ -1,35 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
-  title: "RootCanal — Get More Patients From Google",
+  title: "RootCanal — Dental Growth Intelligence",
   description:
-    "Free SEO audit for dental clinics. Find out why your clinic isn't showing up on Google and how to fix it. Track competitors, get more reviews, rank #1 in your city.",
+    "See how your dental clinic ranks on Google. Free report in 30 seconds.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </head>
+      <body style={{ margin: 0, padding: 0 }}>{children}</body>
     </html>
   );
 }

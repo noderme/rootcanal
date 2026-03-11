@@ -26,6 +26,7 @@ interface AuditResult {
     address: string;
     score: number;
   }[];
+  placeId: string;
   scannedAt: string;
   cached?: boolean;
 }
@@ -348,11 +349,29 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 3. GOOGLE BUSINESS PROFILE CHECK ────────────
+    let clinicPlaceId = "";
     try {
-      const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(url)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status&key=${apiKey}`;
+      // Search by clinic name + city for more reliable match
+      const clinicSearchName = url
+        .replace(/https?:\/\//, "")
+        .replace(/^www\./, "")
+        .split("/")[0]
+        .replace(/\.my\.canva\.site$/, "")
+        .replace(/\.(com|net|org|io|us)$/, "")
+        .replace(/[-_.]/g, " ")
+        .trim();
+      const gbpQuery = `${clinicSearchName} dentist ${city}`;
+      const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(gbpQuery)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status,formatted_address&key=${apiKey}`;
       const gbpRes = await fetch(gbpUrl);
       const gbpData = await gbpRes.json();
       const place = gbpData.candidates?.[0];
+      // Only use if address doesn't contain India
+      if (
+        place?.place_id &&
+        !place.formatted_address?.toLowerCase().includes("india")
+      ) {
+        clinicPlaceId = place.place_id;
+      }
 
       if (!place?.place_id) {
         issues.push({
@@ -545,6 +564,7 @@ export async function GET(request: NextRequest) {
       accessibilityScore,
       issues,
       competitors,
+      placeId: clinicPlaceId,
       scannedAt: new Date().toISOString(),
     };
 
