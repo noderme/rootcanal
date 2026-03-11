@@ -199,9 +199,12 @@ export async function GET(request: NextRequest) {
     const { performanceScore, seoScore, accessibilityScore, audits } =
       await fetchPageSpeed(url, apiKey);
 
-    const overallScore = Math.round(
-      (performanceScore + seoScore + accessibilityScore) / 3,
-    );
+    // If all 3 scores are 0, PageSpeed API failed — default to 50 to avoid showing 0/100
+    const pageSpeedFailed =
+      performanceScore === 0 && seoScore === 0 && accessibilityScore === 0;
+    const overallScore = pageSpeedFailed
+      ? 50
+      : Math.round((performanceScore + seoScore + accessibilityScore) / 3);
 
     // ── 2. ISSUES ─────────────────────────────────────
     const issues: {

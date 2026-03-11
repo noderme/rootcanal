@@ -654,7 +654,10 @@ function DashboardContent() {
               },
               {
                 icon: "⚡",
-                value: data.performanceScore,
+                value:
+                  data.performanceScore === 0 && data.seoScore === 0
+                    ? "—"
+                    : data.performanceScore,
                 label: "How Fast Your Website Loads",
                 color:
                   data.performanceScore >= 70
@@ -669,7 +672,10 @@ function DashboardContent() {
               },
               {
                 icon: "🔍",
-                value: data.seoScore,
+                value:
+                  data.performanceScore === 0 && data.seoScore === 0
+                    ? "—"
+                    : data.seoScore,
                 label: "How Easy You Are to Find",
                 color:
                   data.seoScore >= 70
@@ -684,7 +690,10 @@ function DashboardContent() {
               },
               {
                 icon: "👆",
-                value: data.accessibilityScore,
+                value:
+                  data.performanceScore === 0 && data.seoScore === 0
+                    ? "—"
+                    : data.accessibilityScore,
                 label: "How Easy Your Website Is",
                 color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500",
                 bg: "rgba(240,165,0,0.12)",
