@@ -755,6 +755,16 @@ function DashboardContent() {
           <p style={{ fontSize: 14, color: "#6B7B78", marginTop: 4 }}>
             Scanned {new Date(data.scannedAt).toLocaleString()} · {city}
           </p>
+          <p
+            style={{
+              fontSize: 12,
+              color: "rgba(26,188,156,0.7)",
+              marginTop: 4,
+              fontStyle: "italic",
+            }}
+          >
+            📡 Based on real-time Google visibility data in {city}
+          </p>
         </div>
 
         {/* SCORE HERO — always visible at top */}

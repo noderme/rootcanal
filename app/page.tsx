@@ -226,6 +226,18 @@ function HomeInner() {
               <span>No credit card</span>
               <span>Results in 60 seconds</span>
             </div>
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 12,
+                color: "var(--muted)",
+                fontStyle: "italic",
+                opacity: 0.7,
+              }}
+            >
+              🔍 Live data pulled from Google Maps, reviews, and website
+              performance signals.
+            </div>
           </form>
         </div>
 
