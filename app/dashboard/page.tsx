@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
   initPaddle,
+  onPaddleClose,
   openProCheckout,
   openGrowthCheckout,
   openTestCheckout,
@@ -846,8 +847,10 @@ function DashboardContent() {
     }
 
     setShowUpgradeModal(false);
-    setShowUnlockAnim(true);
-    setTimeout(() => setShowUnlockAnim(false), 3000);
+    onPaddleClose(() => {
+      setShowUnlockAnim(true);
+      setTimeout(() => setShowUnlockAnim(false), 3000);
+    });
   };
 
   // Look up subscriber by clinic_url (primary) or email (fallback)

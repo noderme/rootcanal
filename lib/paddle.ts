@@ -10,9 +10,12 @@ declare global {
   }
 }
 
-// Module-level callback — updated before each checkout open
+// Module-level callbacks — updated before each checkout open
 // because eventCallback must live on Paddle.Initialize(), not Paddle.Checkout.open()
 let pendingOnSuccess: ((email: string) => void) | undefined;
+let pendingOnClose: (() => void) | undefined;
+// True if checkout.closed fired before onPaddleClose was registered
+let checkoutAlreadyClosed = false;
 
 export function initPaddle() {
   if (typeof window === "undefined" || !window.Paddle) return;
@@ -28,8 +31,29 @@ export function initPaddle() {
         pendingOnSuccess?.(customerEmail);
         pendingOnSuccess = undefined;
       }
+      if (event.name === "checkout.closed") {
+        if (pendingOnClose) {
+          // applyPlan already ran — fire immediately
+          pendingOnClose();
+          pendingOnClose = undefined;
+          checkoutAlreadyClosed = false;
+        } else {
+          // applyPlan hasn't run yet — remember for when it does
+          checkoutAlreadyClosed = true;
+        }
+      }
     },
   });
+}
+
+export function onPaddleClose(cb: () => void) {
+  if (checkoutAlreadyClosed) {
+    // Paddle overlay already closed before we got here — fire now
+    checkoutAlreadyClosed = false;
+    cb();
+  } else {
+    pendingOnClose = cb;
+  }
 }
 
 function openCheckout({
@@ -50,6 +74,8 @@ function openCheckout({
 
   initPaddle();
   pendingOnSuccess = onSuccess;
+  pendingOnClose = undefined;
+  checkoutAlreadyClosed = false;
 
   setTimeout(() => {
     window.Paddle.Checkout.open({
