@@ -10,10 +10,26 @@ declare global {
   }
 }
 
+// Module-level callback — updated before each checkout open
+// because eventCallback must live on Paddle.Initialize(), not Paddle.Checkout.open()
+let pendingOnSuccess: ((email: string) => void) | undefined;
+
 export function initPaddle() {
   if (typeof window === "undefined" || !window.Paddle) return;
   if (window.Paddle?.Initialized) return;
-  window.Paddle.Initialize({ token: PADDLE_CLIENT_TOKEN });
+  window.Paddle.Initialize({
+    token: PADDLE_CLIENT_TOKEN,
+    eventCallback: (event: {
+      name: string;
+      data?: { customer?: { email?: string } };
+    }) => {
+      if (event.name === "checkout.completed") {
+        const customerEmail = event.data?.customer?.email ?? "";
+        pendingOnSuccess?.(customerEmail);
+        pendingOnSuccess = undefined;
+      }
+    },
+  });
 }
 
 function openCheckout({
@@ -33,25 +49,14 @@ function openCheckout({
   }
 
   initPaddle();
+  pendingOnSuccess = onSuccess;
 
-  // Small delay to ensure Paddle is fully initialised before opening
   setTimeout(() => {
     window.Paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
       customer: email ? { email } : undefined,
-      // customData is forwarded verbatim to the webhook as event.data.custom_data
-      // This is how we know which clinic URL belongs to which subscriber
       customData: {
         clinicUrl: clinicUrl ?? "",
-      },
-      eventCallback: (event: {
-        name: string;
-        data?: { customer?: { email?: string } };
-      }) => {
-        if (event.name === "checkout.completed") {
-          const customerEmail = event.data?.customer?.email ?? "";
-          onSuccess?.(customerEmail);
-        }
       },
     });
   }, 300);
