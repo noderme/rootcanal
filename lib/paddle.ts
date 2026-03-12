@@ -51,9 +51,6 @@ function openCheckout({
         if (event.name === "checkout.completed") {
           const customerEmail = event.data?.customer?.email ?? "";
           onSuccess?.(customerEmail);
-          try {
-            window.Paddle.Checkout.close();
-          } catch {}
         }
       },
     });

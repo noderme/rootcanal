@@ -829,13 +829,8 @@ function DashboardContent() {
   // Apply plan from a confirmed subscriber record
   const applyPlan = (plan: "pro" | "growth", email: string) => {
     localStorage.setItem("rc_pro_email", email);
-    if (plan === "growth") {
-      setIsGrowth(true);
-      setIsPro(true);
-    } else {
-      setIsPro(true);
-    }
-    setShowUpgradeModal(false);
+    // Hard reload: kills Paddle overlay, closes all modals, re-reads pro status
+    window.location.reload();
   };
 
   // Look up subscriber by clinic_url (primary) or email (fallback)
