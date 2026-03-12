@@ -7,6 +7,19 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
+// ── HELPER: Parse "Street, City, State ZIP, USA" → "City, ST" ──
+function parseCityFromAddress(address: string): string {
+  if (!address) return "";
+  const parts = address.split(",");
+  if (parts.length >= 3) {
+    const cityPart = parts[parts.length - 3].trim();
+    const statePart = parts[parts.length - 2].trim();
+    const stateCode = statePart.replace(/\s\d{5}.*/, "").trim();
+    if (/^[A-Z]{2}$/.test(stateCode)) return `${cityPart}, ${stateCode}`;
+  }
+  return "";
+}
+
 // ── IN-MEMORY CACHE ───────────────────────────────────────
 const cache = new Map<string, { data: AuditResult; timestamp: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
@@ -125,7 +138,8 @@ async function fetchPageSpeed(
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const url = searchParams.get("url");
-  let city = searchParams.get("city") || "";
+  // Never trust city from query param — always re-detect from GBP for accuracy
+  let city = "";
 
   if (!url) {
     return NextResponse.json({ error: "URL is required" }, { status: 400 });
@@ -189,47 +203,121 @@ export async function GET(request: NextRequest) {
     console.error("Dental check error:", e);
   }
 
-  // ── Auto-detect city from Google Places if not provided ──
+  // ── Auto-detect city from website content + Google Places ──
+  let cityDetectionPlaceId: string | null = null;
+  let cityDetectionName: string | null = null;
+  const inputDomain = url
+    .replace(/https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0]
+    .toLowerCase();
+
   if (!city) {
     try {
-      // Normalize URL: strip protocol + www
-      const normalizedUrl = url
-        .replace(/https?:\/\//, "")
-        .replace(/^www\./, "");
+      // ── STRATEGY 1: Scrape the clinic website for address/city ──
+      // Most reliable — the website itself knows where it is
+      let cityFromPage = "";
+      try {
+        const pageRes = await fetch(url, {
+          headers: { "User-Agent": "Mozilla/5.0" },
+          signal: AbortSignal.timeout(5000),
+        });
+        const pageHtml = await pageRes.text();
 
-      // Strategy 1: Search by website URL directly — most accurate
-      const byWebsite = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(normalizedUrl)}&type=dentist&key=${apiKey}`,
-      );
-      const websiteData = await byWebsite.json();
-      let address = websiteData.results?.[0]?.formatted_address || "";
+        // Extract from schema.org LocalBusiness / Dentist markup
+        const schemaMatch =
+          pageHtml.match(/"addressLocality"\s*:\s*"([^"]+)"/i) ||
+          pageHtml.match(/"addressRegion"\s*:\s*"([^"]+)"/i);
+        const localityMatch = pageHtml.match(
+          /"addressLocality"\s*:\s*"([^"]+)"/i,
+        );
+        const regionMatch = pageHtml.match(/"addressRegion"\s*:\s*"([^"]+)"/i);
 
-      console.log("🏙️ Strategy 1 (by URL):", normalizedUrl, "→", address);
+        if (localityMatch && regionMatch) {
+          cityFromPage = `${localityMatch[1]}, ${regionMatch[1]}`;
+          console.log("🏙️ City from schema.org:", cityFromPage);
+        } else {
+          // Fallback: look for US state pattern near address keywords
+          const statePattern =
+            /\b([A-Z][a-z]+(?: [A-Z][a-z]+)?),\s*([A-Z]{2})\s+\d{5}/g;
+          const matches = [...pageHtml.matchAll(statePattern)];
+          if (matches.length > 0) {
+            cityFromPage = `${matches[0][1]}, ${matches[0][2]}`;
+            console.log("🏙️ City from address pattern:", cityFromPage);
+          }
+        }
+      } catch (e) {
+        console.log("🏙️ Page fetch failed, trying Places API");
+      }
 
-      // Strategy 2 fallback: search domain words + dental + region=us
-      if (!address || address.toLowerCase().includes("india")) {
-        const clinicQuery = normalizedUrl
-          .split("/")[0]
+      if (cityFromPage && !cityFromPage.toLowerCase().includes("india")) {
+        city = cityFromPage;
+      }
+
+      // ── STRATEGY 2: Google Places textsearch with website URL ──
+      // Use nearbysearch or textsearch querying the domain directly
+      if (!city) {
+        const byWebsite = await fetch(
+          `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(inputDomain)}&type=dentist&key=${apiKey}`,
+        );
+        const websiteData = await byWebsite.json();
+        // Take ALL results and find one whose website matches our domain
+        for (const result of (websiteData.results || []).slice(0, 5)) {
+          if (!result.place_id) continue;
+          const detRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${result.place_id}&fields=website,formatted_address&key=${apiKey}`,
+          );
+          const detData = await detRes.json();
+          const gbpDomain = (detData.result?.website || "")
+            .replace(/https?:\/\//, "")
+            .replace(/^www\./, "")
+            .split("/")[0]
+            .toLowerCase();
+          console.log(`🔗 S2 check: ${inputDomain} vs ${gbpDomain}`);
+          if (
+            gbpDomain &&
+            (gbpDomain.includes(inputDomain) || inputDomain.includes(gbpDomain))
+          ) {
+            const parsed = parseCityFromAddress(
+              detData.result?.formatted_address || "",
+            );
+            if (parsed && !parsed.toLowerCase().includes("india")) {
+              city = parsed;
+              cityDetectionPlaceId = result.place_id;
+              cityDetectionName = result.name;
+              console.log(
+                "✅ City from Places domain match:",
+                city,
+                result.name,
+              );
+              break;
+            }
+          }
+        }
+      }
+
+      // ── STRATEGY 3: Places textsearch with clinic name from domain ──
+      if (!city) {
+        const clinicQuery = inputDomain
           .replace(/\.(com|net|org|io|us)$/, "")
-          .replace(/\.my\.canva\.site$/, "")
           .replace(/[-_.]/g, " ");
         const byName = await fetch(
           `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(clinicQuery + " dental")}&region=us&type=dentist&key=${apiKey}`,
         );
         const nameData = await byName.json();
-        address = nameData.results?.[0]?.formatted_address || "";
-        console.log("🏙️ Strategy 2 (by name):", clinicQuery, "→", address);
-      }
-
-      // Parse "Street, City, State ZIP, USA" → "City, ST"
-      if (address && !address.toLowerCase().includes("india")) {
-        const parts = address.split(",");
-        if (parts.length >= 3) {
-          const cityPart = parts[parts.length - 3].trim();
-          const statePart = parts[parts.length - 2].trim();
-          const stateCode = statePart.replace(/\s\d{5}.*/, "").trim();
-          if (/^[A-Z]{2}$/.test(stateCode)) {
-            city = `${cityPart}, ${stateCode}`;
+        const topResult = nameData.results?.[0];
+        if (
+          topResult &&
+          !topResult.formatted_address?.toLowerCase().includes("india")
+        ) {
+          const parsed = parseCityFromAddress(
+            topResult.formatted_address || "",
+          );
+          if (parsed) {
+            city = parsed;
+            cityDetectionPlaceId = topResult.place_id;
+            cityDetectionName = topResult.name;
+            console.log("🏙️ City from name search:", city, topResult.name);
           }
         }
       }
@@ -242,7 +330,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const cacheKey = `${url}__${city}`.toLowerCase();
+  const cacheKey = url.toLowerCase(); // city excluded — city is always re-detected
 
   // ── Check cache first (skip if placeId missing — re-fetch to get it) ──
   const cached = getCached(cacheKey);
@@ -453,27 +541,75 @@ export async function GET(request: NextRequest) {
         }
       };
 
-      // Strategy 1: search by "clinic name dentist city"
-      const gbpQuery = `${clinicSearchName} dentist ${city}`;
-      const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(gbpQuery)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status,formatted_address&key=${apiKey}`;
-      const gbpRes = await fetch(gbpUrl);
-      const gbpData = await gbpRes.json();
-      let place = gbpData.candidates?.[0];
+      let place: {
+        place_id?: string;
+        name?: string;
+        rating?: number;
+        user_ratings_total?: number;
+        formatted_address?: string;
+      } | null = null;
 
-      if (place?.place_id && !isIndia(place)) {
-        const matched = await websiteMatches(place.place_id);
+      // Strategy 0: reuse placeId already found during city detection (most reliable)
+      if (cityDetectionPlaceId && !clinicPlaceId) {
+        const matched = await websiteMatches(cityDetectionPlaceId);
         if (matched) {
-          clinicPlaceId = place.place_id;
-          console.log(
-            "✅ GBP found (strategy 1):",
-            place.name,
-            place.formatted_address,
+          // Fetch full details for this placeId
+          const s0Res = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cityDetectionPlaceId}&fields=place_id,name,rating,user_ratings_total,formatted_address&key=${apiKey}`,
           );
+          const s0Data = await s0Res.json();
+          const s0Place = s0Data.result;
+          if (s0Place && !isIndia(s0Place)) {
+            clinicPlaceId = cityDetectionPlaceId;
+            place = s0Place;
+            const gbpCity = parseCityFromAddress(s0Place.formatted_address);
+            if (gbpCity) {
+              city = gbpCity;
+            }
+            console.log(
+              "✅ GBP found (strategy 0 — reused):",
+              s0Place.name,
+              s0Place.formatted_address,
+              "city:",
+              city,
+            );
+          }
         } else {
-          console.log("⚠️ GBP website mismatch — skipping strategy 1 result");
-          place = null;
+          console.log(
+            "⚠️ Strategy 0 placeId website mismatch — continuing to strategy 1",
+          );
         }
       }
+
+      // Strategy 1: search by "clinic name dentist city"
+      if (!clinicPlaceId) {
+        const gbpQuery = `${clinicSearchName} dentist ${city}`;
+        const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(gbpQuery)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status,formatted_address&key=${apiKey}`;
+        const gbpRes = await fetch(gbpUrl);
+        const gbpData = await gbpRes.json();
+        place = gbpData.candidates?.[0];
+
+        if (place?.place_id && !isIndia(place)) {
+          const matched = await websiteMatches(place.place_id);
+          if (matched) {
+            clinicPlaceId = place.place_id;
+            console.log(
+              "✅ GBP found (strategy 1):",
+              place.name,
+              place.formatted_address,
+            );
+            // ✅ Override city with actual GBP address — most accurate source of truth
+            const gbpCity = parseCityFromAddress(place.formatted_address);
+            if (gbpCity) {
+              city = gbpCity;
+              console.log("🏙️ City overridden from GBP (s1):", city);
+            }
+          } else {
+            console.log("⚠️ GBP website mismatch — skipping strategy 1 result");
+            place = null;
+          }
+        }
+      } // end strategy 1
 
       // Strategy 2: fallback — search by website URL via textsearch
       if (!clinicPlaceId) {
@@ -493,6 +629,12 @@ export async function GET(request: NextRequest) {
               place.name,
               place.formatted_address,
             );
+            // ✅ Override city with actual GBP address
+            const gbpCity = parseCityFromAddress(place.formatted_address);
+            if (gbpCity) {
+              city = gbpCity;
+              console.log("🏙️ City overridden from GBP (s2):", city);
+            }
           } else {
             console.log("⚠️ GBP website mismatch — skipping strategy 2 result");
             place = null;
