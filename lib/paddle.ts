@@ -1,11 +1,11 @@
 // 🔑 Replace these with your actual Paddle Price IDs from the dashboard
 // Paddle Dashboard → Catalog → Products → click product → copy Price ID
-export const PADDLE_PRO_PRICE_ID = "pri_REPLACE_WITH_YOUR_PRO_PRICE_ID";
-export const PADDLE_GROWTH_PRICE_ID = "pri_REPLACE_WITH_YOUR_GROWTH_PRICE_ID";
+export const PADDLE_PRO_PRICE_ID = process.env.PADDLE_PRO_PRICE_ID;
+export const PADDLE_GROWTH_PRICE_ID = process.env.PADDLE_GROWTH_PRICE_ID;
 
 // 🔑 Replace with your Paddle Client-side token
 // Paddle Dashboard → Developer → Authentication → Client-side token
-export const PADDLE_CLIENT_TOKEN = "live_REPLACE_WITH_YOUR_CLIENT_TOKEN";
+export const PADDLE_CLIENT_TOKEN = process.env.PADDLE_CLIENT_TOKEN;
 
 declare global {
   interface Window {
@@ -67,6 +67,7 @@ export function openProCheckout(
   clinicUrl?: string,
   onSuccess?: () => void,
 ) {
+  if (!PADDLE_PRO_PRICE_ID) return;
   openCheckout({ priceId: PADDLE_PRO_PRICE_ID, email, clinicUrl, onSuccess });
 }
 
@@ -75,6 +76,7 @@ export function openGrowthCheckout(
   clinicUrl?: string,
   onSuccess?: () => void,
 ) {
+  if (!PADDLE_GROWTH_PRICE_ID) return;
   openCheckout({
     priceId: PADDLE_GROWTH_PRICE_ID,
     email,
