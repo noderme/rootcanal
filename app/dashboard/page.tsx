@@ -827,9 +827,9 @@ function DashboardContent() {
 
   // Apply plan from a confirmed subscriber record
   const applyPlan = (plan: "pro" | "growth", email: string) => {
-    setIsPro(true);
-    setIsGrowth(plan === "growth");
     localStorage.setItem("rc_pro_email", email);
+    setShowUpgradeModal(false);
+    window.location.reload();
   };
 
   // Look up subscriber by clinic_url (primary) or email (fallback)
