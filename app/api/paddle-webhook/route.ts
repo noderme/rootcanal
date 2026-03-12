@@ -9,6 +9,15 @@ const supabase = createClient(
 const PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID!;
 const GROWTH_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID!;
 
+function normalizeUrl(url: string): string {
+  return url
+    .toLowerCase()
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/$/, "");
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text();
@@ -49,7 +58,9 @@ export async function POST(req: NextRequest) {
 
       // Paddle passes our customData straight through as data.custom_data
       // We set { clinicUrl } in paddle.ts — that's what arrives here
-      const clinicUrl: string | null = data?.custom_data?.clinicUrl || null;
+      const clinicUrl: string | null = data?.custom_data?.clinicUrl
+        ? normalizeUrl(data.custom_data.clinicUrl)
+        : null;
 
       const subscriptionId: string | null = data?.id ?? null;
       const status: string = data?.status ?? "active";

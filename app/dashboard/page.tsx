@@ -753,6 +753,18 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+// ─── URL NORMALIZER ────────────────────────────────────────────────────────────
+// Strips protocol, www., and trailing slash so all variants map to the same key
+// e.g. https://www.site.com/ → site.com
+function normalizeUrl(url: string): string {
+  return url
+    .toLowerCase()
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/$/, "");
+}
+
 // ─── DASHBOARD CONTENT ────────────────────────────────────────────────────────
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -801,7 +813,7 @@ function DashboardContent() {
       const { data: sub } = await supabase
         .from("subscribers")
         .select("email, plan, status")
-        .eq("clinic_url", clinicUrl)
+        .eq("clinic_url", normalizeUrl(clinicUrl))
         .eq("status", "active")
         .single();
       if (sub) {
