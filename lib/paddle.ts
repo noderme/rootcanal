@@ -30,6 +30,8 @@ export function initPaddle() {
         const customerEmail = event.data?.customer?.email ?? "";
         pendingOnSuccess?.(customerEmail);
         pendingOnSuccess = undefined;
+        // Auto-close Paddle's success screen so our animation can take over
+        setTimeout(() => window.Paddle?.Checkout?.close(), 1500);
       }
       if (event.name === "checkout.closed") {
         if (pendingOnClose) {
