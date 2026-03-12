@@ -276,8 +276,17 @@ function DashboardContent() {
     initPaddle();
   }, []);
 
-  // TODO: Set to true once Paddle account is fully verified and payouts enabled
-  const handleUpgradeClick = () => setShowUpgradePopup(true);
+  const handleUpgradeClick = () => {
+    if (typeof window !== "undefined" && window.Paddle) {
+      openProCheckout(undefined, url, () => {
+        alert(
+          "🎉 Welcome to RootCanal Pro! Refresh to unlock your full report.",
+        );
+      });
+    } else {
+      setShowUpgradePopup(true);
+    }
+  };
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
 
   const fixGuides: Record<string, string[]> = {
