@@ -1,7 +1,7 @@
-export const PADDLE_PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID;
-export const PADDLE_GROWTH_PRICE_ID =
-  process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID;
-export const PADDLE_CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+export const PADDLE_PRO_PRICE_ID = "pri_01kkgn9fahgne08fqje1b8av43";
+export const PADDLE_GROWTH_PRICE_ID = "pri_01kkgnafpwdvqcs1tg4b0dtegh";
+export const PADDLE_CLIENT_TOKEN = "live_39e3ede11adab1a0cea422ee5fc";
+// 🔑 Replace these with your
 
 declare global {
   interface Window {
@@ -10,17 +10,13 @@ declare global {
   }
 }
 
-let paddleInitialized = false;
-
 export function initPaddle() {
-  if (paddleInitialized || typeof window === "undefined") return;
-  if (!window.Paddle) return;
+  if (typeof window === "undefined" || !window.Paddle) return;
+  if (window.Paddle?.Initialized) return;
 
   window.Paddle.Initialize({
     token: PADDLE_CLIENT_TOKEN,
   });
-
-  paddleInitialized = true;
 }
 
 export function openCheckout({
@@ -41,21 +37,23 @@ export function openCheckout({
 
   initPaddle();
 
-  window.Paddle.Checkout.open({
-    items: [{ priceId, quantity: 1 }],
-    customer: email ? { email } : undefined,
-    customData: clinicUrl ? { clinicUrl } : undefined,
-    settings: {
-      displayMode: "overlay",
-      theme: "dark",
-      locale: "en",
-    },
-    eventCallback: (event: { name: string }) => {
-      if (event.name === "checkout.completed") {
-        onSuccess?.();
-      }
-    },
-  });
+  setTimeout(() => {
+    window.Paddle.Checkout.open({
+      items: [{ priceId, quantity: 1 }],
+      customer: email ? { email } : undefined,
+      customData: clinicUrl ? { clinicUrl } : undefined,
+      settings: {
+        displayMode: "overlay",
+        theme: "dark",
+        locale: "en",
+      },
+      eventCallback: (event: { name: string }) => {
+        if (event.name === "checkout.completed") {
+          onSuccess?.();
+        }
+      },
+    });
+  }, 300);
 }
 
 export function openProCheckout(
