@@ -1,5 +1,6 @@
 export const PADDLE_PRO_PRICE_ID = "pri_01kkgn9fahgne08fqje1b8av43";
 export const PADDLE_GROWTH_PRICE_ID = "pri_01kkgnafpwdvqcs1tg4b0dtegh";
+export const PADDLE_TEST_PRICE_ID = "pri_01kkh9g8zsdygz5bktjsm0xj3p";
 export const PADDLE_CLIENT_TOKEN = "live_d1866540f39450348fb1e72d0c2";
 
 declare global {
@@ -71,6 +72,19 @@ export function openGrowthCheckout(
 ) {
   openCheckout({
     priceId: PADDLE_GROWTH_PRICE_ID,
+    email,
+    clinicUrl,
+    onSuccess,
+  });
+}
+
+export function openTestCheckout(
+  email?: string,
+  clinicUrl?: string,
+  onSuccess?: (email: string) => void,
+) {
+  openCheckout({
+    priceId: PADDLE_TEST_PRICE_ID,
     email,
     clinicUrl,
     onSuccess,

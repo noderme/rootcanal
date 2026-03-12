@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { initPaddle, openProCheckout, openGrowthCheckout } from "@/lib/paddle";
+import { initPaddle, openProCheckout, openGrowthCheckout, openTestCheckout } from "@/lib/paddle";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -76,10 +76,16 @@ function UpgradeModal({
     }
   }, [screen, onClose]);
 
-  const handleSelect = (plan: "pro" | "growth") => {
-    const checkout = plan === "growth" ? openGrowthCheckout : openProCheckout;
+  const handleSelect = (plan: "pro" | "growth" | "test") => {
+    const checkout =
+      plan === "growth"
+        ? openGrowthCheckout
+        : plan === "test"
+          ? openTestCheckout
+          : openProCheckout;
+    const effectivePlan: "pro" | "growth" = plan === "test" ? "pro" : plan;
     checkout(undefined, clinicUrl, async (customerEmail: string) => {
-      setSuccessPlan(plan);
+      setSuccessPlan(effectivePlan);
       setScreen("processing");
 
       // Wait for Paddle webhook to write to Supabase — poll up to 5×
@@ -105,7 +111,7 @@ function UpgradeModal({
         else {
           // Webhook is slow — show success anyway
           setScreen("success");
-          onSuccess(plan, customerEmail);
+          onSuccess(effectivePlan, customerEmail);
         }
       };
       poll();
@@ -566,6 +572,25 @@ function UpgradeModal({
               Get Growth — $99/mo →
             </button>
           </div>
+        </div>
+
+        {/* TEST BUTTON — remove after verifying end-to-end */}
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button
+            onClick={() => handleSelect("test")}
+            style={{
+              background: "transparent",
+              color: "#6B7B78",
+              border: "1px dashed #6B7B78",
+              padding: "8px 20px",
+              borderRadius: 8,
+              fontSize: 12,
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            Test $1 payment (dev only)
+          </button>
         </div>
 
         <div
