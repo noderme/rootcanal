@@ -271,6 +271,42 @@ function DashboardContent() {
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
 
+  // Pro subscriber state
+  const [isPro, setIsPro] = useState(false);
+  const [proEmail, setProEmail] = useState("");
+  const [showProLogin, setShowProLogin] = useState(false);
+  const [proLoginEmail, setProLoginEmail] = useState("");
+  const [proLoginError, setProLoginError] = useState("");
+  const [proLoginLoading, setProLoginLoading] = useState(false);
+
+  // Check if user is Pro subscriber
+  const checkProStatus = async (email: string) => {
+    try {
+      const { data: subscriber } = await supabase
+        .from("subscribers")
+        .select("plan, status")
+        .eq("email", email.toLowerCase().trim())
+        .eq("status", "active")
+        .single();
+      if (subscriber) {
+        setIsPro(true);
+        setProEmail(email);
+        localStorage.setItem("rc_pro_email", email);
+      } else {
+        setProLoginError("No active subscription found for this email.");
+      }
+    } catch {
+      setProLoginError("No active subscription found for this email.");
+    }
+    setProLoginLoading(false);
+  };
+
+  // Auto-check Pro status on load from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("rc_pro_email");
+    if (saved) checkProStatus(saved);
+  }, []);
+
   // Initialize Paddle when component mounts
   useEffect(() => {
     initPaddle();
@@ -279,9 +315,8 @@ function DashboardContent() {
   const handleUpgradeClick = () => {
     if (typeof window !== "undefined" && window.Paddle) {
       openProCheckout(undefined, url, () => {
-        alert(
-          "🎉 Welcome to RootCanal Pro! Refresh to unlock your full report.",
-        );
+        // After successful payment, show Pro login
+        setShowProLogin(true);
       });
     } else {
       setShowUpgradePopup(true);
@@ -781,24 +816,59 @@ function DashboardContent() {
           >
             📄 Export PDF
           </button>
-          <button
-            className="upgrade-btn"
-            onClick={handleUpgradeClick}
-            style={{
-              background: "#1ABC9C",
-              color: "#000",
-              border: "none",
-              padding: "10px 20px",
-              borderRadius: 8,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "opacity 0.2s",
-            }}
-          >
-            Upgrade to Pro — $49/mo
-          </button>
+          {isPro ? (
+            <div
+              style={{
+                background: "rgba(26,188,156,0.1)",
+                border: "1px solid #1ABC9C",
+                padding: "10px 20px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#1ABC9C",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              ⭐ Pro Active
+            </div>
+          ) : (
+            <>
+              <button
+                onClick={() => setShowProLogin(true)}
+                style={{
+                  background: "transparent",
+                  color: "#6B7B78",
+                  border: "1px solid #2A3330",
+                  padding: "10px 16px",
+                  borderRadius: 8,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                I'm already Pro
+              </button>
+              <button
+                className="upgrade-btn"
+                onClick={handleUpgradeClick}
+                style={{
+                  background: "#1ABC9C",
+                  color: "#000",
+                  border: "none",
+                  padding: "10px 20px",
+                  borderRadius: 8,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  transition: "opacity 0.2s",
+                }}
+              >
+                Upgrade to Pro — $49/mo
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -3429,6 +3499,121 @@ function DashboardContent() {
           </div>
         </div>
       </div>
+
+      {/* PRO LOGIN MODAL */}
+      {showProLogin && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              background: "#151918",
+              border: "2px solid #1ABC9C",
+              borderRadius: 20,
+              padding: 40,
+              maxWidth: 420,
+              width: "100%",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
+            <h2
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 24,
+                fontWeight: 800,
+                color: "#F0EBE3",
+                marginBottom: 8,
+              }}
+            >
+              Welcome to RootCanal Pro!
+            </h2>
+            <p
+              style={{
+                fontSize: 14,
+                color: "#6B7B78",
+                marginBottom: 24,
+                lineHeight: 1.6,
+              }}
+            >
+              Enter the email you used to subscribe to unlock your Pro features.
+            </p>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={proLoginEmail}
+              onChange={(e) => {
+                setProLoginEmail(e.target.value);
+                setProLoginError("");
+              }}
+              style={{
+                width: "100%",
+                background: "#0D0F0E",
+                border: "1px solid #2A3330",
+                borderRadius: 8,
+                padding: "12px 16px",
+                color: "#F0EBE3",
+                fontSize: 14,
+                fontFamily: "'DM Sans', sans-serif",
+                outline: "none",
+                marginBottom: 12,
+                boxSizing: "border-box",
+              }}
+            />
+            {proLoginError && (
+              <div style={{ fontSize: 12, color: "#E74C3C", marginBottom: 12 }}>
+                {proLoginError}
+              </div>
+            )}
+            <button
+              onClick={async () => {
+                if (!proLoginEmail.trim()) return;
+                setProLoginLoading(true);
+                setProLoginError("");
+                await checkProStatus(proLoginEmail);
+                setShowProLogin(false);
+              }}
+              disabled={proLoginLoading || !proLoginEmail.trim()}
+              style={{
+                width: "100%",
+                background: "#1ABC9C",
+                color: "#000",
+                border: "none",
+                borderRadius: 8,
+                padding: "14px",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                marginBottom: 12,
+              }}
+            >
+              {proLoginLoading ? "Checking..." : "Unlock Pro Access →"}
+            </button>
+            <button
+              onClick={() => setShowProLogin(false)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#6B7B78",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* UPGRADE POPUP */}
       {showUpgradePopup && !window?.matchMedia("print").matches && (
