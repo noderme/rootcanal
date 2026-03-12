@@ -161,9 +161,6 @@ function HomeInner() {
           <a href="#features" className="rc-nav-link">
             Features
           </a>
-          <a href="#pricing" className="rc-nav-link">
-            Pricing
-          </a>
           <a href="#audit" className="rc-nav-link rc-nav-cta">
             Free Audit →
           </a>
@@ -1241,86 +1238,6 @@ function HomeInner() {
         </div>
       </section>
 
-      {/* PRICING */}
-      <section className="rc-pricing" id="pricing">
-        <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <div
-            className="rc-sec-label"
-            style={{ display: "flex", justifyContent: "center" }}
-          >
-            Pricing
-          </div>
-          <h2
-            className="rc-sec-title"
-            style={{ margin: "0 auto", textAlign: "center" }}
-          >
-            Simple, honest pricing
-          </h2>
-        </div>
-        <div className="rc-pricing-grid">
-          {[
-            {
-              plan: "Starter",
-              price: "$0",
-              period: "forever free",
-              features: [
-                "One-time SEO audit",
-                "Score out of 100",
-                "Top 5 issues identified",
-                "Basic fix suggestions",
-              ],
-              featured: false,
-            },
-            {
-              plan: "Pro",
-              price: "$49",
-              period: "per month",
-              features: [
-                "Monthly automated checks",
-                "Full 30-point Google report",
-                "Competitor tracking (3 clinics)",
-                "Review request automation",
-                "Monthly progress report",
-                "Step-by-step fix guides",
-              ],
-              featured: true,
-            },
-            {
-              plan: "Growth",
-              price: "$99",
-              period: "per month",
-              features: [
-                "Everything in Pro",
-                "Competitor tracking (10 clinics)",
-                "Google Ads automation",
-                "Priority email support",
-                "Quarterly strategy call",
-              ],
-              featured: false,
-            },
-          ].map((p) => (
-            <div
-              key={p.plan}
-              className={`rc-pricing-card${p.featured ? " featured" : ""}`}
-            >
-              {p.featured && (
-                <div className="rc-pricing-badge">Most Popular</div>
-              )}
-              <div className="rc-pricing-plan">{p.plan}</div>
-              <div className="rc-pricing-price">{p.price}</div>
-              <div className="rc-pricing-period">{p.period}</div>
-              <ul className="rc-pricing-features">
-                {p.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <a href="#audit" className="rc-pricing-btn">
-                {p.price === "$0" ? "Get Free Audit" : "Start Free Trial"}
-              </a>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="rc-cta-section">

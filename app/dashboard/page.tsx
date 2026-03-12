@@ -1345,7 +1345,7 @@ function DashboardContent() {
       {/* MAIN */}
       <div
         className="rc-main"
-        style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 40px" }}
+        style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 40px" }}
       >
         <div style={{ marginBottom: 24 }}>
           <h1
