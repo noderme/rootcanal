@@ -1798,61 +1798,6 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* GROWTH UPSELL BANNER — pro users only */}
-        {isPro && !isGrowth && (
-          <div
-            className="card"
-            style={{
-              background: "linear-gradient(135deg, #2a1f0a, #1f1500)",
-              border: "1px solid rgba(212,168,67,0.3)",
-              borderRadius: 16,
-              padding: "24px 32px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 24,
-              animationDelay: "0.2s",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 20,
-                  fontWeight: 700,
-                  marginBottom: 6,
-                }}
-              >
-                🚀 Ready to dominate {city}?
-              </div>
-              <div style={{ fontSize: 14, color: "#6B7B78" }}>
-                Upgrade to Growth for done-for-you SEO fixes, priority support,
-                and weekly ranking updates.
-              </div>
-            </div>
-            <button
-              className="upgrade-btn no-print"
-              onClick={() => setShowUpgradeModal(true)}
-              style={{
-                background: "#D4A843",
-                color: "#000",
-                border: "none",
-                padding: "12px 28px",
-                borderRadius: 8,
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                flexShrink: 0,
-                transition: "opacity 0.2s",
-              }}
-            >
-              Upgrade to Growth — $99/mo →
-            </button>
-          </div>
-        )}
-
         {/* HERO REVIEW BLOCK */}
         <div
           className="card no-print rc-hero-review"
@@ -2010,6 +1955,61 @@ function DashboardContent() {
             )}
           </div>
         </div>
+
+        {/* GROWTH UPSELL BANNER — pro users only */}
+        {isPro && !isGrowth && (
+          <div
+            className="card"
+            style={{
+              background: "linear-gradient(135deg, #2a1f0a, #1f1500)",
+              border: "1px solid rgba(212,168,67,0.3)",
+              borderRadius: 16,
+              padding: "24px 32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 24,
+              animationDelay: "0.2s",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  marginBottom: 6,
+                }}
+              >
+                🚀 Ready to dominate {city}?
+              </div>
+              <div style={{ fontSize: 14, color: "#6B7B78" }}>
+                Upgrade to Growth for done-for-you SEO fixes, priority support,
+                and weekly ranking updates.
+              </div>
+            </div>
+            <button
+              className="upgrade-btn no-print"
+              onClick={() => setShowUpgradeModal(true)}
+              style={{
+                background: "#D4A843",
+                color: "#000",
+                border: "none",
+                padding: "12px 28px",
+                borderRadius: 8,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                transition: "opacity 0.2s",
+              }}
+            >
+              Upgrade to Growth — $99/mo →
+            </button>
+          </div>
+        )}
 
         {/* TOP 3 PRIORITIES */}
         {(() => {
