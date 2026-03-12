@@ -20,6 +20,8 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        {/* Paddle.js — payment checkout */}
+        <script src="https://cdn.paddle.com/paddle/v2/paddle.js" async></script>
       </head>
       <body style={{ margin: 0, padding: 0 }}>{children}</body>
     </html>

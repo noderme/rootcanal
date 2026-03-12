@@ -2,6 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { initPaddle, openProCheckout } from "@/lib/paddle";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -270,7 +271,22 @@ function DashboardContent() {
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
 
-  const handleUpgradeClick = () => setShowUpgradePopup(true);
+  // Initialize Paddle when component mounts
+  useEffect(() => {
+    initPaddle();
+  }, []);
+
+  const handleUpgradeClick = () => {
+    if (typeof window !== "undefined" && window.Paddle) {
+      openProCheckout(undefined, url, () => {
+        alert(
+          "🎉 Welcome to RootCanal Pro! Refresh to unlock your full report.",
+        );
+      });
+    } else {
+      setShowUpgradePopup(true);
+    }
+  };
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
 
   const fixGuides: Record<string, string[]> = {
@@ -631,7 +647,7 @@ function DashboardContent() {
           const pos = allScores.indexOf(data.overallScore) + 1;
           return pos;
         })()
-      : "N/A";
+      : 1;
 
   return (
     <div
@@ -663,10 +679,55 @@ function DashboardContent() {
           * { page-break-inside: avoid; }
           @page { margin: 20px; background: #0D0F0E; }
         }
+        @media (max-width: 768px) {
+          .rc-nav-url { display: none !important; }
+          .rc-nav-export { display: none !important; }
+
+          /* Score hero — stack vertically */
+          .rc-score-hero { grid-template-columns: 1fr !important; }
+
+          /* Metric cards — 2 col on tablet */
+          .rc-metric-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+          /* Hero review block — stack */
+          .rc-hero-review { flex-direction: column !important; align-items: stretch !important; }
+          .rc-hero-review > div:last-child { min-width: unset !important; width: 100% !important; }
+          .rc-hero-review-row { flex-direction: column !important; }
+          .rc-hero-review-row input { width: 100% !important; }
+          .rc-hero-review-row button { width: 100% !important; }
+
+          /* Competitor grid — 1 col */
+          .rc-competitor-grid { grid-template-columns: 1fr !important; }
+
+          /* Tabs — smaller text */
+          .rc-tab-btn { font-size: 11px !important; padding: 8px 6px !important; }
+
+          /* Main padding */
+          .rc-main { padding: 16px !important; }
+          nav { padding: 12px 16px !important; }
+
+          /* Upgrade grid */
+          .rc-upgrade-grid { grid-template-columns: 1fr !important; }
+          .rc-upgrade-btns { flex-direction: column !important; align-items: stretch !important; }
+
+          /* Gap analysis — stack */
+          .rc-gap-grid { grid-template-columns: 1fr !important; }
+          .rc-gap-vs { display: none !important; }
+
+          /* Roadmap rows */
+          .rc-roadmap-item { flex-wrap: wrap !important; }
+        }
+        @media (max-width: 480px) {
+          /* Single col metrics on small phones */
+          .rc-metric-grid { grid-template-columns: 1fr !important; }
+          .rc-tab-btn { font-size: 10px !important; padding: 6px 3px !important; }
+          h1 { font-size: 22px !important; }
+        }
       `}</style>
 
       {/* NAV */}
       <nav
+        className="rc-nav-pad"
         style={{
           position: "sticky",
           top: 0,
@@ -693,6 +754,7 @@ function DashboardContent() {
           Root<span style={{ color: "#1ABC9C" }}>Canal</span>
         </a>
         <div
+          className="rc-nav-url"
           style={{
             fontSize: 13,
             color: "#6B7B78",
@@ -704,6 +766,7 @@ function DashboardContent() {
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
             onClick={() => window.print()}
+            className="rc-nav-export"
             style={{
               background: "transparent",
               color: "#6B7B78",
@@ -739,7 +802,7 @@ function DashboardContent() {
         </div>
       </nav>
 
-      <div style={{ padding: "32px 40px" }}>
+      <div className="rc-main-pad" style={{ padding: "32px 40px" }}>
         {/* HEADER */}
         <div style={{ marginBottom: 28 }}>
           <h1
@@ -770,7 +833,7 @@ function DashboardContent() {
         {/* SCORE HERO — always visible at top */}
         {(() => (
           <div
-            className="card"
+            className="card rc-score-hero"
             style={{
               display: "grid",
               gridTemplateColumns: "260px 1fr",
@@ -814,6 +877,7 @@ function DashboardContent() {
 
             {/* Metrics */}
             <div
+              className="rc-metric-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(2, 1fr)",
@@ -1110,7 +1174,7 @@ function DashboardContent() {
 
         {/* ── HERO REVIEW BLOCK ── */}
         <div
-          className="card no-print"
+          className="card no-print rc-hero-review"
           style={{
             background: "linear-gradient(135deg, #0f2a20, #0D1F18)",
             border: "1px solid rgba(26,188,156,0.4)",
@@ -1167,7 +1231,10 @@ function DashboardContent() {
               minWidth: 280,
             }}
           >
-            <div style={{ display: "flex", gap: 10 }}>
+            <div
+              className="rc-hero-review-input"
+              style={{ display: "flex", gap: 10 }}
+            >
               <input
                 type="text"
                 value={reviewContact}
@@ -1382,6 +1449,7 @@ function DashboardContent() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              className="rc-tab-btn"
               style={{
                 flex: 1,
                 padding: "10px 16px",
@@ -1702,7 +1770,13 @@ function DashboardContent() {
                 <div
                   style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3" }}
                 >
-                  {new URL(url).hostname.replace("www.", "")}
+                  {(() => {
+                    try {
+                      return new URL(url).hostname.replace("www.", "");
+                    } catch {
+                      return url || "your clinic";
+                    }
+                  })()}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -1839,9 +1913,10 @@ function DashboardContent() {
                                 }}
                               >
                                 Step {i + 1}: Overtake{" "}
-                                {comp.name.length > 25
-                                  ? comp.name.slice(0, 25) + "..."
-                                  : comp.name}
+                                {(comp.name || "Competitor").length > 25
+                                  ? (comp.name || "Competitor").slice(0, 25) +
+                                    "..."
+                                  : comp.name || "Competitor"}
                               </div>
                               {!isLocked && (
                                 <span
@@ -3310,7 +3385,10 @@ function DashboardContent() {
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+          <div
+            className="rc-upgrade-btns"
+            style={{ display: "flex", gap: 16, justifyContent: "center" }}
+          >
             <button
               className="upgrade-btn no-print"
               onClick={handleUpgradeClick}
