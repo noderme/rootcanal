@@ -1383,7 +1383,12 @@ function DashboardContent() {
               color: "#F0EBE3",
             }}
           >
-            {data?.clinicName ? `${data.clinicName}` : "Your Clinic"}&apos;s Growth Intelligence Report
+            {(data?.clinicName || (url
+              ? url.replace(/https?:\/\//, "").replace(/^www\./, "").split("/")[0]
+                  .replace(/\.(com|net|org|io|us|dental|care|health)$/, "")
+                  .replace(/[-_.]/g, " ")
+                  .replace(/\b\w/g, (l) => l.toUpperCase()).trim()
+              : "Your Clinic"))}&apos;s Growth Intelligence Report
           </h1>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
             <span
