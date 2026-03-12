@@ -1,11 +1,7 @@
-// 🔑 Replace these with your actual Paddle Price IDs from the dashboard
-// Paddle Dashboard → Catalog → Products → click product → copy Price ID
-export const PADDLE_PRO_PRICE_ID = process.env.PADDLE_PRO_PRICE_ID;
-export const PADDLE_GROWTH_PRICE_ID = process.env.PADDLE_GROWTH_PRICE_ID;
-
-// 🔑 Replace with your Paddle Client-side token
-// Paddle Dashboard → Developer → Authentication → Client-side token
-export const PADDLE_CLIENT_TOKEN = process.env.PADDLE_CLIENT_TOKEN;
+export const PADDLE_PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID;
+export const PADDLE_GROWTH_PRICE_ID =
+  process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID;
+export const PADDLE_CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
 
 declare global {
   interface Window {
