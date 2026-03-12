@@ -592,7 +592,7 @@ function UpgradeModal({
           🔒 Secure checkout via Paddle · Cancel anytime
         </div>
 
-        {/* TEST BUTTON — remove before going live */}
+        {/* TEST BUTTON — uncomment to test checkout flow
         <div style={{ textAlign: "center", marginTop: 16 }}>
           <button
             onClick={() => handleSelect("test")}
@@ -610,6 +610,7 @@ function UpgradeModal({
             [DEV] Test checkout
           </button>
         </div>
+        */}
       </div>
     </div>
   );
