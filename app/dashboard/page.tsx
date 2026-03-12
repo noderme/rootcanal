@@ -2,7 +2,12 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { initPaddle, openProCheckout, openGrowthCheckout, openTestCheckout } from "@/lib/paddle";
+import {
+  initPaddle,
+  openProCheckout,
+  openGrowthCheckout,
+  openTestCheckout,
+} from "@/lib/paddle";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -826,11 +831,18 @@ function DashboardContent() {
   const [proLoginError, setProLoginError] = useState("");
   const [proLoginLoading, setProLoginLoading] = useState(false);
 
-  // Apply plan from a confirmed subscriber record
   const applyPlan = (plan: "pro" | "growth", email: string) => {
-    localStorage.setItem("rc_pro_email", email);
-    // Hard reload: kills Paddle overlay, closes all modals, re-reads pro status
-    window.location.reload();
+    localStorage.setItem("rc_pro_email", email.toLowerCase().trim());
+
+    if (plan === "growth") {
+      setIsPro(true);
+      setIsGrowth(true);
+    } else {
+      setIsPro(true);
+      setIsGrowth(false);
+    }
+
+    setShowUpgradeModal(false);
   };
 
   // Look up subscriber by clinic_url (primary) or email (fallback)
@@ -1383,14 +1395,28 @@ function DashboardContent() {
               color: "#F0EBE3",
             }}
           >
-            {(data?.clinicName || (url
-              ? url.replace(/https?:\/\//, "").replace(/^www\./, "").split("/")[0]
-                  .replace(/\.(com|net|org|io|us|dental|care|health)$/, "")
-                  .replace(/[-_.]/g, " ")
-                  .replace(/\b\w/g, (l) => l.toUpperCase()).trim()
-              : "Your Clinic"))}&apos;s Growth Intelligence Report
+            {data?.clinicName ||
+              (url
+                ? url
+                    .replace(/https?:\/\//, "")
+                    .replace(/^www\./, "")
+                    .split("/")[0]
+                    .replace(/\.(com|net|org|io|us|dental|care|health)$/, "")
+                    .replace(/[-_.]/g, " ")
+                    .replace(/\b\w/g, (l) => l.toUpperCase())
+                    .trim()
+                : "Your Clinic")}
+            &apos;s Growth Intelligence Report
           </h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginTop: 6,
+              flexWrap: "wrap",
+            }}
+          >
             <span
               style={{
                 display: "inline-flex",
