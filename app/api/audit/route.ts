@@ -520,6 +520,7 @@ export async function GET(request: NextRequest) {
 
     // ── 3. GOOGLE BUSINESS PROFILE CHECK ────────────
     let clinicPlaceId = "";
+    let clinicName: string | undefined;
     try {
       const clinicSearchName = url
         .replace(/https?:\/\//, "")
@@ -692,6 +693,7 @@ export async function GET(request: NextRequest) {
           status: "pass",
         });
       }
+      if (place?.name) clinicName = place.name;
     } catch (gbpError) {
       console.error("GBP check error:", gbpError);
     }
@@ -855,7 +857,7 @@ export async function GET(request: NextRequest) {
     const result: AuditResult = {
       url,
       city,
-      clinicName: place?.name,
+      clinicName,
       overallScore,
       performanceScore,
       seoScore,
