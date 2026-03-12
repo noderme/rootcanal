@@ -580,25 +580,6 @@ function UpgradeModal({
           </div>
         </div>
 
-        {/* TEST BUTTON — remove after verifying end-to-end */}
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <button
-            onClick={() => handleSelect("test")}
-            style={{
-              background: "transparent",
-              color: "#6B7B78",
-              border: "1px dashed #6B7B78",
-              padding: "8px 20px",
-              borderRadius: 8,
-              fontSize: 12,
-              cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-            }}
-          >
-            Test $1 payment (dev only)
-          </button>
-        </div>
-
         <div
           style={{
             textAlign: "center",
