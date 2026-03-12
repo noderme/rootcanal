@@ -228,15 +228,48 @@ function HomeInner() {
             </div>
             <div
               style={{
-                marginTop: 12,
-                fontSize: 12,
-                color: "var(--muted)",
-                fontStyle: "italic",
-                opacity: 0.7,
+                marginTop: 16,
+                padding: "10px 16px",
+                background: "linear-gradient(135deg, #e8f4fd 0%, #f0faf8 100%)",
+                border: "1px solid #b8e0f7",
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                boxShadow: "0 2px 8px rgba(14, 165, 233, 0.08)",
               }}
             >
-              🔍 Live data pulled from Google Maps, reviews, and website
-              performance signals.
+              {/* Animated pulse dot */}
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <div
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background: "#0ea5e9",
+                    animation: "pulse 2s infinite",
+                  }}
+                />
+                <style>{`
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.5); }
+        70% { box-shadow: 0 0 0 7px rgba(14, 165, 233, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+      }
+    `}</style>
+              </div>
+
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "#0369a1",
+                  fontWeight: 500,
+                  letterSpacing: "0.01em",
+                }}
+              >
+                🦷 <strong>Live intel for your practice</strong> — pulled fresh
+                from Google Maps, patient reviews & website performance signals.
+              </span>
             </div>
           </form>
         </div>
