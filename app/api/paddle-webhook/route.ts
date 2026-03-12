@@ -87,7 +87,12 @@ export async function POST(req: NextRequest) {
 
       const subscriptionId: string | null =
         data?.subscription_id ?? data?.id ?? null;
-      const status: string = data?.status ?? "active";
+      // transaction.completed carries a transaction status ("completed"), not a subscription
+      // status — always treat a completed transaction as an active subscription.
+      const status: string =
+        eventType === "transaction.completed"
+          ? "active"
+          : (data?.status ?? "active");
 
       console.log(`📦 Saving: ${email} → plan:${plan} | clinic:${clinicUrl}`);
 
