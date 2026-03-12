@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { initPaddle, openProCheckout } from "@/lib/paddle";
+import { initPaddle, openProCheckout, openGrowthCheckout } from "@/lib/paddle";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,6 +48,542 @@ interface ReviewData {
   } | null;
 }
 
+// ─── UPGRADE MODAL ─────────────────────────────────────────────────────────────
+// mode "both"        → free user  → shows Pro card (teal) + Growth card (gold)
+// mode "growth-only" → pro user   → shows Growth card only
+type UpgradeModalProps = {
+  mode: "both" | "growth-only";
+  clinicUrl: string;
+  onClose: () => void;
+  onSuccess: (plan: "pro" | "growth", email: string) => void;
+};
+
+function UpgradeModal({
+  mode,
+  clinicUrl,
+  onClose,
+  onSuccess,
+}: UpgradeModalProps) {
+  const [screen, setScreen] = useState<"plans" | "processing" | "success">(
+    "plans",
+  );
+  const [successPlan, setSuccessPlan] = useState<"pro" | "growth">("pro");
+
+  useEffect(() => {
+    if (screen === "success") {
+      const t = setTimeout(onClose, 3000);
+      return () => clearTimeout(t);
+    }
+  }, [screen, onClose]);
+
+  const handleSelect = (plan: "pro" | "growth") => {
+    const checkout = plan === "growth" ? openGrowthCheckout : openProCheckout;
+    checkout(undefined, clinicUrl, async (customerEmail: string) => {
+      setSuccessPlan(plan);
+      setScreen("processing");
+
+      // Wait for Paddle webhook to write to Supabase — poll up to 5×
+      await new Promise((r) => setTimeout(r, 2000));
+      let attempts = 0;
+      const poll = async (): Promise<void> => {
+        attempts++;
+        try {
+          const { data: sub } = await supabase
+            .from("subscribers")
+            .select("plan, status")
+            .eq("email", customerEmail.toLowerCase().trim())
+            .eq("status", "active")
+            .single();
+          if (sub) {
+            setScreen("success");
+            onSuccess(sub.plan as "pro" | "growth", customerEmail);
+            return;
+          }
+        } catch {}
+        if (attempts < 5)
+          await new Promise((r) => setTimeout(r, 2000)).then(poll);
+        else {
+          // Webhook is slow — show success anyway
+          setScreen("success");
+          onSuccess(plan, customerEmail);
+        }
+      };
+      poll();
+    });
+  };
+
+  const proFeatures = [
+    "Monthly automated checks",
+    "Full 30-point Google report",
+    "Competitor tracking (3 clinics)",
+    "Review request automation",
+    "Monthly progress report",
+    "Step-by-step fix guides",
+  ];
+
+  const growthFeatures = [
+    "Everything in Pro",
+    "Competitor tracking (10 clinics)",
+    "Google Ads automation",
+    "Priority email support",
+    "Quarterly strategy call",
+  ];
+
+  if (screen === "processing") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 2000,
+          background: "rgba(0,0,0,0.92)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            background: "#151918",
+            borderRadius: 24,
+            padding: 56,
+            textAlign: "center",
+            maxWidth: 400,
+          }}
+        >
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              border: "4px solid #2A3330",
+              borderTopColor: "#1ABC9C",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 28px",
+            }}
+          />
+          <div
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 24,
+              fontWeight: 700,
+              color: "#F0EBE3",
+              marginBottom: 12,
+            }}
+          >
+            Activating your plan...
+          </div>
+          <div style={{ fontSize: 14, color: "#6B7B78" }}>
+            Confirming your payment and setting up your account.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (screen === "success") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 2000,
+          background: "rgba(0,0,0,0.92)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div
+          style={{
+            background: "#151918",
+            borderRadius: 24,
+            padding: 56,
+            textAlign: "center",
+            maxWidth: 480,
+            width: "100%",
+          }}
+        >
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 64 64"
+            fill="none"
+            style={{ margin: "0 auto 24px", display: "block" }}
+          >
+            <circle
+              cx="32"
+              cy="32"
+              r="32"
+              fill={
+                successPlan === "growth"
+                  ? "rgba(212,168,67,0.15)"
+                  : "rgba(26,188,156,0.15)"
+              }
+            />
+            <path
+              d="M20 32 L28 40 L44 24"
+              stroke={successPlan === "growth" ? "#D4A843" : "#1ABC9C"}
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <div
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 26,
+              fontWeight: 900,
+              color: "#F0EBE3",
+              marginBottom: 16,
+            }}
+          >
+            {successPlan === "growth"
+              ? "No Cavities Found! 🦷🚀"
+              : "Checkup Complete! 🦷⭐"}
+          </div>
+          <div
+            style={{
+              fontSize: 15,
+              color: "#6B7B78",
+              lineHeight: 1.7,
+              marginBottom: 24,
+            }}
+          >
+            {successPlan === "growth"
+              ? "Your clinic is in perfect health. We're now tracking 10 competitors, automating review requests, and building your path to #1."
+              : "Your practice just leveled up. Monthly rescans, 3 competitor slots, and review automation are all active — your dashboard is refreshing now."}
+          </div>
+          <div style={{ fontSize: 13, color: "#6B7B78" }}>
+            Taking you to your dashboard...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Plans screen
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2000,
+        background: "rgba(0,0,0,0.88)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 24,
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "#151918",
+          borderRadius: 24,
+          width: "100%",
+          maxWidth: mode === "growth-only" ? 460 : 820,
+          position: "relative",
+          padding: 40,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          style={{
+            position: "absolute",
+            top: 16,
+            right: 20,
+            background: "transparent",
+            border: "none",
+            color: "#6B7B78",
+            fontSize: 22,
+            cursor: "pointer",
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
+
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div
+            style={{
+              fontSize: 11,
+              letterSpacing: 2,
+              color: "#1ABC9C",
+              textTransform: "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            {mode === "growth-only" ? "Upgrade Your Plan" : "Choose Your Plan"}
+          </div>
+          <div
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 26,
+              fontWeight: 900,
+              color: "#F0EBE3",
+            }}
+          >
+            {mode === "growth-only"
+              ? "Take Your Clinic to the Next Level"
+              : "Start Growing Your Practice Today"}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: mode === "growth-only" ? "1fr" : "1fr 1fr",
+            gap: 20,
+          }}
+        >
+          {/* PRO CARD — only shown in "both" mode */}
+          {mode === "both" && (
+            <div
+              style={{
+                background: "#0D0F0E",
+                border: "2px solid #1ABC9C",
+                borderRadius: 16,
+                padding: 28,
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: -12,
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  background: "#1ABC9C",
+                  color: "#000",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  padding: "4px 16px",
+                  borderRadius: 20,
+                  whiteSpace: "nowrap",
+                  letterSpacing: 1,
+                }}
+              >
+                MOST POPULAR
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: "#1ABC9C",
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                  marginBottom: 8,
+                  textTransform: "uppercase",
+                }}
+              >
+                Pro
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 36,
+                  fontWeight: 900,
+                  color: "#F0EBE3",
+                  marginBottom: 4,
+                }}
+              >
+                $49
+                <span
+                  style={{ fontSize: 16, fontWeight: 400, color: "#6B7B78" }}
+                >
+                  /mo
+                </span>
+              </div>
+              <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 24 }}>
+                For clinics serious about Google growth
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  marginBottom: 28,
+                }}
+              >
+                {proFeatures.map((f) => (
+                  <div
+                    key={f}
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "flex-start",
+                      fontSize: 13,
+                      color: "#F0EBE3",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#1ABC9C",
+                        fontWeight: 700,
+                        flexShrink: 0,
+                        marginTop: 1,
+                      }}
+                    >
+                      ✓
+                    </span>{" "}
+                    {f}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => handleSelect("pro")}
+                style={{
+                  background: "#1ABC9C",
+                  color: "#000",
+                  border: "none",
+                  padding: "14px",
+                  borderRadius: 10,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  width: "100%",
+                }}
+              >
+                Get Pro — $49/mo →
+              </button>
+            </div>
+          )}
+
+          {/* GROWTH CARD */}
+          <div
+            style={{
+              background: "#0D0F0E",
+              border: "2px solid #D4A843",
+              borderRadius: 16,
+              padding: 28,
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: -12,
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "#D4A843",
+                color: "#000",
+                fontSize: 11,
+                fontWeight: 800,
+                padding: "4px 16px",
+                borderRadius: 20,
+                whiteSpace: "nowrap",
+                letterSpacing: 1,
+              }}
+            >
+              {mode === "growth-only" ? "YOUR NEXT LEVEL" : "BEST RESULTS"}
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#D4A843",
+                fontWeight: 700,
+                letterSpacing: 2,
+                marginBottom: 8,
+                textTransform: "uppercase",
+              }}
+            >
+              Growth
+            </div>
+            <div
+              style={{
+                fontFamily: "'Playfair Display', serif",
+                fontSize: 36,
+                fontWeight: 900,
+                color: "#F0EBE3",
+                marginBottom: 4,
+              }}
+            >
+              $99
+              <span style={{ fontSize: 16, fontWeight: 400, color: "#6B7B78" }}>
+                /mo
+              </span>
+            </div>
+            <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 24 }}>
+              For clinics that want to dominate their city
+            </div>
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                marginBottom: 28,
+              }}
+            >
+              {growthFeatures.map((f) => (
+                <div
+                  key={f}
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "flex-start",
+                    fontSize: 13,
+                    color: "#F0EBE3",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#D4A843",
+                      fontWeight: 700,
+                      flexShrink: 0,
+                      marginTop: 1,
+                    }}
+                  >
+                    ✓
+                  </span>{" "}
+                  {f}
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => handleSelect("growth")}
+              style={{
+                background: "#D4A843",
+                color: "#000",
+                border: "none",
+                padding: "14px",
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                width: "100%",
+              }}
+            >
+              Get Growth — $99/mo →
+            </button>
+          </div>
+        </div>
+
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: 20,
+            fontSize: 12,
+            color: "#6B7B78",
+          }}
+        >
+          🔒 Secure checkout via Paddle · Cancel anytime
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SCORE RING ────────────────────────────────────────────────────────────────
 function ScoreRing({ score }: { score: number }) {
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
@@ -63,10 +599,8 @@ function ScoreRing({ score }: { score: number }) {
           ? "Needs Filling"
           : "Critical";
 
-  // SVG tooth that degrades based on score
   const ToothSVG = () => {
     if (score >= 80) {
-      // Perfect — clean white tooth
       return (
         <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
           <path
@@ -84,7 +618,6 @@ function ScoreRing({ score }: { score: number }) {
         </svg>
       );
     } else if (score >= 60) {
-      // Minor cavities — small brown spots
       return (
         <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
           <path
@@ -99,70 +632,46 @@ function ScoreRing({ score }: { score: number }) {
         </svg>
       );
     } else if (score >= 40) {
-      // Needs filling — big cavities, yellowed
       return (
         <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
           <path
             d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
-            fill="#E8D5A0"
-            stroke="#A07830"
+            fill="#E8D5B0"
+            stroke="#B8824A"
             strokeWidth="2"
           />
-          <ellipse
-            cx="14"
-            cy="17"
-            rx="5"
-            ry="4"
-            fill="#5C3A0A"
-            opacity="0.75"
-          />
-          <ellipse cx="30" cy="20" rx="4" ry="5" fill="#5C3A0A" opacity="0.7" />
-          <ellipse
-            cx="20"
-            cy="30"
-            rx="5"
-            ry="3.5"
-            fill="#4A2E08"
-            opacity="0.65"
+          <path
+            d="M12 14 Q18 22 16 30"
+            stroke="#8B4513"
+            strokeWidth="2"
+            strokeLinecap="round"
           />
           <path
-            d="M16 12 Q22 10 28 13"
-            stroke="#8B6020"
+            d="M26 12 Q30 20 28 28"
+            stroke="#8B4513"
             strokeWidth="1.5"
-            fill="none"
+            strokeLinecap="round"
           />
+          <circle cx="22" cy="32" r="4" fill="#7A3410" opacity="0.5" />
         </svg>
       );
     } else {
-      // Critical — cracked, broken, dark
       return (
         <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
           <path
             d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
-            fill="#6B4A2A"
-            stroke="#3D2810"
-            strokeWidth="2"
+            fill="#C8956C"
+            stroke="#8B4513"
+            strokeWidth="2.5"
           />
           <path
-            d="M22 2 L19 14 L24 20 L18 36"
-            stroke="#2A1A08"
+            d="M10 10 L34 42 M34 10 L10 42"
+            stroke="#5C1A00"
             strokeWidth="2.5"
             strokeLinecap="round"
+            opacity="0.6"
           />
-          <path
-            d="M10 10 L14 18"
-            stroke="#2A1A08"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M32 12 L28 22"
-            stroke="#2A1A08"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <ellipse cx="14" cy="22" rx="5" ry="4" fill="#1A0A00" opacity="0.9" />
-          <ellipse cx="30" cy="26" rx="4" ry="5" fill="#1A0A00" opacity="0.9" />
+          <circle cx="22" cy="26" r="6" fill="#7A1A00" opacity="0.4" />
         </svg>
       );
     }
@@ -171,73 +680,71 @@ function ScoreRing({ score }: { score: number }) {
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
+        position: "relative",
+        display: "inline-flex",
         alignItems: "center",
-        gap: 8,
+        justifyContent: "center",
+        width: 140,
+        height: 140,
       }}
     >
-      <ToothSVG />
-      <div style={{ position: "relative", width: 140, height: 140 }}>
-        <svg
-          width="140"
-          height="140"
-          viewBox="0 0 120 120"
-          style={{ transform: "rotate(-90deg)" }}
-        >
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke="#2A3330"
-            strokeWidth="8"
-          />
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke={color}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            style={{ transition: "stroke-dashoffset 1.5s ease" }}
-          />
-        </svg>
+      <svg
+        width="140"
+        height="140"
+        viewBox="0 0 140 140"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: "rotate(-90deg)",
+        }}
+      >
+        <circle
+          cx="70"
+          cy="70"
+          r={radius}
+          fill="none"
+          stroke="#1A2320"
+          strokeWidth="10"
+        />
+        <circle
+          cx="70"
+          cy="70"
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth="10"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 1.5s ease" }}
+        />
+      </svg>
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
+        <ToothSVG />
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
+            fontFamily: "'DM Mono', monospace",
+            fontSize: 20,
+            fontWeight: 700,
+            color,
+            lineHeight: 1,
+            marginTop: 6,
           }}
         >
-          <div
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 48,
-              fontWeight: 900,
-              color,
-              lineHeight: 1,
-            }}
-          >
-            {score}
-          </div>
-          <div style={{ fontSize: 13, color: "#6B7B78" }}>/ 100</div>
+          {score}
         </div>
       </div>
       <div
         style={{
+          position: "absolute",
+          bottom: -28,
+          left: "50%",
+          transform: "translateX(-50%)",
           fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: 1.5,
-          textTransform: "uppercase",
-          color,
-          fontFamily: "'DM Mono', monospace",
+          color: "#6B7B78",
+          whiteSpace: "nowrap",
+          fontWeight: 500,
         }}
       >
         {toothLabel}
@@ -246,83 +753,135 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+// ─── DASHBOARD CONTENT ────────────────────────────────────────────────────────
 function DashboardContent() {
   const searchParams = useSearchParams();
   const url = searchParams.get("url") || "";
+  const city = searchParams.get("city") || "";
 
   const [data, setData] = useState<AuditData | null>(null);
-  const city = searchParams.get("city") || data?.city || "";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
-  const [patientValue, setPatientValue] = useState(150);
+  const [loadingStep, setLoadingStep] = useState(0);
   const [reviews, setReviews] = useState<ReviewData | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const [leadEmail, setLeadEmail] = useState("");
-  const [leadPhone, setLeadPhone] = useState("");
-  const [leadSubmitting, setLeadSubmitting] = useState(false);
-  const [leadSuccess, setLeadSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "competitors" | "roadmap" | "reviews" | "score" | "health"
   >("competitors");
+  const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
+  const [patientValue, setPatientValue] = useState(150);
   const [reviewContact, setReviewContact] = useState("");
   const [reviewSending, setReviewSending] = useState(false);
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
 
-  // Pro subscriber state
+  // Plan state
   const [isPro, setIsPro] = useState(false);
-  const [proEmail, setProEmail] = useState("");
+  const [isGrowth, setIsGrowth] = useState(false);
+
+  // Upgrade modal
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // "I'm already Pro" re-auth modal (for free users who lost localStorage)
   const [showProLogin, setShowProLogin] = useState(false);
   const [proLoginEmail, setProLoginEmail] = useState("");
   const [proLoginError, setProLoginError] = useState("");
   const [proLoginLoading, setProLoginLoading] = useState(false);
 
-  // Check if user is Pro subscriber
-  const checkProStatus = async (email: string) => {
+  // Apply plan from a confirmed subscriber record
+  const applyPlan = (plan: "pro" | "growth", email: string) => {
+    setIsPro(true);
+    setIsGrowth(plan === "growth");
+    localStorage.setItem("rc_pro_email", email);
+  };
+
+  // Look up subscriber by clinic_url (primary) or email (fallback)
+  const checkByUrl = async (clinicUrl: string) => {
     try {
-      const { data: subscriber } = await supabase
+      const { data: sub } = await supabase
+        .from("subscribers")
+        .select("email, plan, status")
+        .eq("clinic_url", clinicUrl)
+        .eq("status", "active")
+        .single();
+      if (sub) {
+        applyPlan(sub.plan as "pro" | "growth", sub.email);
+        return true;
+      }
+    } catch {}
+    return false;
+  };
+
+  const checkByEmail = async (email: string): Promise<boolean> => {
+    try {
+      const { data: sub } = await supabase
         .from("subscribers")
         .select("plan, status")
         .eq("email", email.toLowerCase().trim())
         .eq("status", "active")
         .single();
-      if (subscriber) {
-        setIsPro(true);
-        setProEmail(email);
-        localStorage.setItem("rc_pro_email", email);
-      } else {
-        setProLoginError("No active subscription found for this email.");
+      if (sub) {
+        applyPlan(sub.plan as "pro" | "growth", email);
+        return true;
       }
-    } catch {
-      setProLoginError("No active subscription found for this email.");
-    }
-    setProLoginLoading(false);
+    } catch {}
+    return false;
   };
 
-  // Auto-check Pro status on load from localStorage
+  // On mount: check by clinic_url first, then localStorage email
   useEffect(() => {
-    const saved = localStorage.getItem("rc_pro_email");
-    if (saved) checkProStatus(saved);
-  }, []);
-
-  // Initialize Paddle when component mounts
-  useEffect(() => {
+    const detect = async () => {
+      if (url) {
+        const found = await checkByUrl(url);
+        if (found) return;
+      }
+      const saved = localStorage.getItem("rc_pro_email");
+      if (saved) checkByEmail(saved);
+    };
+    detect();
     initPaddle();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]);
 
-  const handleUpgradeClick = () => {
-    if (typeof window !== "undefined" && window.Paddle) {
-      openProCheckout(undefined, url, () => {
-        // After successful payment, show Pro login
-        setShowProLogin(true);
+  // Fetch audit data
+  useEffect(() => {
+    if (!url) return;
+    const steps = [0, 1, 2, 3];
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      if (i < steps.length) setLoadingStep(i);
+      else clearInterval(interval);
+    }, 4000);
+    fetch(
+      `/api/audit?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
+    )
+      .then((res) => res.json())
+      .then((d) => {
+        if (d.error === "not_dental") {
+          setError(d.message);
+          setLoading(false);
+          return;
+        }
+        setData(d);
+        setLoading(false);
+        setReviewsLoading(true);
+        fetch(
+          `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
+        )
+          .then((r) => r.json())
+          .then((r) => {
+            setReviews(r);
+            setReviewsLoading(false);
+          })
+          .catch(() => setReviewsLoading(false));
+      })
+      .catch(() => {
+        setError("Failed to audit. Please try again.");
+        setLoading(false);
       });
-    } else {
-      setShowUpgradePopup(true);
-    }
-  };
-  const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
+    return () => clearInterval(interval);
+  }, [url, city]);
 
   const fixGuides: Record<string, string[]> = {
     "Doesn't work on phones": [
@@ -350,30 +909,6 @@ function DashboardContent() {
     "Google visibility needs work": [
       "Add your city name to your homepage title and first paragraph",
       "Create a separate page for each service you offer (teeth whitening, braces, etc.)",
-      "Ask satisfied patients to leave a Google review — more reviews = higher ranking",
-    ],
-    "Missing Google search preview": [
-      "This is called a 'meta description' — it's the text Google shows under your clinic name in search results",
-      "Ask your web developer to add a meta description to every page",
-      "Example: 'Family dental clinic in Austin TX. Accepting new patients. Call us today!'",
-      "Keep it under 160 characters and include your city name",
-    ],
-    "Missing clinic name on Google": [
-      "Ask your web developer to add a proper page title to your website",
-      "Good example: 'Austin Family Dental | Dentist in Austin TX'",
-      "This should include your clinic name and city",
-    ],
-    "Images not labeled": [
-      "Ask your web developer to add 'alt text' to all images on your website",
-      "Alt text describes what's in each image — e.g. 'Dental exam room at Austin Family Dental'",
-      "This helps Google understand your website better and improves ranking",
-    ],
-    "Not listed on Healthgrades": [
-      "Go to healthgrades.com and search for your clinic",
-      "If your clinic appears but is unclaimed, click 'Is this you?' and claim it",
-      "If it doesn't appear, go to healthgrades.com/dentists and add your practice",
-      "Fill in everything — address, phone, hours, services, and a photo",
-      "Ask satisfied patients to leave a review on Healthgrades too",
     ],
     "Not listed on Zocdoc": [
       "Go to zocdoc.com/join and sign up as a provider — it's free to list",
@@ -404,70 +939,10 @@ function DashboardContent() {
     ],
   };
 
-  const handleLeadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLeadSubmitting(true);
-    try {
-      await supabase.from("leads").insert({
-        email: leadEmail,
-        phone: leadPhone,
-        url,
-        city,
-      });
-      setLeadSuccess(true);
-    } catch (err) {
-      console.error("Lead save error:", err);
-    }
-    setLeadSubmitting(false);
-  };
-
-  useEffect(() => {
-    if (!url) return;
-    // Animate loading steps
-    const steps = [0, 1, 2, 3];
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      if (i < steps.length) setLoadingStep(i);
-      else clearInterval(interval);
-    }, 4000);
-    fetch(
-      `/api/audit?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
-    )
-      .then((res) => res.json())
-      .then((d) => {
-        if (d.error === "not_dental") {
-          setError(d.message);
-          setLoading(false);
-          return;
-        }
-        setData(d);
-        setLoading(false);
-        // Fetch reviews for the SCANNED clinic
-        if (url) {
-          setReviewsLoading(true);
-          fetch(
-            `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
-          )
-            .then((r) => r.json())
-            .then((r) => {
-              setReviews(r);
-              setReviewsLoading(false);
-            })
-            .catch(() => setReviewsLoading(false));
-        }
-      })
-      .catch(() => {
-        setError("Failed to audit. Please try again.");
-        setLoading(false);
-      });
-    return () => clearInterval(interval);
-  }, [url, city]);
-
   const loadingSteps = [
     { icon: "⚡", label: "Checking website speed..." },
     { icon: "🔍", label: "Analyzing Google visibility..." },
-    { icon: "🏆", label: "Finding competitors in " + city + "..." },
+    { icon: "🏆", label: `Finding competitors in ${city}...` },
     { icon: "⭐", label: "Reading patient reviews..." },
   ];
 
@@ -485,12 +960,10 @@ function DashboardContent() {
         }}
       >
         <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
-
-        {/* Spinner */}
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+          @keyframes spin { to { transform: rotate(360deg); } }
+          @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        `}</style>
         <div
           style={{
             width: 64,
@@ -501,8 +974,6 @@ function DashboardContent() {
             animation: "spin 1s linear infinite",
           }}
         />
-
-        {/* Title */}
         <div style={{ textAlign: "center" }}>
           <div
             style={{
@@ -516,8 +987,6 @@ function DashboardContent() {
           </div>
           <div style={{ fontSize: 14, color: "#6B7B78" }}>{url}</div>
         </div>
-
-        {/* Steps */}
         <div
           style={{
             display: "flex",
@@ -546,7 +1015,6 @@ function DashboardContent() {
                   border: `1px solid ${isDone ? "rgba(46,204,113,0.2)" : isActive ? "rgba(26,188,156,0.2)" : "#2A3330"}`,
                   opacity: i > loadingStep ? 0.4 : 1,
                   transition: "all 0.4s ease",
-                  animation: isActive ? "fadeIn 0.4s ease" : "none",
                 }}
               >
                 <div style={{ fontSize: 20 }}>{isDone ? "✅" : step.icon}</div>
@@ -669,8 +1137,6 @@ function DashboardContent() {
   const passIssues = data.issues.filter((i) => i.status === "pass");
   const warnIssues = data.issues.filter((i) => i.status === "warn");
 
-  // Rank = position among competitors based on How Easy You Are to Find
-  // We insert user into competitor list and find their position
   const userRank =
     data.competitors.length > 0
       ? (() => {
@@ -679,8 +1145,7 @@ function DashboardContent() {
             data.overallScore,
           ];
           allScores.sort((a, b) => b - a);
-          const pos = allScores.indexOf(data.overallScore) + 1;
-          return pos;
+          return allScores.indexOf(data.overallScore) + 1;
         })()
       : 1;
 
@@ -700,6 +1165,7 @@ function DashboardContent() {
         ::-webkit-scrollbar-track { background: #0D0F0E; }
         ::-webkit-scrollbar-thumb { background: #2A3330; border-radius: 3px; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .card { animation: fadeUp 0.5s ease both; }
         .nav-link { color: #6B7B78; text-decoration: none; font-size: 14px; font-weight: 500; }
         .nav-link:hover { color: #F0EBE3; }
@@ -717,43 +1183,24 @@ function DashboardContent() {
         @media (max-width: 768px) {
           .rc-nav-url { display: none !important; }
           .rc-nav-export { display: none !important; }
-
-          /* Score hero — stack vertically */
           .rc-score-hero { grid-template-columns: 1fr !important; }
-
-          /* Metric cards — 2 col on tablet */
           .rc-metric-grid { grid-template-columns: repeat(2, 1fr) !important; }
-
-          /* Hero review block — stack */
           .rc-hero-review { flex-direction: column !important; align-items: stretch !important; }
           .rc-hero-review > div:last-child { min-width: unset !important; width: 100% !important; }
           .rc-hero-review-row { flex-direction: column !important; }
           .rc-hero-review-row input { width: 100% !important; }
           .rc-hero-review-row button { width: 100% !important; }
-
-          /* Competitor grid — 1 col */
           .rc-competitor-grid { grid-template-columns: 1fr !important; }
-
-          /* Tabs — smaller text */
           .rc-tab-btn { font-size: 11px !important; padding: 8px 6px !important; }
-
-          /* Main padding */
           .rc-main { padding: 16px !important; }
           nav { padding: 12px 16px !important; }
-
-          /* Upgrade grid */
           .rc-upgrade-grid { grid-template-columns: 1fr !important; }
           .rc-upgrade-btns { flex-direction: column !important; align-items: stretch !important; }
-
-          /* Gap analysis — stack */
           .rc-gap-grid { grid-template-columns: 1fr !important; }
           .rc-gap-vs { display: none !important; }
-
-          /* Roadmap rows */
           .rc-roadmap-item { flex-wrap: wrap !important; }
         }
         @media (max-width: 480px) {
-          /* Single col metrics on small phones */
           .rc-metric-grid { grid-template-columns: 1fr !important; }
           .rc-tab-btn { font-size: 10px !important; padding: 6px 3px !important; }
           h1 { font-size: 22px !important; }
@@ -762,7 +1209,6 @@ function DashboardContent() {
 
       {/* NAV */}
       <nav
-        className="rc-nav-pad"
         style={{
           position: "sticky",
           top: 0,
@@ -816,44 +1262,40 @@ function DashboardContent() {
           >
             📄 Export PDF
           </button>
-          {isPro ? (
+
+          {isGrowth ? (
             <div
               style={{
-                background: "rgba(26,188,156,0.1)",
-                border: "1px solid #1ABC9C",
+                background: "rgba(212,168,67,0.1)",
+                border: "1px solid #D4A843",
                 padding: "10px 20px",
                 borderRadius: 8,
                 fontSize: 13,
                 fontWeight: 700,
-                color: "#1ABC9C",
-                fontFamily: "'DM Sans', sans-serif",
+                color: "#D4A843",
               }}
             >
-              ⭐ Pro Active
+              🚀 Growth Active
             </div>
-          ) : (
-            <>
-              <button
-                onClick={() => setShowProLogin(true)}
+          ) : isPro ? (
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div
                 style={{
-                  background: "transparent",
-                  color: "#6B7B78",
-                  border: "1px solid #2A3330",
-                  padding: "10px 16px",
+                  background: "rgba(26,188,156,0.1)",
+                  border: "1px solid #1ABC9C",
+                  padding: "10px 20px",
                   borderRadius: 8,
-                  fontFamily: "'DM Sans', sans-serif",
                   fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
+                  fontWeight: 700,
+                  color: "#1ABC9C",
                 }}
               >
-                I'm already Pro
-              </button>
+                ⭐ Pro Active
+              </div>
               <button
-                className="upgrade-btn"
-                onClick={handleUpgradeClick}
+                onClick={() => setShowUpgradeModal(true)}
                 style={{
-                  background: "#1ABC9C",
+                  background: "#D4A843",
                   color: "#000",
                   border: "none",
                   padding: "10px 20px",
@@ -862,32 +1304,49 @@ function DashboardContent() {
                   fontSize: 13,
                   fontWeight: 700,
                   cursor: "pointer",
-                  transition: "opacity 0.2s",
                 }}
               >
-                Upgrade to Pro — $49/mo
+                Upgrade to Growth →
               </button>
-            </>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              style={{
+                background: "#1ABC9C",
+                color: "#000",
+                border: "none",
+                padding: "10px 20px",
+                borderRadius: 8,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Upgrade →
+            </button>
           )}
         </div>
       </nav>
 
-      <div className="rc-main-pad" style={{ padding: "32px 40px" }}>
-        {/* HEADER */}
-        <div style={{ marginBottom: 28 }}>
+      {/* MAIN */}
+      <div
+        className="rc-main"
+        style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 40px" }}
+      >
+        <div style={{ marginBottom: 24 }}>
           <h1
             style={{
               fontFamily: "'Playfair Display', serif",
-              fontSize: 28,
+              fontSize: 30,
               fontWeight: 900,
-              letterSpacing: -1,
+              marginBottom: 6,
+              color: "#F0EBE3",
             }}
           >
-            Your Dental Growth Report
+            Your Google Ranking Report
           </h1>
-          <p style={{ fontSize: 14, color: "#6B7B78", marginTop: 4 }}>
-            Scanned {new Date(data.scannedAt).toLocaleString()} · {city}
-          </p>
           <p
             style={{
               fontSize: 12,
@@ -900,7 +1359,7 @@ function DashboardContent() {
           </p>
         </div>
 
-        {/* SCORE HERO — always visible at top */}
+        {/* SCORE HERO */}
         {(() => (
           <div
             className="card rc-score-hero"
@@ -912,7 +1371,6 @@ function DashboardContent() {
               animationDelay: "0.1s",
             }}
           >
-            {/* Score ring */}
             <div
               style={{
                 background: "#151918",
@@ -944,8 +1402,6 @@ function DashboardContent() {
                 Your Google Score
               </div>
             </div>
-
-            {/* Metrics */}
             <div
               className="rc-metric-grid"
               style={{
@@ -1072,23 +1528,21 @@ function DashboardContent() {
                     >
                       {m.label}
                     </div>
-                    {(m as any).sublabel && (
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: "rgba(107,123,120,0.6)",
-                          marginTop: 2,
-                          fontStyle: "italic",
-                        }}
-                      >
-                        {(m as any).sublabel}
-                      </div>
-                    )}
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "rgba(107,123,120,0.6)",
+                        marginTop: 2,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {m.sublabel}
+                    </div>
                   </div>
                 </div>
               ))}
 
-              {/* Visibility banner — spans full width */}
+              {/* Visibility banner */}
               {data.competitors.length > 0 &&
                 (() => {
                   const yourRankNum =
@@ -1145,9 +1599,9 @@ function DashboardContent() {
                           </div>
                         </div>
                       </div>
-                      {!inTopThree && (
+                      {!inTopThree && !isGrowth && (
                         <button
-                          onClick={handleUpgradeClick}
+                          onClick={() => setShowUpgradeModal(true)}
                           style={{
                             background: "#E74C3C",
                             color: "#fff",
@@ -1172,8 +1626,8 @@ function DashboardContent() {
           </div>
         ))()}
 
-        {/* UPGRADE BANNER */}
-        {data.overallScore < 70 && (
+        {/* UPGRADE BANNER — free users with low score */}
+        {data.overallScore < 70 && !isPro && !isGrowth && (
           <div
             className="card"
             style={{
@@ -1221,7 +1675,7 @@ function DashboardContent() {
             </div>
             <button
               className="upgrade-btn no-print"
-              onClick={handleUpgradeClick}
+              onClick={() => setShowUpgradeModal(true)}
               style={{
                 background: "#1ABC9C",
                 color: "#000",
@@ -1242,7 +1696,62 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* ── HERO REVIEW BLOCK ── */}
+        {/* GROWTH UPSELL BANNER — pro users only */}
+        {isPro && !isGrowth && (
+          <div
+            className="card"
+            style={{
+              background: "linear-gradient(135deg, #2a1f0a, #1f1500)",
+              border: "1px solid rgba(212,168,67,0.3)",
+              borderRadius: 16,
+              padding: "24px 32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 24,
+              animationDelay: "0.2s",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  marginBottom: 6,
+                }}
+              >
+                🚀 Ready to dominate {city}?
+              </div>
+              <div style={{ fontSize: 14, color: "#6B7B78" }}>
+                Upgrade to Growth for done-for-you SEO fixes, priority support,
+                and weekly ranking updates.
+              </div>
+            </div>
+            <button
+              className="upgrade-btn no-print"
+              onClick={() => setShowUpgradeModal(true)}
+              style={{
+                background: "#D4A843",
+                color: "#000",
+                border: "none",
+                padding: "12px 28px",
+                borderRadius: 8,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                transition: "opacity 0.2s",
+              }}
+            >
+              Upgrade to Growth — $99/mo →
+            </button>
+          </div>
+        )}
+
+        {/* HERO REVIEW BLOCK */}
         <div
           className="card no-print rc-hero-review"
           style={{
@@ -1400,7 +1909,7 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* ── TOP 3 PRIORITIES ── */}
+        {/* TOP 3 PRIORITIES */}
         {(() => {
           const priorities: string[] = [];
           const reviewCount = reviews?.total ?? 0;
@@ -1494,7 +2003,7 @@ function DashboardContent() {
           );
         })()}
 
-        {/* ── TAB NAV ── */}
+        {/* TABS */}
         <div
           style={{
             display: "flex",
@@ -1540,230 +2049,497 @@ function DashboardContent() {
           ))}
         </div>
 
-        {/* COMPETITORS TAB CONTENT */}
+        {/* COMPETITORS TAB */}
         {activeTab === "competitors" && (
           <>
-            {data.competitors.length > 0 && (
-              <>
-                {/* ── COMPETITOR GAP CARD ── */}
-                {reviews &&
-                  data.competitors.length > 0 &&
-                  (() => {
-                    const topComp = [...data.competitors].sort(
-                      (a, b) => b.score - a.score,
-                    )[0];
-                    const ratingGap = (
-                      (topComp.rating || 0) - (reviews.rating || 0)
-                    ).toFixed(1);
-                    const reviewGap =
-                      (topComp.reviews || 0) - (reviews.total || 0);
-                    return (
+            {data.competitors.length > 0 &&
+              reviews &&
+              (() => {
+                const topComp = [...data.competitors].sort(
+                  (a, b) => b.score - a.score,
+                )[0];
+                const ratingGap = (
+                  (topComp.rating || 0) - (reviews.rating || 0)
+                ).toFixed(1);
+                const reviewGap = (topComp.reviews || 0) - (reviews.total || 0);
+                return (
+                  <div
+                    className="card"
+                    style={{
+                      background: "#151918",
+                      border: "1px solid #2A3330",
+                      borderRadius: 16,
+                      padding: 24,
+                      marginBottom: 24,
+                      animationDelay: "0.35s",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: 20,
+                      }}
+                    >
                       <div
-                        className="card"
                         style={{
-                          background: "#151918",
-                          border: "1px solid #2A3330",
-                          borderRadius: 16,
-                          padding: 24,
-                          marginBottom: 24,
-                          animationDelay: "0.35s",
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: 18,
+                          fontWeight: 700,
+                        }}
+                      >
+                        You vs. Top Competitor
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "4px 12px",
+                          borderRadius: 20,
+                          background: "rgba(231,76,60,0.1)",
+                          color: "#E74C3C",
+                          fontFamily: "'DM Mono', monospace",
+                        }}
+                      >
+                        GAP ANALYSIS
+                      </span>
+                    </div>
+                    <div
+                      className="rc-gap-grid"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr auto 1fr",
+                        gap: 16,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          background: "rgba(26,188,156,0.06)",
+                          border: "1px solid rgba(26,188,156,0.2)",
+                          borderRadius: 12,
+                          padding: 16,
                         }}
                       >
                         <div
                           style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            marginBottom: 20,
+                            fontSize: 11,
+                            color: "#6B7B78",
+                            fontWeight: 600,
+                            marginBottom: 12,
+                            textTransform: "uppercase",
+                            letterSpacing: 1,
                           }}
                         >
-                          <div
-                            style={{
-                              fontFamily: "'Playfair Display', serif",
-                              fontSize: 18,
-                              fontWeight: 700,
-                            }}
-                          >
-                            You vs. Top Competitor
-                          </div>
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 600,
-                              padding: "4px 12px",
-                              borderRadius: 20,
-                              background: "rgba(231,76,60,0.1)",
-                              color: "#E74C3C",
-                              fontFamily: "'DM Mono', monospace",
-                            }}
-                          >
-                            GAP ANALYSIS
-                          </span>
+                          Your Clinic
                         </div>
                         <div
                           style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr auto 1fr",
-                            gap: 16,
-                            alignItems: "center",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 10,
                           }}
                         >
-                          {/* Your stats */}
-                          <div
-                            style={{
-                              background: "rgba(26,188,156,0.06)",
-                              border: "1px solid rgba(26,188,156,0.2)",
-                              borderRadius: 12,
-                              padding: 16,
-                            }}
-                          >
+                          <div>
                             <div
                               style={{
-                                fontSize: 11,
-                                color: "#6B7B78",
-                                fontWeight: 600,
-                                marginBottom: 12,
-                                textTransform: "uppercase",
-                                letterSpacing: 1,
-                              }}
-                            >
-                              Your Clinic
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 10,
-                              }}
-                            >
-                              <div>
-                                <div
-                                  style={{
-                                    fontSize: 22,
-                                    fontWeight: 900,
-                                    color: "#1ABC9C",
-                                    fontFamily: "'Playfair Display', serif",
-                                  }}
-                                >
-                                  {reviews.rating?.toFixed(1) ?? "—"} ⭐
-                                </div>
-                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                                  Google Rating
-                                </div>
-                              </div>
-                              <div>
-                                <div
-                                  style={{
-                                    fontSize: 22,
-                                    fontWeight: 900,
-                                    color: "#1ABC9C",
-                                    fontFamily: "'Playfair Display', serif",
-                                  }}
-                                >
-                                  {reviews.total ?? "—"}
-                                </div>
-                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                                  Reviews
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          {/* VS divider */}
-                          <div style={{ textAlign: "center" }}>
-                            <div
-                              style={{
-                                fontSize: 16,
+                                fontSize: 22,
                                 fontWeight: 900,
-                                color: "#2A3330",
+                                color: "#1ABC9C",
+                                fontFamily: "'Playfair Display', serif",
                               }}
                             >
-                              VS
+                              {reviews.rating?.toFixed(1) ?? "—"} ⭐
+                            </div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                              Google Rating
                             </div>
                           </div>
-                          {/* Top competitor stats */}
-                          <div
-                            style={{
-                              background: "rgba(231,76,60,0.06)",
-                              border: "1px solid rgba(231,76,60,0.2)",
-                              borderRadius: 12,
-                              padding: 16,
-                            }}
-                          >
+                          <div>
                             <div
                               style={{
-                                fontSize: 11,
-                                color: "#6B7B78",
-                                fontWeight: 600,
-                                marginBottom: 12,
-                                textTransform: "uppercase",
-                                letterSpacing: 1,
+                                fontSize: 22,
+                                fontWeight: 900,
+                                color: "#1ABC9C",
+                                fontFamily: "'Playfair Display', serif",
                               }}
                             >
-                              Top Clinic
+                              {reviews.total ?? "—"}
                             </div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                              Reviews
+                            </div>
+                          </div>
+                          <div>
                             <div
                               style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 10,
+                                fontSize: 22,
+                                fontWeight: 900,
+                                color: "#1ABC9C",
+                                fontFamily: "'Playfair Display', serif",
                               }}
                             >
-                              <div>
-                                <div
-                                  style={{
-                                    fontSize: 22,
-                                    fontWeight: 900,
-                                    color: "#E74C3C",
-                                    fontFamily: "'Playfair Display', serif",
-                                  }}
-                                >
-                                  {(topComp.rating || 0).toFixed(1)} ⭐
-                                </div>
-                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                                  Google Rating{" "}
-                                  {Number(ratingGap) > 0 ? (
-                                    <span style={{ color: "#E74C3C" }}>
-                                      ({ratingGap} ahead)
-                                    </span>
-                                  ) : (
-                                    <span style={{ color: "#2ECC71" }}>
-                                      ✓ You lead
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div>
-                                <div
-                                  style={{
-                                    fontSize: 22,
-                                    fontWeight: 900,
-                                    color: "#E74C3C",
-                                    fontFamily: "'Playfair Display', serif",
-                                  }}
-                                >
-                                  {topComp.reviews || "—"}
-                                </div>
-                                <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                                  Reviews{" "}
-                                  {reviewGap > 0 ? (
-                                    <span style={{ color: "#E74C3C" }}>
-                                      ({reviewGap} more)
-                                    </span>
-                                  ) : (
-                                    <span style={{ color: "#2ECC71" }}>
-                                      ✓ You lead
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
+                              {data.overallScore}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                              Google Score
                             </div>
                           </div>
                         </div>
                       </div>
-                    );
-                  })()}
-              </>
-            )}
+                      <div
+                        className="rc-gap-vs"
+                        style={{
+                          textAlign: "center",
+                          color: "#2A3330",
+                          fontSize: 24,
+                          fontWeight: 900,
+                        }}
+                      >
+                        vs
+                      </div>
+                      <div
+                        style={{
+                          background: "rgba(231,76,60,0.06)",
+                          border: "1px solid rgba(231,76,60,0.2)",
+                          borderRadius: 12,
+                          padding: 16,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#6B7B78",
+                            fontWeight: 600,
+                            marginBottom: 12,
+                            textTransform: "uppercase",
+                            letterSpacing: 1,
+                          }}
+                        >
+                          Top Competitor
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 10,
+                          }}
+                        >
+                          <div>
+                            <div
+                              style={{
+                                fontSize: 22,
+                                fontWeight: 900,
+                                color: "#E74C3C",
+                                fontFamily: "'Playfair Display', serif",
+                              }}
+                            >
+                              {topComp.rating?.toFixed(1) ?? "—"} ⭐
+                            </div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                              Google Rating{" "}
+                              <span
+                                style={{
+                                  color:
+                                    Number(ratingGap) > 0
+                                      ? "#E74C3C"
+                                      : "#2ECC71",
+                                }}
+                              >
+                                (
+                                {Number(ratingGap) > 0
+                                  ? `+${ratingGap} ahead`
+                                  : "you're ahead!"}
+                                )
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <div
+                              style={{
+                                fontSize: 22,
+                                fontWeight: 900,
+                                color: "#E74C3C",
+                                fontFamily: "'Playfair Display', serif",
+                              }}
+                            >
+                              {topComp.reviews ?? "—"}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                              Reviews{" "}
+                              <span
+                                style={{
+                                  color: reviewGap > 0 ? "#E74C3C" : "#2ECC71",
+                                }}
+                              >
+                                (
+                                {reviewGap > 0
+                                  ? `+${reviewGap} ahead`
+                                  : "you're ahead!"}
+                                )
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <div
+                              style={{
+                                fontSize: 22,
+                                fontWeight: 900,
+                                color: "#E74C3C",
+                                fontFamily: "'Playfair Display', serif",
+                              }}
+                            >
+                              {topComp.score}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                              Google Score
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+            <div
+              className="card rc-competitor-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 16,
+                marginBottom: 24,
+                animationDelay: "0.4s",
+              }}
+            >
+              {/* Your clinic card */}
+              <div
+                style={{
+                  background: "rgba(26,188,156,0.06)",
+                  border: "2px solid rgba(26,188,156,0.4)",
+                  borderRadius: 14,
+                  padding: 20,
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    padding: "3px 10px",
+                    borderRadius: 4,
+                    background: "rgba(26,188,156,0.15)",
+                    color: "#1ABC9C",
+                    fontFamily: "'DM Mono', monospace",
+                    letterSpacing: 1,
+                  }}
+                >
+                  YOU
+                </div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: "#F0EBE3",
+                    marginBottom: 4,
+                  }}
+                >
+                  {
+                    url
+                      .replace(/https?:\/\//, "")
+                      .replace(/www\./, "")
+                      .split("/")[0]
+                  }
+                </div>
+                <div
+                  style={{ fontSize: 13, color: "#6B7B78", marginBottom: 16 }}
+                >
+                  {city}
+                </div>
+                <div style={{ display: "flex", gap: 16 }}>
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: 24,
+                        fontWeight: 900,
+                        color: "#1ABC9C",
+                      }}
+                    >
+                      {reviews?.rating?.toFixed(1) ?? "—"} ⭐
+                    </div>
+                    <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                      {reviews?.total ?? 0} reviews
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: 24,
+                        fontWeight: 900,
+                        color: "#1ABC9C",
+                      }}
+                    >
+                      {data.overallScore}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                      Google score
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Competitor cards */}
+              {data.competitors
+                .slice(0, isPro ? undefined : 2)
+                .map((comp, i) => (
+                  <div
+                    key={i}
+                    className="comp-row"
+                    style={{
+                      background: "#151918",
+                      border: "1px solid #2A3330",
+                      borderRadius: 14,
+                      padding: 20,
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        marginBottom: 12,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: "#F0EBE3",
+                          paddingRight: 8,
+                        }}
+                      >
+                        {comp.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          padding: "3px 8px",
+                          borderRadius: 4,
+                          background:
+                            comp.score > data.overallScore
+                              ? "rgba(231,76,60,0.12)"
+                              : "rgba(46,204,113,0.12)",
+                          color:
+                            comp.score > data.overallScore
+                              ? "#E74C3C"
+                              : "#2ECC71",
+                          fontFamily: "'DM Mono', monospace",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}
+                      >
+                        #{i + 1 + 1}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#6B7B78",
+                        marginBottom: 12,
+                      }}
+                    >
+                      {comp.address}
+                    </div>
+                    <div style={{ display: "flex", gap: 16 }}>
+                      <div>
+                        <div
+                          style={{
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: 20,
+                            fontWeight: 900,
+                            color:
+                              comp.rating >= (reviews?.rating || 0)
+                                ? "#E74C3C"
+                                : "#2ECC71",
+                          }}
+                        >
+                          {comp.rating?.toFixed(1)} ⭐
+                        </div>
+                        <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                          {comp.reviews} reviews
+                        </div>
+                      </div>
+                      <div>
+                        <div
+                          style={{
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: 20,
+                            fontWeight: 900,
+                            color:
+                              comp.score > data.overallScore
+                                ? "#E74C3C"
+                                : "#2ECC71",
+                          }}
+                        >
+                          {comp.score}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                          Google score
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              {/* Locked competitors for free users */}
+              {!isPro && data.competitors.length > 2 && (
+                <div
+                  style={{
+                    background: "#151918",
+                    border: "1px dashed #2A3330",
+                    borderRadius: 14,
+                    padding: 20,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    textAlign: "center",
+                    gap: 10,
+                    gridColumn:
+                      data.competitors.length > 3 ? "1 / -1" : undefined,
+                  }}
+                >
+                  <div style={{ fontSize: 28 }}>🔒</div>
+                  <div
+                    style={{ fontSize: 14, fontWeight: 700, color: "#6B7B78" }}
+                  >
+                    {data.competitors.length - 2} more competitors hidden
+                  </div>
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    style={{
+                      background: "#1ABC9C",
+                      color: "#000",
+                      border: "none",
+                      padding: "8px 20px",
+                      borderRadius: 8,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    Unlock with Pro →
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         )}
 
@@ -1777,7 +2553,7 @@ function DashboardContent() {
               borderRadius: 16,
               padding: 24,
               marginBottom: 24,
-              animationDelay: "0.4s",
+              animationDelay: "0.45s",
             }}
           >
             <div
@@ -1795,7 +2571,7 @@ function DashboardContent() {
                   fontWeight: 700,
                 }}
               >
-                Your Growth Roadmap 🗺️
+                🗺️ Your Path to #1
               </div>
               <span
                 style={{
@@ -1803,254 +2579,155 @@ function DashboardContent() {
                   fontWeight: 600,
                   padding: "4px 12px",
                   borderRadius: 20,
-                  background: "rgba(240,165,0,0.12)",
-                  color: "#F0A500",
+                  background: "rgba(212,168,67,0.1)",
+                  color: "#D4A843",
                   fontFamily: "'DM Mono', monospace",
                 }}
               >
-                You are #{userRank}
+                GROWTH ROADMAP
               </span>
             </div>
 
-            {/* You are here */}
-            <div
-              style={{
-                background: "rgba(26,188,156,0.06)",
-                border: "1px solid rgba(26,188,156,0.3)",
-                borderRadius: 12,
-                padding: "14px 16px",
-                marginBottom: 16,
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-              }}
-            >
-              <span style={{ fontSize: 20 }}>📍</span>
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#1ABC9C",
-                    fontWeight: 700,
-                    marginBottom: 2,
-                  }}
-                >
-                  YOU ARE HERE
-                </div>
-                <div
-                  style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3" }}
-                >
-                  {(() => {
-                    try {
-                      return new URL(url).hostname.replace("www.", "");
-                    } catch {
-                      return url || "your clinic";
-                    }
-                  })()}
-                </div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div
-                  style={{
-                    fontFamily: "'DM Mono', monospace",
-                    fontSize: 22,
-                    fontWeight: 700,
-                    color: "#1ABC9C",
-                  }}
-                >
-                  #{userRank}
-                </div>
-                <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                  Local Rank (est.)
-                </div>
-              </div>
-            </div>
-
-            {/* Closest competitors to overtake */}
             {(() => {
-              // Get competitors ahead of user, sorted by closest score first
-              const aheadComps = data.competitors
-                .filter((c) => c.score > data.overallScore)
-                .sort((a, b) => a.score - b.score)
-                .slice(0, 3);
-
-              // Get competitors behind user
-              const behindComps = data.competitors
-                .filter((c) => c.score < data.overallScore + 5)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 2);
-
-              const stepsToShow = [...aheadComps].slice(0, 3);
-
+              const aheadComps = [...data.competitors]
+                .filter((c) => c.score >= data.overallScore)
+                .sort((a, b) => a.score - b.score);
+              const behindComps = [...data.competitors].filter(
+                (c) => c.score < data.overallScore,
+              );
+              const stepsToShow = isPro ? aheadComps : aheadComps.slice(0, 1);
               return (
-                <div>
-                  {stepsToShow.length === 0 && (
-                    <div
-                      style={{
-                        textAlign: "center",
-                        padding: "24px 0",
-                        color: "#1ABC9C",
-                        fontSize: 15,
-                        fontWeight: 600,
-                      }}
-                    >
-                      🏆 You are already leading! Keep it up.
-                    </div>
-                  )}
-
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                >
                   {stepsToShow.map((comp, i) => {
                     const gap = comp.score - data.overallScore;
-                    const reviewGap =
-                      (comp.reviews || 0) - (reviews?.total || 0);
+                    const reviewGap = Math.max(
+                      0,
+                      (comp.reviews || 0) - (reviews?.total || 0),
+                    );
                     const weeks =
-                      i === 0
-                        ? "3–4 weeks"
-                        : i === 1
-                          ? "6–8 weeks"
-                          : "3–4 months";
-                    const isLocked = i > 0;
-
+                      gap <= 5
+                        ? "2–4 weeks"
+                        : gap <= 15
+                          ? "1–2 months"
+                          : "2–4 months";
+                    const isLocked = !isPro && i > 0;
                     return (
                       <div
                         key={i}
+                        className="rc-roadmap-item"
                         style={{
-                          position: "relative",
-                          marginBottom: 12,
-                          opacity: isLocked ? 0.6 : 1,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 16,
+                          padding: "16px 20px",
+                          borderRadius: 12,
+                          background: isLocked
+                            ? "#0D0F0E"
+                            : "rgba(240,165,0,0.04)",
+                          border: `1px solid ${isLocked ? "#1A1F1E" : "rgba(240,165,0,0.2)"}`,
                         }}
                       >
-                        {/* Connector line */}
-                        {i < stepsToShow.length - 1 && (
-                          <div
-                            style={{
-                              position: "absolute",
-                              left: 20,
-                              top: "100%",
-                              width: 2,
-                              height: 12,
-                              background: "#2A3330",
-                              zIndex: 0,
-                            }}
-                          />
-                        )}
-
                         <div
                           style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: "50%",
                             background: isLocked
-                              ? "#0D0F0E"
-                              : "rgba(240,165,0,0.04)",
-                            border: `1px solid ${isLocked ? "#2A3330" : "rgba(240,165,0,0.2)"}`,
-                            borderRadius: 12,
-                            padding: "14px 16px",
+                              ? "#1A1F1E"
+                              : "rgba(240,165,0,0.12)",
+                            border: `2px solid ${isLocked ? "#2A3330" : "#F0A500"}`,
                             display: "flex",
                             alignItems: "center",
-                            gap: 14,
+                            justifyContent: "center",
+                            fontSize: 14,
+                            flexShrink: 0,
                           }}
                         >
+                          {isLocked ? "🔒" : `${i + 1}`}
+                        </div>
+                        <div style={{ flex: 1 }}>
                           <div
                             style={{
-                              width: 36,
-                              height: 36,
-                              borderRadius: "50%",
-                              background: isLocked
-                                ? "#1A1F1E"
-                                : "rgba(240,165,0,0.12)",
-                              border: `2px solid ${isLocked ? "#2A3330" : "#F0A500"}`,
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: 14,
-                              flexShrink: 0,
+                              gap: 8,
+                              marginBottom: 4,
                             }}
                           >
-                            {isLocked ? "🔒" : `${i + 1}`}
-                          </div>
-
-                          <div style={{ flex: 1 }}>
                             <div
                               style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                                marginBottom: 4,
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: isLocked ? "#6B7B78" : "#F0EBE3",
                               }}
                             >
-                              <div
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: 700,
-                                  color: isLocked ? "#6B7B78" : "#F0EBE3",
-                                }}
-                              >
-                                Step {i + 1}: Overtake{" "}
-                                {(comp.name || "Competitor").length > 25
-                                  ? (comp.name || "Competitor").slice(0, 25) +
-                                    "..."
-                                  : comp.name || "Competitor"}
-                              </div>
-                              {!isLocked && (
-                                <span
-                                  style={{
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    padding: "2px 8px",
-                                    borderRadius: 4,
-                                    background: "rgba(240,165,0,0.12)",
-                                    color: "#F0A500",
-                                    fontFamily: "'DM Mono', monospace",
-                                  }}
-                                >
-                                  NEXT TARGET
-                                </span>
-                              )}
+                              Step {i + 1}: Overtake{" "}
+                              {(comp.name || "Competitor").length > 25
+                                ? (comp.name || "Competitor").slice(0, 25) +
+                                  "..."
+                                : comp.name || "Competitor"}
                             </div>
-
-                            {!isLocked ? (
-                              <div
+                            {!isLocked && (
+                              <span
                                 style={{
-                                  fontSize: 12,
-                                  color: "#6B7B78",
-                                  lineHeight: 1.6,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  padding: "2px 8px",
+                                  borderRadius: 4,
+                                  background: "rgba(240,165,0,0.12)",
+                                  color: "#F0A500",
+                                  fontFamily: "'DM Mono', monospace",
                                 }}
                               >
-                                {reviewGap > 0
-                                  ? `Get ${reviewGap} more reviews + improve score by ${gap} points`
-                                  : `Improve your score by ${gap} points`}{" "}
-                                — estimated{" "}
-                                <span
-                                  style={{ color: "#F0A500", fontWeight: 600 }}
-                                >
-                                  {weeks}
-                                </span>
-                              </div>
-                            ) : (
-                              <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                                🔒 Unlock with Pro to see full roadmap
-                              </div>
+                                NEXT TARGET
+                              </span>
                             )}
                           </div>
-
-                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          {!isLocked ? (
                             <div
                               style={{
-                                fontFamily: "'DM Mono', monospace",
-                                fontSize: 16,
-                                fontWeight: 700,
-                                color: isLocked ? "#6B7B78" : "#F0A500",
+                                fontSize: 12,
+                                color: "#6B7B78",
+                                lineHeight: 1.6,
                               }}
                             >
-                              Score: {comp.score}
+                              {reviewGap > 0
+                                ? `Get ${reviewGap} more reviews + improve score by ${gap} points`
+                                : `Improve your score by ${gap} points`}{" "}
+                              — estimated{" "}
+                              <span
+                                style={{ color: "#F0A500", fontWeight: 600 }}
+                              >
+                                {weeks}
+                              </span>
                             </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              {gap > 0 ? `+${gap} ahead` : "same level"}
+                          ) : (
+                            <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                              🔒 Unlock with Pro to see full roadmap
                             </div>
+                          )}
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div
+                            style={{
+                              fontFamily: "'DM Mono', monospace",
+                              fontSize: 16,
+                              fontWeight: 700,
+                              color: isLocked ? "#6B7B78" : "#F0A500",
+                            }}
+                          >
+                            Score: {comp.score}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                            {gap > 0 ? `+${gap} ahead` : "same level"}
                           </div>
                         </div>
                       </div>
                     );
                   })}
 
-                  {/* Final goal */}
                   {stepsToShow.length > 0 && (
                     <div
                       style={{
@@ -2062,7 +2739,7 @@ function DashboardContent() {
                         alignItems: "center",
                         gap: 14,
                         marginTop: 12,
-                        opacity: 0.5,
+                        opacity: isPro ? 1 : 0.5,
                       }}
                     >
                       <div
@@ -2095,32 +2772,45 @@ function DashboardContent() {
                             ? `Rank #1 in ${city}`
                             : `Top 3 in ${city}`}
                         </div>
-                        <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                          🔒 Get Pro to unlock your full step-by-step growth
-                          plan
-                        </div>
+                        {isGrowth ? (
+                          <div style={{ fontSize: 12, color: "#2ECC71" }}>
+                            ✅ Full growth plan is active — keep following the
+                            steps above!
+                          </div>
+                        ) : isPro ? (
+                          <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                            🚀 Upgrade to Growth for a done-for-you accelerated
+                            plan
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                            🔒 Get Pro to unlock your full step-by-step growth
+                            plan
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={handleUpgradeClick}
-                        style={{
-                          background: "#2ECC71",
-                          color: "#000",
-                          border: "none",
-                          padding: "8px 16px",
-                          borderRadius: 8,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          fontFamily: "'DM Sans', sans-serif",
-                          flexShrink: 0,
-                        }}
-                      >
-                        Get Pro →
-                      </button>
+                      {!isGrowth && (
+                        <button
+                          onClick={() => setShowUpgradeModal(true)}
+                          style={{
+                            background: isPro ? "#D4A843" : "#2ECC71",
+                            color: "#000",
+                            border: "none",
+                            padding: "8px 16px",
+                            borderRadius: 8,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            fontFamily: "'DM Sans', sans-serif",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isPro ? "Get Growth →" : "Get Pro →"}
+                        </button>
+                      )}
                     </div>
                   )}
 
-                  {/* Clinics behind you */}
                   {behindComps.length > 0 && (
                     <div
                       style={{
@@ -2275,10 +2965,7 @@ function DashboardContent() {
                     color: "#6B7B78",
                     lineHeight: 1.7,
                     maxWidth: 420,
-                    marginTop: 0,
-                    marginBottom: 20,
-                    marginLeft: "auto",
-                    marginRight: "auto",
+                    margin: "0 auto 20px",
                   }}
                 >
                   Clinics with more reviews rank higher on Google and attract
@@ -2295,22 +2982,26 @@ function DashboardContent() {
                   every visit — so your clinic builds trust while you focus on
                   care.
                 </div>
-                <button
-                  onClick={handleUpgradeClick}
-                  style={{
-                    background: "#F0A500",
-                    color: "#000",
-                    border: "none",
-                    padding: "12px 28px",
-                    borderRadius: 8,
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Get More Reviews with Pro →
-                </button>
+                {!isGrowth && (
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    style={{
+                      background: "#F0A500",
+                      color: "#000",
+                      border: "none",
+                      padding: "12px 28px",
+                      borderRadius: 8,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {isPro
+                      ? "Upgrade to Growth for Automated Reviews →"
+                      : "Get More Reviews with Pro →"}
+                  </button>
+                )}
               </div>
             ) : reviews?.analysis ? (
               <div
@@ -2320,7 +3011,6 @@ function DashboardContent() {
                   gap: 20,
                 }}
               >
-                {/* Summary + Sentiment Breakdown */}
                 <div
                   style={{
                     gridColumn: "1 / -1",
@@ -2329,7 +3019,6 @@ function DashboardContent() {
                     gap: 16,
                   }}
                 >
-                  {/* Summary */}
                   <div
                     style={{
                       background: "#0D0F0E",
@@ -2382,8 +3071,6 @@ function DashboardContent() {
                       {reviews.analysis.sentiment?.toUpperCase()}
                     </div>
                   </div>
-
-                  {/* Sentiment Breakdown */}
                   <div
                     style={{
                       background: "#0D0F0E",
@@ -2454,8 +3141,6 @@ function DashboardContent() {
                         </div>
                       </div>
                     ))}
-
-                    {/* Review count comparison */}
                     <div
                       style={{
                         marginTop: 16,
@@ -2518,7 +3203,6 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                {/* Response Rate */}
                 <div
                   style={{
                     gridColumn: "1 / -1",
@@ -2541,7 +3225,7 @@ function DashboardContent() {
                         marginBottom: 4,
                       }}
                     >
-                      REVIEW YOU REPLY TO REVIEWS
+                      HOW OFTEN YOU REPLY TO REVIEWS
                     </div>
                     <div
                       style={{
@@ -2583,7 +3267,6 @@ function DashboardContent() {
                   )}
                 </div>
 
-                {/* What patients love */}
                 <div
                   style={{
                     background: "#0D0F0E",
@@ -2617,7 +3300,6 @@ function DashboardContent() {
                   ))}
                 </div>
 
-                {/* Complaints */}
                 <div
                   style={{
                     background: "#0D0F0E",
@@ -2671,7 +3353,6 @@ function DashboardContent() {
                   )}
                 </div>
 
-                {/* Fix now */}
                 <div
                   style={{
                     background: "#0D0F0E",
@@ -2723,7 +3404,6 @@ function DashboardContent() {
                   )}
                 </div>
 
-                {/* Promote */}
                 <div
                   style={{
                     background: "#0D0F0E",
@@ -2772,19 +3452,25 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* HEALTH TAB */}
-
-        {/* SCORE TAB */}
+        {/* SCORE / INTELLIGENCE TAB */}
         {activeTab === "score" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Score breakdown cards */}
+          <div
+            className="card"
+            style={{
+              background: "#151918",
+              border: "1px solid #2A3330",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              animationDelay: "0.5s",
+            }}
+          >
             <div
-              className="card"
               style={{
-                background: "#151918",
-                border: "1px solid #2A3330",
-                borderRadius: 16,
-                padding: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 20,
               }}
             >
               <div
@@ -2792,542 +3478,436 @@ function DashboardContent() {
                   fontFamily: "'Playfair Display', serif",
                   fontSize: 20,
                   fontWeight: 700,
-                  marginBottom: 20,
                 }}
               >
-                📊 Your Score Breakdown
+                🧠 Growth Intelligence
+              </div>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "4px 12px",
+                  borderRadius: 20,
+                  background: "rgba(26,188,156,0.12)",
+                  color: "#1ABC9C",
+                  fontFamily: "'DM Mono', monospace",
+                }}
+              >
+                AI POWERED
+              </span>
+            </div>
+
+            {/* Patient Value Calculator */}
+            <div
+              style={{
+                background: "#0D0F0E",
+                borderRadius: 12,
+                padding: 20,
+                marginBottom: 20,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#F0EBE3",
+                  marginBottom: 4,
+                }}
+              >
+                💰 What Each New Patient Is Worth
+              </div>
+              <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 16 }}>
+                Adjust your average patient lifetime value to see your revenue
+                potential.
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <input
+                  type="range"
+                  min={50}
+                  max={1000}
+                  step={50}
+                  value={patientValue}
+                  onChange={(e) => setPatientValue(Number(e.target.value))}
+                  style={{ flex: 1, accentColor: "#1ABC9C" }}
+                />
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 28,
+                    fontWeight: 900,
+                    color: "#1ABC9C",
+                    minWidth: 80,
+                  }}
+                >
+                  ${patientValue}
+                </div>
               </div>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 16,
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 12,
                 }}
               >
                 {[
-                  {
-                    label: "Website Speed",
-                    value:
-                      data.performanceScore === 0 && data.seoScore === 0
-                        ? null
-                        : data.performanceScore,
-                    desc: "How fast your site loads for patients",
-                    icon: "⚡",
-                  },
-                  {
-                    label: "Google Findability",
-                    value:
-                      data.performanceScore === 0 && data.seoScore === 0
-                        ? null
-                        : data.seoScore,
-                    desc: "How easily Google can find your clinic",
-                    icon: "🔍",
-                  },
-                  {
-                    label: "Website Usability",
-                    value:
-                      data.performanceScore === 0 && data.seoScore === 0
-                        ? null
-                        : data.accessibilityScore,
-                    desc: "How easy your site is for patients to use",
-                    icon: "👆",
-                  },
-                  {
-                    label: "Overall Score",
-                    value: data.overallScore,
-                    desc: "Your combined Google presence score",
-                    icon: "🏆",
-                  },
-                ].map((item, i) => {
-                  const val = item.value;
-                  const color =
-                    val === null
-                      ? "#6B7B78"
-                      : val >= 70
-                        ? "#2ECC71"
-                        : val >= 40
-                          ? "#F0A500"
-                          : "#E74C3C";
-                  return (
+                  { label: "5 new patients/mo", value: patientValue * 5 },
+                  { label: "10 new patients/mo", value: patientValue * 10 },
+                  { label: "20 new patients/mo", value: patientValue * 20 },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    style={{
+                      background: "#151918",
+                      borderRadius: 10,
+                      padding: "14px 16px",
+                      textAlign: "center",
+                    }}
+                  >
                     <div
-                      key={i}
                       style={{
-                        background: "#0D0F0E",
-                        borderRadius: 12,
-                        padding: 20,
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: 22,
+                        fontWeight: 900,
+                        color: "#2ECC71",
+                      }}
+                    >
+                      ${value.toLocaleString()}
+                    </div>
+                    <div
+                      style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}
+                    >
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Score breakdown */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 16,
+              }}
+            >
+              {[
+                {
+                  label: "Website Speed",
+                  score: data.performanceScore,
+                  icon: "⚡",
+                  desc: "How fast your site loads for patients",
+                },
+                {
+                  label: "Google Findability",
+                  score: data.seoScore,
+                  icon: "🔍",
+                  desc: "How easily Google can find and rank you",
+                },
+                {
+                  label: "Website Usability",
+                  score: data.accessibilityScore,
+                  icon: "👆",
+                  desc: "How easy your site is to use on mobile",
+                },
+              ].map(({ label, score, icon, desc }) => {
+                const color =
+                  score >= 70 ? "#2ECC71" : score >= 40 ? "#F0A500" : "#E74C3C";
+                return (
+                  <div
+                    key={label}
+                    style={{
+                      background: "#0D0F0E",
+                      borderRadius: 12,
+                      padding: 20,
+                    }}
+                  >
+                    <div style={{ fontSize: 24, marginBottom: 8 }}>{icon}</div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: "#6B7B78",
+                        marginBottom: 4,
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Playfair Display', serif",
+                        fontSize: 36,
+                        fontWeight: 900,
+                        color,
+                        marginBottom: 4,
+                      }}
+                    >
+                      {score || "—"}
+                    </div>
+                    <div
+                      style={{
+                        height: 6,
+                        background: "#2A3330",
+                        borderRadius: 3,
+                        marginBottom: 8,
                       }}
                     >
                       <div
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: 8,
+                          height: 6,
+                          background: color,
+                          borderRadius: 3,
+                          width: `${score}%`,
+                          transition: "width 1s ease",
                         }}
-                      >
-                        <span style={{ fontSize: 20 }}>{item.icon}</span>
-                        <span
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: 32,
-                            fontWeight: 900,
-                            color,
-                          }}
-                        >
-                          {val === null ? "—" : val}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: "#F0EBE3",
-                          marginBottom: 4,
-                        }}
-                      >
-                        {item.label}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                        {item.desc}
-                      </div>
-                      {val !== null && (
-                        <div
-                          style={{
-                            marginTop: 12,
-                            height: 4,
-                            background: "#1A2320",
-                            borderRadius: 2,
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: 4,
-                              width: `${val}%`,
-                              background: color,
-                              borderRadius: 2,
-                              transition: "width 1s ease",
-                            }}
-                          />
-                        </div>
-                      )}
+                      />
                     </div>
-                  );
-                })}
-              </div>
+                    <div style={{ fontSize: 11, color: "#6B7B78" }}>{desc}</div>
+                  </div>
+                );
+              })}
             </div>
+          </div>
+        )}
 
-            {/* What your score means */}
+        {/* HEALTH TAB */}
+        {activeTab === "health" && (
+          <div
+            className="card"
+            style={{
+              background: "#151918",
+              border: "1px solid #2A3330",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              animationDelay: "0.5s",
+            }}
+          >
             <div
-              className="card"
               style={{
-                background: "#151918",
-                border: "1px solid #2A3330",
-                borderRadius: 16,
-                padding: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 20,
               }}
             >
               <div
                 style={{
                   fontFamily: "'Playfair Display', serif",
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: 700,
-                  marginBottom: 16,
                 }}
               >
-                What Your Score Means
+                🔧 Website Health Check
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {failIssues.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "4px 12px",
+                      borderRadius: 20,
+                      background: "rgba(231,76,60,0.1)",
+                      color: "#E74C3C",
+                      fontFamily: "'DM Mono', monospace",
+                    }}
+                  >
+                    {failIssues.length} ISSUES
+                  </span>
+                )}
+                {passIssues.length > 0 && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "4px 12px",
+                      borderRadius: 20,
+                      background: "rgba(46,204,113,0.1)",
+                      color: "#2ECC71",
+                      fontFamily: "'DM Mono', monospace",
+                    }}
+                  >
+                    {passIssues.length} PASSING
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {[...failIssues, ...warnIssues, ...passIssues].map((issue, i) => {
+              const dotColor =
+                issue.status === "fail"
+                  ? "#E74C3C"
+                  : issue.status === "warn"
+                    ? "#F0A500"
+                    : "#2ECC71";
+              const isExpanded = expandedIssue === i;
+              return (
+                <div
+                  key={i}
+                  className="issue-row"
+                  style={{
+                    padding: "14px 16px",
+                    borderRadius: 10,
+                    marginBottom: 4,
+                    cursor: "pointer",
+                    transition: "background 0.2s",
+                    background: isExpanded
+                      ? "rgba(26,188,156,0.04)"
+                      : "transparent",
+                  }}
+                  onClick={() => setExpandedIssue(isExpanded ? null : i)}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: dotColor,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: "#F0EBE3",
+                        }}
+                      >
+                        {issue.title}
+                      </div>
+                      <div
+                        style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}
+                      >
+                        {issue.desc}
+                      </div>
+                      {isExpanded && fixGuides[issue.title] && (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            background: "#0D0F0E",
+                            borderRadius: 8,
+                            padding: 16,
+                            borderLeft: `3px solid ${dotColor}`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#1ABC9C",
+                              fontWeight: 600,
+                              marginBottom: 10,
+                            }}
+                          >
+                            🛠️ HOW TO FIX THIS
+                          </div>
+                          {fixGuides[issue.title].map((step, j) => (
+                            <div
+                              key={j}
+                              style={{
+                                display: "flex",
+                                gap: 10,
+                                fontSize: 12,
+                                color: "#F0EBE3",
+                                marginBottom: 8,
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  color: "#1ABC9C",
+                                  fontWeight: 700,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {j + 1}.
+                              </span>
+                              {step}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {issue.status !== "pass" && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "3px 8px",
+                          borderRadius: 4,
+                          background:
+                            issue.priority === "HIGH"
+                              ? "rgba(231,76,60,0.12)"
+                              : "rgba(240,165,0,0.12)",
+                          color:
+                            issue.priority === "HIGH" ? "#E74C3C" : "#F0A500",
+                          fontFamily: "'DM Mono', monospace",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {issue.priority}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div
+              style={{
+                marginTop: 20,
+                paddingTop: 20,
+                borderTop: "1px solid #2A3330",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  marginBottom: 16,
+                  color: "#F0A500",
+                }}
+              >
+                ⚡ Easy Wins — Do These This Week
               </div>
               {[
-                {
-                  range: "80–100",
-                  label: "Top Performer",
-                  desc: "You're ahead of most clinics. Focus on reviews and maintaining your position.",
-                  color: "#2ECC71",
-                },
-                {
-                  range: "60–79",
-                  label: "Good Standing",
-                  desc: "Solid foundation. A few targeted fixes can push you into the top 3.",
-                  color: "#F0A500",
-                },
-                {
-                  range: "40–59",
-                  label: "Needs Work",
-                  desc: "Competitors are likely outranking you. Address the issues in the Health tab.",
-                  color: "#E67E22",
-                },
-                {
-                  range: "0–39",
-                  label: "Critical",
-                  desc: "Patients searching Google can barely find you. Immediate action needed.",
-                  color: "#E74C3C",
-                },
-              ].map((tier, i) => (
+                "Add 'dentist + your city' to your homepage title",
+                "Complete your Google Business Profile",
+                "Ask your last 10 patients for a Google review",
+                "Add your clinic hours to Google",
+                "Upload 10+ photos to Google Business",
+              ].map((tip, i) => (
                 <div
                   key={i}
                   style={{
                     display: "flex",
-                    alignItems: "center",
-                    gap: 16,
-                    padding: "12px 0",
-                    borderBottom: i < 3 ? "1px solid #1A2320" : "none",
+                    gap: 10,
+                    alignItems: "flex-start",
+                    padding: "8px 0",
+                    fontSize: 13,
+                    color: "#6B7B78",
                   }}
                 >
-                  <div
-                    style={{
-                      width: 60,
-                      textAlign: "center",
-                      fontFamily: "'DM Mono', monospace",
-                      fontSize: 11,
-                      color: tier.color,
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
+                  <span
+                    style={{ color: "#1ABC9C", fontWeight: 700, flexShrink: 0 }}
                   >
-                    {tier.range}
-                  </div>
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: tier.color,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color:
-                          data.overallScore >= parseInt(tier.range)
-                            ? tier.color
-                            : "#F0EBE3",
-                      }}
-                    >
-                      {tier.label}
-                    </div>
-                    <div
-                      style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}
-                    >
-                      {tier.desc}
-                    </div>
-                  </div>
-                  {data.overallScore >= parseInt(tier.range.split("–")[0]) &&
-                    data.overallScore <= parseInt(tier.range.split("–")[1]) && (
-                      <span
-                        style={{
-                          marginLeft: "auto",
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: tier.color,
-                          background: `${tier.color}18`,
-                          padding: "3px 10px",
-                          borderRadius: 20,
-                          flexShrink: 0,
-                        }}
-                      >
-                        YOU ARE HERE
-                      </span>
-                    )}
+                    →
+                  </span>
+                  {tip}
                 </div>
               ))}
             </div>
           </div>
-        )}
-
-        {activeTab === "health" && (
-          <>
-            {/* ISSUES */}
-            <div
-              className="card"
-              style={{
-                marginBottom: 24,
-                animationDelay: "0.3s",
-              }}
-            >
-              {/* Unified Checklist */}
-              <div
-                style={{
-                  background: "#151918",
-                  border: "1px solid #2A3330",
-                  borderRadius: 16,
-                  padding: 24,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 20,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 20,
-                      fontWeight: 700,
-                    }}
-                  >
-                    Your Clinic Health Checklist
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: "4px 12px",
-                        borderRadius: 20,
-                        background: "rgba(231,76,60,0.12)",
-                        color: "#E74C3C",
-                        fontFamily: "'DM Mono', monospace",
-                      }}
-                    >
-                      {failIssues.length} Failed
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: "4px 12px",
-                        borderRadius: 20,
-                        background: "rgba(240,165,0,0.12)",
-                        color: "#F0A500",
-                        fontFamily: "'DM Mono', monospace",
-                      }}
-                    >
-                      {warnIssues.length} Warning
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: "4px 12px",
-                        borderRadius: 20,
-                        background: "rgba(46,204,113,0.12)",
-                        color: "#2ECC71",
-                        fontFamily: "'DM Mono', monospace",
-                      }}
-                    >
-                      {passIssues.length} Good
-                    </span>
-                  </div>
-                </div>
-                {[...failIssues, ...warnIssues, ...passIssues].map(
-                  (issue, i) => {
-                    const icon =
-                      issue.status === "fail"
-                        ? "❌"
-                        : issue.status === "warn"
-                          ? "⚠️"
-                          : "✅";
-                    const dotColor =
-                      issue.status === "fail"
-                        ? "#E74C3C"
-                        : issue.status === "warn"
-                          ? "#F0A500"
-                          : "#2ECC71";
-                    const isExpanded = expandedIssue === i;
-                    return (
-                      <div
-                        key={i}
-                        className="issue-row"
-                        style={{
-                          padding: "14px 0",
-                          borderBottom: "1px solid #2A3330",
-                          borderRadius: 4,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 14,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 18,
-                              flexShrink: 0,
-                              marginTop: 1,
-                            }}
-                          >
-                            {icon}
-                          </span>
-                          <div style={{ flex: 1 }}>
-                            <div
-                              style={{
-                                fontSize: 14,
-                                fontWeight: 600,
-                                marginBottom: 4,
-                                color:
-                                  issue.status === "pass"
-                                    ? "#A0B0AD"
-                                    : "#F0EBE3",
-                              }}
-                            >
-                              {issue.title}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: "#6B7B78",
-                                lineHeight: 1.5,
-                              }}
-                            >
-                              {issue.desc}
-                            </div>
-                            {fixGuides[issue.title] && (
-                              <button
-                                onClick={() =>
-                                  setExpandedIssue(isExpanded ? null : i)
-                                }
-                                style={{
-                                  marginTop: 8,
-                                  background: "transparent",
-                                  border: `1px solid ${dotColor}40`,
-                                  color: dotColor,
-                                  padding: "4px 12px",
-                                  borderRadius: 6,
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  cursor: "pointer",
-                                  fontFamily: "'DM Sans', sans-serif",
-                                }}
-                              >
-                                {isExpanded
-                                  ? "▲ Hide fix guide"
-                                  : "▼ How to fix this"}
-                              </button>
-                            )}
-                            {isExpanded && fixGuides[issue.title] && (
-                              <div
-                                style={{
-                                  marginTop: 12,
-                                  background: "#0D0F0E",
-                                  borderRadius: 8,
-                                  padding: 16,
-                                  borderLeft: `3px solid ${dotColor}`,
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    fontSize: 12,
-                                    color: "#1ABC9C",
-                                    fontWeight: 600,
-                                    marginBottom: 10,
-                                  }}
-                                >
-                                  🛠️ HOW TO FIX THIS
-                                </div>
-                                {fixGuides[issue.title].map((step, j) => (
-                                  <div
-                                    key={j}
-                                    style={{
-                                      display: "flex",
-                                      gap: 10,
-                                      fontSize: 12,
-                                      color: "#F0EBE3",
-                                      marginBottom: 8,
-                                      lineHeight: 1.6,
-                                    }}
-                                  >
-                                    <span
-                                      style={{
-                                        color: "#1ABC9C",
-                                        fontWeight: 700,
-                                        flexShrink: 0,
-                                      }}
-                                    >
-                                      {j + 1}.
-                                    </span>
-                                    {step}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          {issue.status !== "pass" && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                padding: "3px 8px",
-                                borderRadius: 4,
-                                background:
-                                  issue.priority === "HIGH"
-                                    ? "rgba(231,76,60,0.12)"
-                                    : "rgba(240,165,0,0.12)",
-                                color:
-                                  issue.priority === "HIGH"
-                                    ? "#E74C3C"
-                                    : "#F0A500",
-                                fontFamily: "'DM Mono', monospace",
-                                flexShrink: 0,
-                              }}
-                            >
-                              {issue.priority}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  },
-                )}
-
-                {/* Google Profile Checklist */}
-                <div
-                  style={{
-                    marginTop: 20,
-                    paddingTop: 20,
-                    borderTop: "1px solid #2A3330",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      marginBottom: 16,
-                      color: "#F0A500",
-                    }}
-                  >
-                    ⚡ Easy Wins — Do These This Week
-                  </div>
-                  {[
-                    "Add 'dentist + your city' to your homepage title",
-                    "Complete your Google Business Profile",
-                    "Ask your last 10 patients for a Google review",
-                    "Add your clinic hours to Google",
-                    "Upload 10+ photos to Google Business",
-                  ].map((tip, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        alignItems: "flex-start",
-                        padding: "8px 0",
-                        fontSize: 13,
-                        color: "#6B7B78",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "#1ABC9C",
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}
-                      >
-                        →
-                      </span>
-                      {tip}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </>
         )}
 
         {/* BOTTOM CTA */}
@@ -3350,7 +3930,11 @@ function DashboardContent() {
               marginBottom: 12,
             }}
           >
-            Don't lose patients to nearby competitors.
+            {isGrowth
+              ? "You're on the Growth plan — keep climbing! 🚀"
+              : isPro
+                ? "Ready to grow even faster?"
+                : "Don't lose patients to nearby competitors."}
           </div>
           <div
             style={{
@@ -3361,122 +3945,175 @@ function DashboardContent() {
               margin: "0 auto 32px",
             }}
           >
-            Stay ahead of nearby clinics and keep attracting new patients.
-            Monitor reviews, rankings and competitor moves every month — so
-            you're always one step ahead.
-          </div>
-          <div
-            style={{
-              fontSize: 15,
-              color: "#A0B0AD",
-              maxWidth: 560,
-              marginTop: 0,
-              marginBottom: 32,
-              marginLeft: "auto",
-              marginRight: "auto",
-            }}
-          >
-            Unlock competitor tracking, monthly growth insights, and review
-            automation — everything you need to reach and hold the #1 spot in
-            your city.
+            {isGrowth
+              ? "You have full access to all features. Keep monitoring your ranking and responding to reviews every week."
+              : isPro
+                ? "Upgrade to Growth for done-for-you SEO fixes, weekly check-ins, and priority support to reach #1 faster."
+                : "Stay ahead of nearby clinics and keep attracting new patients. Monitor reviews, rankings and competitor moves every month — so you're always one step ahead."}
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 16,
-              maxWidth: 640,
-              margin: "0 auto 32px",
-              textAlign: "left",
-            }}
-          >
-            {[
-              {
-                icon: "⭐",
-                title: "Get More Reviews",
-                desc: "We automatically ask your patients for Google reviews after every visit",
-              },
-              {
-                icon: "📈",
-                title: "Monthly Progress",
-                desc: "See if your score improves each month and what changed",
-              },
-              {
-                icon: "🔔",
-                title: "Competitor Alerts",
-                desc: "Get notified the moment a competitor overtakes your ranking",
-              },
-              {
-                icon: "💬",
-                title: "Review Monitoring",
-                desc: "Instant alerts when a patient leaves a new review — good or bad",
-              },
-              {
-                icon: "🛠️",
-                title: "Fix Guides",
-                desc: "Step-by-step plain English instructions to fix every problem we find",
-              },
-              {
-                icon: "🏆",
-                title: "Rank Tracking",
-                desc: "We track your Google ranking every month so you always know where you stand",
-              },
-            ].map((f, i) => (
+          {!isGrowth && (
+            <>
               <div
-                key={i}
                 style={{
-                  background: "#0D0F0E",
-                  borderRadius: 12,
-                  padding: 16,
-                  display: "flex",
-                  gap: 12,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 16,
+                  maxWidth: 640,
+                  margin: "0 auto 32px",
+                  textAlign: "left",
                 }}
               >
-                <span style={{ fontSize: 20 }}>{f.icon}</span>
-                <div>
+                {(isPro
+                  ? [
+                      {
+                        icon: "🛠️",
+                        title: "Done-For-You Fixes",
+                        desc: "We implement SEO and speed fixes directly on your site — no developer needed",
+                      },
+                      {
+                        icon: "📅",
+                        title: "Weekly Updates",
+                        desc: "Get a ranking update every week so you always know if you're gaining or losing ground",
+                      },
+                      {
+                        icon: "👤",
+                        title: "Dedicated Manager",
+                        desc: "A real person reviews your account monthly and gives you a personalised action plan",
+                      },
+                      {
+                        icon: "🔔",
+                        title: "Competitor Alerts",
+                        desc: "Get notified the moment a competitor overtakes your ranking",
+                      },
+                      {
+                        icon: "💬",
+                        title: "Review Monitoring",
+                        desc: "Instant alerts when a patient leaves a new review — good or bad",
+                      },
+                      {
+                        icon: "🏆",
+                        title: "Rank Tracking",
+                        desc: "We track your Google ranking weekly so you always know where you stand",
+                      },
+                    ]
+                  : [
+                      {
+                        icon: "⭐",
+                        title: "Get More Reviews",
+                        desc: "We automatically ask your patients for Google reviews after every visit",
+                      },
+                      {
+                        icon: "📈",
+                        title: "Monthly Progress",
+                        desc: "See if your score improves each month and what changed",
+                      },
+                      {
+                        icon: "🔔",
+                        title: "Competitor Alerts",
+                        desc: "Get notified the moment a competitor overtakes your ranking",
+                      },
+                      {
+                        icon: "💬",
+                        title: "Review Monitoring",
+                        desc: "Instant alerts when a patient leaves a new review — good or bad",
+                      },
+                      {
+                        icon: "🛠️",
+                        title: "Fix Guides",
+                        desc: "Step-by-step plain English instructions to fix every problem we find",
+                      },
+                      {
+                        icon: "🏆",
+                        title: "Rank Tracking",
+                        desc: "We track your Google ranking every month so you always know where you stand",
+                      },
+                    ]
+                ).map((f, i) => (
                   <div
+                    key={i}
                     style={{
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: "#F0EBE3",
-                      marginBottom: 4,
+                      background: "#0D0F0E",
+                      borderRadius: 12,
+                      padding: 16,
+                      display: "flex",
+                      gap: 12,
                     }}
                   >
-                    {f.title}
+                    <span style={{ fontSize: 20 }}>{f.icon}</span>
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: "#F0EBE3",
+                          marginBottom: 4,
+                        }}
+                      >
+                        {f.title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#6B7B78",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {f.desc}
+                      </div>
+                    </div>
                   </div>
-                  <div
-                    style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}
-                  >
-                    {f.desc}
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <div
-            className="rc-upgrade-btns"
-            style={{ display: "flex", gap: 16, justifyContent: "center" }}
-          >
-            <button
-              className="upgrade-btn no-print"
-              onClick={handleUpgradeClick}
-              style={{
-                background: "#1ABC9C",
-                color: "#000",
-                border: "none",
-                padding: "14px 36px",
-                borderRadius: 8,
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "opacity 0.2s",
-              }}
-            >
-              Get Pro Access — $49/month →
-            </button>
+              <div
+                className="rc-upgrade-btns"
+                style={{ display: "flex", gap: 16, justifyContent: "center" }}
+              >
+                <button
+                  className="upgrade-btn no-print"
+                  onClick={() => setShowUpgradeModal(true)}
+                  style={{
+                    background: isPro ? "#D4A843" : "#1ABC9C",
+                    color: "#000",
+                    border: "none",
+                    padding: "14px 36px",
+                    borderRadius: 8,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "opacity 0.2s",
+                  }}
+                >
+                  {isPro
+                    ? "Upgrade to Growth — $99/month →"
+                    : "Get Pro Access — $49/month →"}
+                </button>
+                <a
+                  href="/"
+                  style={{
+                    background: "transparent",
+                    color: "#6B7B78",
+                    border: "1px solid #2A3330",
+                    padding: "14px 28px",
+                    borderRadius: 8,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
+                  ← Scan Another Clinic
+                </a>
+              </div>
+            </>
+          )}
+
+          {isGrowth && (
             <a
               href="/"
               style={{
@@ -3496,57 +4133,65 @@ function DashboardContent() {
             >
               ← Scan Another Clinic
             </a>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* PRO LOGIN MODAL */}
+      {/* UPGRADE MODAL */}
+      {showUpgradeModal && (
+        <UpgradeModal
+          mode={isPro && !isGrowth ? "growth-only" : "both"}
+          clinicUrl={url}
+          onClose={() => setShowUpgradeModal(false)}
+          onSuccess={(plan, email) => {
+            applyPlan(plan, email);
+          }}
+        />
+      )}
+
+      {/* "I'M ALREADY PRO" RE-AUTH MODAL — free users only */}
       {showProLogin && (
         <div
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 1000,
-            background: "rgba(0,0,0,0.85)",
+            background: "rgba(0,0,0,0.8)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             padding: 24,
           }}
+          onClick={() => setShowProLogin(false)}
         >
           <div
             style={{
               background: "#151918",
-              border: "2px solid #1ABC9C",
+              border: "1px solid #2A3330",
               borderRadius: 20,
               padding: 40,
-              maxWidth: 420,
               width: "100%",
-              textAlign: "center",
+              maxWidth: 420,
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
-            <h2
-              style={{
-                fontFamily: "'Playfair Display', serif",
-                fontSize: 24,
-                fontWeight: 800,
-                color: "#F0EBE3",
-                marginBottom: 8,
-              }}
-            >
-              Welcome to RootCanal Pro!
-            </h2>
-            <p
-              style={{
-                fontSize: 14,
-                color: "#6B7B78",
-                marginBottom: 24,
-                lineHeight: 1.6,
-              }}
-            >
-              Enter the email you used to subscribe to unlock your Pro features.
-            </p>
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>🔒</div>
+              <h2
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: 24,
+                  fontWeight: 900,
+                  color: "#F0EBE3",
+                  marginBottom: 8,
+                }}
+              >
+                Restore Your Pro Access
+              </h2>
+              <p style={{ fontSize: 14, color: "#6B7B78", lineHeight: 1.6 }}>
+                Enter the email you used to subscribe.
+              </p>
+            </div>
             <input
               type="email"
               placeholder="your@email.com"
@@ -3579,8 +4224,13 @@ function DashboardContent() {
                 if (!proLoginEmail.trim()) return;
                 setProLoginLoading(true);
                 setProLoginError("");
-                await checkProStatus(proLoginEmail);
-                setShowProLogin(false);
+                const found = await checkByEmail(proLoginEmail);
+                if (found) setShowProLogin(false);
+                else
+                  setProLoginError(
+                    "No active subscription found for this email.",
+                  );
+                setProLoginLoading(false);
               }}
               disabled={proLoginLoading || !proLoginEmail.trim()}
               style={{
@@ -3595,9 +4245,10 @@ function DashboardContent() {
                 cursor: "pointer",
                 fontFamily: "'DM Sans', sans-serif",
                 marginBottom: 12,
+                opacity: proLoginLoading || !proLoginEmail.trim() ? 0.6 : 1,
               }}
             >
-              {proLoginLoading ? "Checking..." : "Unlock Pro Access →"}
+              {proLoginLoading ? "Checking..." : "Unlock My Access →"}
             </button>
             <button
               onClick={() => setShowProLogin(false)}
@@ -3607,256 +4258,11 @@ function DashboardContent() {
                 color: "#6B7B78",
                 fontSize: 13,
                 cursor: "pointer",
+                width: "100%",
               }}
             >
               Close
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* UPGRADE POPUP */}
-      {showUpgradePopup && !window?.matchMedia("print").matches && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: "rgba(0,0,0,0.8)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-          onClick={() => !leadSuccess && setShowUpgradePopup(false)}
-        >
-          <div
-            style={{
-              background: "#151918",
-              border: "2px solid #1ABC9C",
-              borderRadius: 20,
-              padding: 48,
-              width: "100%",
-              maxWidth: 480,
-              boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
-              position: "relative",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {!leadSuccess ? (
-              <>
-                {/* Close button */}
-                <button
-                  onClick={() => setShowUpgradePopup(false)}
-                  style={{
-                    position: "absolute",
-                    top: 16,
-                    right: 16,
-                    background: "transparent",
-                    border: "none",
-                    color: "#6B7B78",
-                    fontSize: 20,
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-
-                {/* Header */}
-                <div style={{ textAlign: "center", marginBottom: 32 }}>
-                  <div style={{ fontSize: 40, marginBottom: 12 }}>🦷</div>
-                  <h2
-                    style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 28,
-                      fontWeight: 900,
-                      color: "#F0EBE3",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Upgrade to Pro
-                  </h2>
-                  <p
-                    style={{ fontSize: 15, color: "#6B7B78", lineHeight: 1.6 }}
-                  >
-                    Enter your details and we&apos;ll set up your Pro account
-                    within 24 hours.
-                  </p>
-                </div>
-
-                {/* Features */}
-                <div
-                  style={{
-                    background: "#0D0F0E",
-                    borderRadius: 12,
-                    padding: 20,
-                    marginBottom: 28,
-                  }}
-                >
-                  {[
-                    "Monthly automated rescans",
-                    "Competitor change alerts",
-                    "Review request automation (SMS)",
-                    "Step-by-step fix guides",
-                    "Monthly PDF reports",
-                  ].map((f) => (
-                    <div
-                      key={f}
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        alignItems: "center",
-                        fontSize: 14,
-                        color: "#F0EBE3",
-                        marginBottom: 10,
-                      }}
-                    >
-                      <span style={{ color: "#1ABC9C", fontWeight: 700 }}>
-                        ✓
-                      </span>{" "}
-                      {f}
-                    </div>
-                  ))}
-                  <div
-                    style={{
-                      marginTop: 16,
-                      paddingTop: 16,
-                      borderTop: "1px solid #2A3330",
-                      textAlign: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        fontSize: 36,
-                        fontWeight: 900,
-                        color: "#1ABC9C",
-                      }}
-                    >
-                      $49
-                    </span>
-                    <span style={{ fontSize: 14, color: "#6B7B78" }}>
-                      /month
-                    </span>
-                  </div>
-                </div>
-
-                {/* Form */}
-                <form
-                  onSubmit={handleLeadSubmit}
-                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
-                >
-                  <input
-                    type="email"
-                    placeholder="Your email address"
-                    value={leadEmail}
-                    onChange={(e) => setLeadEmail(e.target.value)}
-                    required
-                    style={{
-                      padding: "14px 18px",
-                      borderRadius: 8,
-                      border: "2px solid #2A3330",
-                      background: "#0D0F0E",
-                      color: "#F0EBE3",
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 15,
-                      outline: "none",
-                    }}
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Your phone number (with country code)"
-                    value={leadPhone}
-                    onChange={(e) => setLeadPhone(e.target.value)}
-                    style={{
-                      padding: "14px 18px",
-                      borderRadius: 8,
-                      border: "2px solid #2A3330",
-                      background: "#0D0F0E",
-                      color: "#F0EBE3",
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 15,
-                      outline: "none",
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={leadSubmitting}
-                    style={{
-                      background: "#1ABC9C",
-                      color: "#000",
-                      border: "none",
-                      padding: "16px",
-                      borderRadius: 8,
-                      fontSize: 16,
-                      fontWeight: 700,
-                      cursor: leadSubmitting ? "not-allowed" : "pointer",
-                      fontFamily: "'DM Sans', sans-serif",
-                      opacity: leadSubmitting ? 0.7 : 1,
-                      marginTop: 4,
-                    }}
-                  >
-                    {leadSubmitting
-                      ? "Setting up your account..."
-                      : "Get Pro Access →"}
-                  </button>
-                  <p
-                    style={{
-                      fontSize: 12,
-                      color: "#6B7B78",
-                      textAlign: "center",
-                    }}
-                  >
-                    We&apos;ll contact you within 24 hours to activate your
-                    account
-                  </p>
-                </form>
-              </>
-            ) : (
-              // Success state
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{ fontSize: 60, marginBottom: 20 }}>🎉</div>
-                <h2
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: 28,
-                    fontWeight: 900,
-                    color: "#F0EBE3",
-                    marginBottom: 12,
-                  }}
-                >
-                  You&apos;re on the list!
-                </h2>
-                <p
-                  style={{
-                    fontSize: 16,
-                    color: "#6B7B78",
-                    lineHeight: 1.7,
-                    marginBottom: 28,
-                  }}
-                >
-                  We&apos;ll reach out to{" "}
-                  <strong style={{ color: "#1ABC9C" }}>{leadEmail}</strong>{" "}
-                  within 24 hours to set up your Pro account.
-                </p>
-                <button
-                  onClick={() => setShowUpgradePopup(false)}
-                  style={{
-                    background: "#1ABC9C",
-                    color: "#000",
-                    border: "none",
-                    padding: "14px 36px",
-                    borderRadius: 8,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Back to Report
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}

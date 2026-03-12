@@ -1,7 +1,6 @@
 export const PADDLE_PRO_PRICE_ID = "pri_01kkgn9fahgne08fqje1b8av43";
 export const PADDLE_GROWTH_PRICE_ID = "pri_01kkgnafpwdvqcs1tg4b0dtegh";
-export const PADDLE_CLIENT_TOKEN = "live_39e3ede11adab1a0cea422ee5fc";
-// 🔑 Replace these with your
+export const PADDLE_CLIENT_TOKEN = "live_d1866540f39450348fb1e72d0c2";
 
 declare global {
   interface Window {
@@ -13,13 +12,10 @@ declare global {
 export function initPaddle() {
   if (typeof window === "undefined" || !window.Paddle) return;
   if (window.Paddle?.Initialized) return;
-
-  window.Paddle.Initialize({
-    token: PADDLE_CLIENT_TOKEN,
-  });
+  window.Paddle.Initialize({ token: PADDLE_CLIENT_TOKEN });
 }
 
-export function openCheckout({
+function openCheckout({
   priceId,
   email,
   clinicUrl,
@@ -28,28 +24,32 @@ export function openCheckout({
   priceId: string;
   email?: string;
   clinicUrl?: string;
-  onSuccess?: () => void;
+  onSuccess?: (email: string) => void;
 }) {
   if (typeof window === "undefined" || !window.Paddle) {
-    alert("Payment system is loading. Please try again in a moment.");
+    console.error("Paddle not loaded");
     return;
   }
 
   initPaddle();
 
+  // Small delay to ensure Paddle is fully initialised before opening
   setTimeout(() => {
     window.Paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
       customer: email ? { email } : undefined,
-      customData: clinicUrl ? { clinicUrl } : undefined,
-      settings: {
-        displayMode: "overlay",
-        theme: "dark",
-        locale: "en",
+      // customData is forwarded verbatim to the webhook as event.data.custom_data
+      // This is how we know which clinic URL belongs to which subscriber
+      customData: {
+        clinicUrl: clinicUrl ?? "",
       },
-      eventCallback: (event: { name: string }) => {
+      eventCallback: (event: {
+        name: string;
+        data?: { customer?: { email?: string } };
+      }) => {
         if (event.name === "checkout.completed") {
-          onSuccess?.();
+          const customerEmail = event.data?.customer?.email ?? "";
+          onSuccess?.(customerEmail);
         }
       },
     });
@@ -59,18 +59,16 @@ export function openCheckout({
 export function openProCheckout(
   email?: string,
   clinicUrl?: string,
-  onSuccess?: () => void,
+  onSuccess?: (email: string) => void,
 ) {
-  if (!PADDLE_PRO_PRICE_ID) return;
   openCheckout({ priceId: PADDLE_PRO_PRICE_ID, email, clinicUrl, onSuccess });
 }
 
 export function openGrowthCheckout(
   email?: string,
   clinicUrl?: string,
-  onSuccess?: () => void,
+  onSuccess?: (email: string) => void,
 ) {
-  if (!PADDLE_GROWTH_PRICE_ID) return;
   openCheckout({
     priceId: PADDLE_GROWTH_PRICE_ID,
     email,

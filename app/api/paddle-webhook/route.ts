@@ -6,15 +6,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
+const PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID!;
+const GROWTH_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID!;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text();
     const event = JSON.parse(body);
+    const eventType: string = event.event_type;
 
-    const eventType = event.event_type;
     console.log("🪝 Paddle webhook received:", eventType);
 
-    // Handle subscription activated or payment completed
+    // ── NEW SUBSCRIPTION / PAYMENT ────────────────────────────────────────────
     if (
       eventType === "subscription.activated" ||
       eventType === "subscription.updated" ||
@@ -22,61 +25,66 @@ export async function POST(req: NextRequest) {
     ) {
       const data = event.data;
 
-      // Extract customer info
-      const email =
-        data?.customer?.email || data?.billing_details?.email || null;
+      // Customer email — Paddle always includes this on completed checkouts
+      const email: string | null =
+        data?.customer?.email ?? data?.billing_details?.email ?? null;
 
-      const priceId =
-        data?.items?.[0]?.price?.id ||
-        data?.subscription_items?.[0]?.price?.id ||
+      if (!email) {
+        console.warn("⚠️  No email in webhook payload — skipping");
+        return NextResponse.json({ received: true });
+      }
+
+      // Price ID → plan
+      const priceId: string | null =
+        data?.items?.[0]?.price?.id ??
+        data?.subscription_items?.[0]?.price?.id ??
         null;
 
-      const subscriptionId = data?.id || null;
-      const status = data?.status || "active";
-
-      // Map price ID to plan name
-      // 🔑 REPLACE these with your actual Paddle Price IDs from the dashboard
-      const PRO_PRICE_ID = process.env.PADDLE_PRO_PRICE_ID || "pri_REPLACE_PRO";
-      const GROWTH_PRICE_ID =
-        process.env.PADDLE_GROWTH_PRICE_ID || "pri_REPLACE_GROWTH";
-
       const plan =
-        priceId === PRO_PRICE_ID
-          ? "pro"
-          : priceId === GROWTH_PRICE_ID
-            ? "growth"
-            : "pro"; // default fallback
+        priceId === GROWTH_PRICE_ID
+          ? "growth"
+          : priceId === PRO_PRICE_ID
+            ? "pro"
+            : "pro"; // safe fallback
 
-      if (email) {
-        // Save subscriber to Supabase
-        const { error } = await supabase.from("subscribers").upsert(
-          {
-            email,
-            plan,
-            subscription_id: subscriptionId,
-            status,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "email" },
-        );
+      // Paddle passes our customData straight through as data.custom_data
+      // We set { clinicUrl } in paddle.ts — that's what arrives here
+      const clinicUrl: string | null = data?.custom_data?.clinicUrl || null;
 
-        if (error) {
-          console.error("❌ Supabase upsert error:", error);
-        } else {
-          console.log(`✅ Subscriber saved: ${email} → ${plan}`);
-        }
+      const subscriptionId: string | null = data?.id ?? null;
+      const status: string = data?.status ?? "active";
+
+      console.log(`📦 Saving: ${email} → plan:${plan} | clinic:${clinicUrl}`);
+
+      const { error } = await supabase.from("subscribers").upsert(
+        {
+          email,
+          plan,
+          subscription_id: subscriptionId,
+          status,
+          clinic_url: clinicUrl, // saved so dashboard can look up by URL
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "email" },
+      );
+
+      if (error) {
+        console.error("❌ Supabase upsert error:", error);
+        return NextResponse.json({ error: "DB write failed" }, { status: 500 });
       }
+
+      console.log(`✅ Subscriber saved: ${email} → ${plan}`);
     }
 
-    // Handle subscription cancelled
+    // ── SUBSCRIPTION CANCELLED ────────────────────────────────────────────────
     if (eventType === "subscription.canceled") {
-      const email = event.data?.customer?.email;
+      const email: string | null = event.data?.customer?.email ?? null;
       if (email) {
         await supabase
           .from("subscribers")
           .update({ status: "cancelled", updated_at: new Date().toISOString() })
           .eq("email", email);
-        console.log(`❌ Subscription cancelled: ${email}`);
+        console.log(`❌ Cancelled: ${email}`);
       }
     }
 
