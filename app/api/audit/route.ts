@@ -189,15 +189,38 @@ export async function GET(request: NextRequest) {
     }
 
     if (!domainIsDental && !pageIsDental) {
-      console.log("❌ Not a dental website:", url);
-      return NextResponse.json(
-        {
-          error: "not_dental",
-          message:
-            "This doesn't appear to be a dental clinic website. Please enter your clinic's URL (e.g. bestsmilesdental.com).",
-        },
-        { status: 400 },
-      );
+      // Final fallback — check Google Places before rejecting
+      // Some dental clinics have non-obvious domain names
+      try {
+        const checkDomain = url
+          .replace(/https?:\/\//, "")
+          .replace(/^www\./, "")
+          .split("/")[0];
+        const placesCheckRes = await fetch(
+          `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(checkDomain)}&type=dentist&key=${apiKey}`,
+        );
+        const placesCheckData = await placesCheckRes.json();
+        const foundAsDentist = (placesCheckData.results?.length || 0) > 0;
+        console.log(
+          "🦷 Places dental check:",
+          foundAsDentist,
+          "for",
+          checkDomain,
+        );
+        if (!foundAsDentist) {
+          console.log("❌ Not a dental website:", url);
+          return NextResponse.json(
+            {
+              error: "not_dental",
+              message:
+                "This doesn't appear to be a dental clinic website. Please enter your clinic's URL (e.g. bestsmilesdental.com).",
+            },
+            { status: 400 },
+          );
+        }
+      } catch {
+        console.log("⚠️ Places dental check failed — allowing through");
+      }
     }
   } catch (e) {
     console.error("Dental check error:", e);
@@ -562,7 +585,9 @@ export async function GET(request: NextRequest) {
           if (s0Place && !isIndia(s0Place)) {
             clinicPlaceId = cityDetectionPlaceId;
             place = s0Place;
-            const gbpCity = parseCityFromAddress(s0Place.formatted_address);
+            const gbpCity = parseCityFromAddress(
+              s0Place.formatted_address ?? "",
+            );
             if (gbpCity) {
               city = gbpCity;
             }
@@ -599,7 +624,7 @@ export async function GET(request: NextRequest) {
               place.formatted_address,
             );
             // ✅ Override city with actual GBP address — most accurate source of truth
-            const gbpCity = parseCityFromAddress(place.formatted_address);
+            const gbpCity = parseCityFromAddress(place.formatted_address ?? "");
             if (gbpCity) {
               city = gbpCity;
               console.log("🏙️ City overridden from GBP (s1):", city);
@@ -630,7 +655,7 @@ export async function GET(request: NextRequest) {
               place.formatted_address,
             );
             // ✅ Override city with actual GBP address
-            const gbpCity = parseCityFromAddress(place.formatted_address);
+            const gbpCity = parseCityFromAddress(place.formatted_address ?? "");
             if (gbpCity) {
               city = gbpCity;
               console.log("🏙️ City overridden from GBP (s2):", city);
@@ -651,7 +676,7 @@ export async function GET(request: NextRequest) {
           priority: "HIGH",
           status: "fail",
         });
-      } else if (!place.rating || place.user_ratings_total < 5) {
+      } else if (!place.rating || (place.user_ratings_total ?? 0) < 5) {
         issues.push({
           title: "Google Business Profile needs attention",
           desc: "Your clinic is on Google Maps but has very few reviews. More reviews = higher ranking = more patients.",
