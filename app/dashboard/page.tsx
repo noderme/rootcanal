@@ -12,6 +12,7 @@ const supabase = createClient(
 interface AuditData {
   url: string;
   city: string;
+  clinicName?: string;
   overallScore: number;
   performanceScore: number;
   seoScore: number;
@@ -828,8 +829,13 @@ function DashboardContent() {
   // Apply plan from a confirmed subscriber record
   const applyPlan = (plan: "pro" | "growth", email: string) => {
     localStorage.setItem("rc_pro_email", email);
+    if (plan === "growth") {
+      setIsGrowth(true);
+      setIsPro(true);
+    } else {
+      setIsPro(true);
+    }
     setShowUpgradeModal(false);
-    window.location.reload();
   };
 
   // Look up subscriber by clinic_url (primary) or email (fallback)
@@ -1382,18 +1388,43 @@ function DashboardContent() {
               color: "#F0EBE3",
             }}
           >
-            Your Google Ranking Report
+            {data?.clinicName ? `${data.clinicName}` : "Your Clinic"}&apos;s Growth Intelligence Report
           </h1>
-          <p
-            style={{
-              fontSize: 12,
-              color: "rgba(26,188,156,0.7)",
-              marginTop: 4,
-              fontStyle: "italic",
-            }}
-          >
-            📡 Based on real-time Google visibility data in {city}
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                background: "rgba(26,188,156,0.1)",
+                border: "1px solid rgba(26,188,156,0.3)",
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "#1ABC9C",
+                letterSpacing: 0.5,
+                textTransform: "uppercase",
+              }}
+            >
+              ✦ AI Powered
+            </span>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid #2A3330",
+                borderRadius: 20,
+                padding: "3px 10px",
+                fontSize: 11,
+                color: "#6B7B78",
+              }}
+            >
+              📡 Powered by Google Maps, Google PageSpeed & live web data
+            </span>
+          </div>
         </div>
 
         {/* SCORE HERO */}

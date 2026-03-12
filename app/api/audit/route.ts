@@ -27,6 +27,7 @@ const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 interface AuditResult {
   url: string;
   city: string;
+  clinicName?: string;
   overallScore: number;
   performanceScore: number;
   seoScore: number;
@@ -854,6 +855,7 @@ export async function GET(request: NextRequest) {
     const result: AuditResult = {
       url,
       city,
+      clinicName: place?.name,
       overallScore,
       performanceScore,
       seoScore,

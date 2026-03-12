@@ -50,8 +50,10 @@ function openCheckout({
       }) => {
         if (event.name === "checkout.completed") {
           const customerEmail = event.data?.customer?.email ?? "";
-          window.Paddle.Checkout.close();
           onSuccess?.(customerEmail);
+          try {
+            window.Paddle.Checkout.close();
+          } catch {}
         }
       },
     });
