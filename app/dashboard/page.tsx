@@ -590,6 +590,25 @@ function UpgradeModal({
         >
           🔒 Secure checkout via Paddle · Cancel anytime
         </div>
+
+        {/* TEST BUTTON — remove before going live */}
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button
+            onClick={() => handleSelect("test")}
+            style={{
+              background: "transparent",
+              border: "1px dashed #2A3330",
+              color: "#3A5349",
+              fontSize: 11,
+              padding: "6px 14px",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            [DEV] Test checkout
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -803,6 +822,9 @@ function DashboardContent() {
   const [isPro, setIsPro] = useState(false);
   const [isGrowth, setIsGrowth] = useState(false);
 
+  // Post-payment unlock animation
+  const [showUnlockAnim, setShowUnlockAnim] = useState(false);
+
   // Upgrade modal
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
@@ -824,6 +846,8 @@ function DashboardContent() {
     }
 
     setShowUpgradeModal(false);
+    setShowUnlockAnim(true);
+    setTimeout(() => setShowUnlockAnim(false), 3000);
   };
 
   // Look up subscriber by clinic_url (primary) or email (fallback)
@@ -4211,6 +4235,90 @@ function DashboardContent() {
           )}
         </div>
       </div>
+
+      {/* UNLOCK ANIMATION — shown briefly after successful payment */}
+      {showUnlockAnim && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 3000,
+            background: "rgba(0,0,0,0.92)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            animation: "fadeInOut 3s ease forwards",
+            pointerEvents: "none",
+          }}
+        >
+          <style>{`
+            @keyframes fadeInOut {
+              0%   { opacity: 0; }
+              15%  { opacity: 1; }
+              75%  { opacity: 1; }
+              100% { opacity: 0; }
+            }
+            @keyframes unlockPulse {
+              0%   { transform: scale(0.6); opacity: 0; }
+              50%  { transform: scale(1.1); opacity: 1; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes unlockRing {
+              0%   { transform: scale(0.5); opacity: 0.8; }
+              100% { transform: scale(2.2); opacity: 0; }
+            }
+          `}</style>
+          <div style={{ position: "relative", width: 100, height: 100 }}>
+            <div style={{
+              position: "absolute", inset: 0, borderRadius: "50%",
+              border: "2px solid #1ABC9C",
+              animation: "unlockRing 1.2s ease-out forwards",
+            }} />
+            <div style={{
+              position: "absolute", inset: 0, borderRadius: "50%",
+              border: "2px solid #1ABC9C",
+              animation: "unlockRing 1.2s ease-out 0.3s forwards",
+              opacity: 0,
+            }} />
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "rgba(26,188,156,0.12)",
+              borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              animation: "unlockPulse 0.6s ease forwards",
+            }}>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <path d="M14 24 L22 32 L34 16"
+                  stroke="#1ABC9C" strokeWidth="3.5"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  strokeDasharray="40"
+                  strokeDashoffset="40"
+                  style={{ animation: "dash 0.5s ease 0.4s forwards" }}
+                />
+              </svg>
+            </div>
+          </div>
+          <div style={{
+            marginTop: 28,
+            fontFamily: "'Playfair Display', serif",
+            fontSize: 22,
+            fontWeight: 800,
+            color: "#F0EBE3",
+            letterSpacing: 0.5,
+          }}>
+            You&apos;re unlocked
+          </div>
+          <div style={{ marginTop: 8, fontSize: 14, color: "#6B7B78" }}>
+            Your full dashboard is ready
+          </div>
+          <style>{`
+            @keyframes dash {
+              to { stroke-dashoffset: 0; }
+            }
+          `}</style>
+        </div>
+      )}
 
       {/* UPGRADE MODAL */}
       {showUpgradeModal && (
