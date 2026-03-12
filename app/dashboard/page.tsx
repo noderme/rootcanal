@@ -835,7 +835,7 @@ function DashboardContent() {
     localStorage.setItem("rc_pro_email", email.toLowerCase().trim());
 
     if (plan === "growth") {
-      setIsPro(true);
+      setIsPro(false);
       setIsGrowth(true);
     } else {
       setIsPro(true);
