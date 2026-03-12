@@ -224,7 +224,7 @@ function HomeInner() {
             <div className="rc-note">
               <span>100% Free</span>
               <span>No credit card</span>
-              <span>Results in 60 seconds</span>
+              <span>Results in 30 seconds</span>
             </div>
             <div
               style={{
