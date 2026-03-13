@@ -1267,7 +1267,6 @@ function DashboardContent() {
           .rc-hero-review-row input { width: 100% !important; }
           .rc-hero-review-row button { width: 100% !important; }
           .rc-competitor-grid { grid-template-columns: 1fr !important; }
-          .rc-tab-btn { font-size: 11px !important; padding: 8px 6px !important; }
           .rc-main { padding: 16px !important; }
           nav { padding: 12px 16px !important; }
           .rc-upgrade-grid { grid-template-columns: 1fr !important; }
@@ -1275,12 +1274,16 @@ function DashboardContent() {
           .rc-gap-grid { grid-template-columns: 1fr !important; }
           .rc-gap-vs { display: none !important; }
           .rc-roadmap-item { flex-wrap: wrap !important; }
+          .rc-sidebar { display: none !important; }
+          .rc-bottom-tabs { display: flex !important; }
         }
         @media (max-width: 480px) {
           .rc-metric-grid { grid-template-columns: 1fr !important; }
-          .rc-tab-btn { font-size: 10px !important; padding: 6px 3px !important; }
           h1 { font-size: 22px !important; }
         }
+        .rc-sidebar-btn:hover { background: rgba(26,188,156,0.08) !important; color: #F0EBE3 !important; }
+        .rc-bottom-tabs { display: none; }
+        .rc-bottom-tab-btn:hover { background: rgba(26,188,156,0.08) !important; }
       `}</style>
 
       {/* NAV */}
@@ -1406,11 +1409,62 @@ function DashboardContent() {
         </div>
       </nav>
 
-      {/* MAIN */}
-      <div
-        className="rc-main"
-        style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 40px" }}
-      >
+      {/* BODY */}
+      <div style={{ display: "flex", maxWidth: 1280, margin: "0 auto" }}>
+
+        {/* SIDEBAR */}
+        <aside className="rc-sidebar" style={{
+          width: 210,
+          flexShrink: 0,
+          borderRight: "1px solid #2A3330",
+          padding: "28px 0",
+          position: "sticky",
+          top: 65,
+          height: "calc(100vh - 65px)",
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+        }}>
+          <div style={{ padding: "0 20px 16px", fontSize: 10, letterSpacing: 2.5, textTransform: "uppercase", color: "#4A5A57", fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>
+            Navigation
+          </div>
+          {([
+            { id: "competitors", label: "🏆 Competitors" },
+            { id: "roadmap",     label: "📈 Growth Plan" },
+            { id: "reviews",     label: "⭐ Reviews" },
+            { id: "score",       label: "🧠 Intelligence" },
+            { id: "health",      label: "🔧 Health" },
+          ] as const).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className="rc-sidebar-btn"
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                padding: "11px 20px",
+                border: "none",
+                cursor: "pointer",
+                background: activeTab === item.id ? "rgba(26,188,156,0.1)" : "transparent",
+                color: activeTab === item.id ? "#1ABC9C" : "#6B7B78",
+                fontSize: 14,
+                fontWeight: activeTab === item.id ? 700 : 500,
+                fontFamily: "'DM Sans', sans-serif",
+                borderLeft: activeTab === item.id ? "3px solid #1ABC9C" : "3px solid transparent",
+                transition: "all 0.15s",
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </aside>
+
+        {/* MAIN */}
+        <div
+          className="rc-main"
+          style={{ flex: 1, padding: "32px 40px", minWidth: 0 }}
+        >
         <div style={{ marginBottom: 24 }}>
           <h1
             style={{
@@ -2123,48 +2177,52 @@ function DashboardContent() {
           );
         })()}
 
-        {/* TABS */}
+        {/* BOTTOM TABS — mobile only */}
         <div
+          className="rc-bottom-tabs"
           style={{
-            display: "flex",
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 50,
+            display: "none",
             gap: 0,
-            marginBottom: 24,
-            background: "#151918",
-            borderRadius: 12,
-            padding: 4,
-            border: "1px solid #2A3330",
-            overflowX: "auto",
+            background: "#0D1310",
+            borderTop: "1px solid #2A3330",
+            padding: "8px 4px",
           }}
         >
           {(
             [
-              { id: "competitors", label: "🏆 Competitors" },
-              { id: "roadmap", label: "🗺️ Growth Plan" },
-              { id: "reviews", label: "⭐ Reviews" },
-              { id: "score", label: "🧠 Intelligence" },
-              { id: "health", label: "🔧 Health" },
+              { id: "competitors", label: "🏆", sublabel: "Rivals" },
+              { id: "roadmap",     label: "📈", sublabel: "Growth" },
+              { id: "reviews",     label: "⭐", sublabel: "Reviews" },
+              { id: "score",       label: "🧠", sublabel: "Intel" },
+              { id: "health",      label: "🔧", sublabel: "Health" },
             ] as const
           ).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="rc-tab-btn"
+              className="rc-bottom-tab-btn"
               style={{
                 flex: 1,
-                padding: "10px 16px",
+                padding: "6px 4px",
                 border: "none",
                 cursor: "pointer",
-                borderRadius: 9,
-                fontSize: 13,
-                fontWeight: 600,
+                background: "transparent",
+                color: activeTab === tab.id ? "#1ABC9C" : "#4A5A57",
+                fontSize: 18,
                 fontFamily: "'DM Sans', sans-serif",
-                whiteSpace: "nowrap",
-                transition: "all 0.2s",
-                background: activeTab === tab.id ? "#1ABC9C" : "transparent",
-                color: activeTab === tab.id ? "#000" : "#6B7B78",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
               }}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              <span style={{ fontSize: 10, fontWeight: 600, color: activeTab === tab.id ? "#1ABC9C" : "#4A5A57" }}>{tab.sublabel}</span>
             </button>
           ))}
         </div>
@@ -4255,6 +4313,7 @@ function DashboardContent() {
             </a>
           )}
         </div>
+      </div>
       </div>
 
       {/* UNLOCK ANIMATION — shown briefly after successful payment */}
