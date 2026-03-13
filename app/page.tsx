@@ -52,13 +52,13 @@ function HomeInner() {
         .rc-nav-link:hover { color: var(--dark); }
         .rc-nav-cta { background: var(--dark); color: var(--cream) !important; padding: 10px 22px; border-radius: 6px; font-weight: 600 !important; transition: background 0.2s; }
         .rc-nav-cta:hover { background: var(--red) !important; }
-        .rc-hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; padding: 120px 60px 80px; gap: 60px; align-items: center; position: relative; overflow: hidden; }
+        .rc-hero { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; padding: 100px 60px 32px; gap: 60px; align-items: center; position: relative; overflow: hidden; }
         .rc-hero::before { content: ''; position: absolute; top: -100px; right: -100px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(192,57,43,0.08) 0%, transparent 70%); pointer-events: none; }
-        .rc-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--red); margin-bottom: 24px; }
+        .rc-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--red); margin-bottom: 12px; }
         .rc-eyebrow::before { content: ''; width: 24px; height: 2px; background: var(--red); }
-        .rc-h1 { font-family: 'Playfair Display', serif; font-size: clamp(42px, 5vw, 68px); font-weight: 900; line-height: 1.05; letter-spacing: -2px; color: var(--dark); margin-bottom: 24px; }
+        .rc-h1 { font-family: 'Playfair Display', serif; font-size: clamp(36px, 4.5vw, 58px); font-weight: 900; line-height: 1.05; letter-spacing: -2px; color: var(--dark); margin-bottom: 12px; }
         .rc-h1 em { font-style: italic; color: var(--red); }
-        .rc-sub { font-size: 18px; line-height: 1.7; color: var(--muted); max-width: 480px; margin-bottom: 40px; font-weight: 300; }
+        .rc-sub { font-size: 17px; line-height: 1.6; color: var(--muted); max-width: 480px; margin-bottom: 16px; font-weight: 300; }
         .rc-form-wrap { display: flex; flex-direction: column; gap: 12px; max-width: 500px; }
         .rc-scan-box { display: flex; border: 2px solid var(--dark); border-radius: 8px; overflow: hidden; background: white; box-shadow: 6px 6px 0 var(--dark); transition: box-shadow 0.2s; }
         .rc-scan-box:focus-within { box-shadow: 8px 8px 0 var(--red); }
@@ -171,24 +171,22 @@ function HomeInner() {
       <section className="rc-hero">
         <div>
           <div className="rc-eyebrow">
-            Free Google Ranking Report for Dental Clinics
+            Free Competitive Analysis for Dental Clinics
           </div>
           <h1 className="rc-h1">
-            Your Clinic's <em>Dental Growth</em>
+            Your Clinic is Losing Patients
             <br />
-            Intelligence Report
+            <em>to Competitors on Google</em>
           </h1>
           <p className="rc-sub">
-            See your dental clinic&apos;s Google ranking, patient review
-            insights, and website problems — in 30 seconds. No tech knowledge
-            needed.
+            See exactly why — and fix it in minutes.
           </p>
           <p
             style={{
-              fontSize: 15,
+              fontSize: 14,
               color: "var(--dark)",
               fontWeight: 600,
-              marginBottom: 32,
+              marginBottom: 16,
               maxWidth: 480,
               lineHeight: 1.6,
               background: "rgba(212,168,67,0.12)",
@@ -278,7 +276,7 @@ function HomeInner() {
               background: "#0D0F0E",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 16,
-              padding: 28,
+              padding: 20,
               width: "100%",
               maxWidth: 400,
               boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
@@ -291,7 +289,7 @@ function HomeInner() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
-                marginBottom: 20,
+                marginBottom: 12,
               }}
             >
               <div>
@@ -383,7 +381,7 @@ function HomeInner() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  padding: "10px 0",
+                  padding: "7px 0",
                   borderBottom: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
@@ -718,7 +716,7 @@ function HomeInner() {
       {/* FEATURES */}
       <section className="rc-section" id="features">
         <div className="rc-sec-label">What you get</div>
-        <h2 className="rc-sec-title">Everything inside your free report</h2>
+        <h2 className="rc-sec-title">Everything inside your free analysis</h2>
         <p
           style={{
             textAlign: "center",
