@@ -1826,10 +1826,10 @@ function DashboardContent() {
           background: "linear-gradient(135deg, #0a1a14, #0D1F18)",
           border: "1px solid rgba(26,188,156,0.2)",
           borderRadius: 16,
-          padding: "24px 28px",
+          padding: "32px 36px",
           marginBottom: 24,
         }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#1ABC9C", textTransform: "uppercase", marginBottom: 16 }}>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#1ABC9C", textTransform: "uppercase", marginBottom: 28 }}>
             How it works
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -1842,14 +1842,21 @@ function DashboardContent() {
               { emoji: "📈", label: "Ranking improves", sub: "you rise on Google" },
               { emoji: "🏥", label: "More patients", sub: "book your clinic" },
             ].map((step, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ textAlign: "center", flex: 1 }}>
-                  <div style={{ fontSize: 26, marginBottom: 4 }}>{step.emoji}</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: "#F0EBE3" }}>{step.label}</div>
-                  <div style={{ fontSize: 9, color: "rgba(247,243,237,0.4)" }}>{step.sub}</div>
+              <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
+                <div style={{
+                  textAlign: "center",
+                  flex: 1,
+                  background: "rgba(26,188,156,0.06)",
+                  border: "1px solid rgba(26,188,156,0.12)",
+                  borderRadius: 14,
+                  padding: "20px 8px",
+                }}>
+                  <div style={{ fontSize: 42, marginBottom: 10, lineHeight: 1 }}>{step.emoji}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#F0EBE3", marginBottom: 4 }}>{step.label}</div>
+                  <div style={{ fontSize: 11, color: "rgba(247,243,237,0.45)" }}>{step.sub}</div>
                 </div>
                 {i < 6 && (
-                  <div style={{ fontSize: 16, color: "#1ABC9C", padding: "0 4px", marginBottom: 18 }}>→</div>
+                  <div style={{ fontSize: 20, color: "#1ABC9C", padding: "0 8px", flexShrink: 0, marginBottom: 10 }}>→</div>
                 )}
               </div>
             ))}
