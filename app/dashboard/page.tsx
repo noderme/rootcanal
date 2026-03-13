@@ -1546,21 +1546,22 @@ function DashboardContent() {
           <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderRight: "1px solid #2A3330", flexShrink: 0 }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 34, fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{data.overallScore}</div>
             <div>
-              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1 }}>Google Score</div>
+              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1 }}>Your Website on Google</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: gradeColor }}>{gradeLabel}</div>
             </div>
           </div>
           {([
-            { icon: "🏆", value: `#${userRank}`, label: "Rank", color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C" },
-            { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore, label: "Speed", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
-            { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore, label: "Findability", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
-            { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore, label: "Usability", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
-          ] as { icon: string; value: string | number; label: string; color: string }[]).map((m, i, arr) => (
+            { icon: "🏆", value: `#${userRank}`, label: "Google Search Rank", sublabel: "vs competitors in your city", color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C" },
+            { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore, label: "Website Speed", sublabel: "how fast your site loads", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
+            { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore, label: "Google Findability", sublabel: "how easily patients find you", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
+            { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore, label: "Website Usability", sublabel: "how easy your site is to use", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
+          ] as { icon: string; value: string | number; label: string; sublabel: string; color: string }[]).map((m, i, arr) => (
             <div key={i} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, borderRight: i < arr.length - 1 ? "1px solid #2A3330" : "none" }}>
               <span style={{ fontSize: 18 }}>{m.icon}</span>
               <div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.value}</div>
-                <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 2 }}>{m.label}</div>
+                <div style={{ fontSize: 11, color: "#B0BDB9", marginTop: 2, fontWeight: 600 }}>{m.label}</div>
+                <div style={{ fontSize: 10, color: "#4A5A57", marginTop: 1 }}>{m.sublabel}</div>
               </div>
             </div>
           ))}
