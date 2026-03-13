@@ -1821,6 +1821,39 @@ function DashboardContent() {
           </div>
         </div>
 
+        {/* HOW IT WORKS PIPELINE */}
+        <div style={{
+          background: "linear-gradient(135deg, #0a1a14, #0D1F18)",
+          border: "1px solid rgba(26,188,156,0.2)",
+          borderRadius: 16,
+          padding: "24px 28px",
+          marginBottom: 24,
+        }}>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#1ABC9C", textTransform: "uppercase", marginBottom: 16 }}>
+            How it works
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
+            {[
+              { emoji: "🦷", label: "Patient visits", sub: "your clinic" },
+              { emoji: "📧", label: "You enter", sub: "patient email" },
+              { emoji: "📩", label: "Patient gets", sub: "review link" },
+              { emoji: "⭐", label: "Patient leaves", sub: "Google review" },
+              { emoji: "📈", label: "Your ranking", sub: "improves" },
+            ].map((step, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ textAlign: "center", minWidth: 90 }}>
+                  <div style={{ fontSize: 28, marginBottom: 4 }}>{step.emoji}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#F0EBE3" }}>{step.label}</div>
+                  <div style={{ fontSize: 10, color: "rgba(247,243,237,0.4)" }}>{step.sub}</div>
+                </div>
+                {i < 4 && (
+                  <div style={{ fontSize: 18, color: "#1ABC9C", padding: "0 6px", marginBottom: 18 }}>→</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* GROWTH UPSELL BANNER — pro users only */}
         {isPro && !isGrowth && (
           <div
