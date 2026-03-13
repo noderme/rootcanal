@@ -1015,102 +1015,119 @@ function DashboardContent() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 32,
+          gap: 0,
+          overflow: "hidden",
+          position: "relative",
         }}
       >
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
-          @keyframes spin { to { transform: rotate(360deg); } }
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+          @keyframes float1 { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
+          @keyframes float2 { 0%,100% { transform: translateY(0) rotate(3deg); } 50% { transform: translateY(-22px) rotate(-5deg); } }
+          @keyframes float3 { 0%,100% { transform: translateY(0) rotate(6deg); } 50% { transform: translateY(-14px) rotate(-3deg); } }
+          @keyframes float4 { 0%,100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-20px) rotate(6deg); } }
+          @keyframes float5 { 0%,100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(-16px) rotate(-4deg); } }
+          @keyframes float6 { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-24px) rotate(5deg); } }
+          @keyframes scanPulse { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(26,188,156,0.4); } 50% { transform: scale(1.06); box-shadow: 0 0 0 18px rgba(26,188,156,0); } }
+          @keyframes dotBounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+          @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         `}</style>
+
+        {/* Floating dental tools — scattered around */}
+        {[
+          { emoji: "🦷", top: "8%",  left: "8%",  size: 52, anim: "float1", delay: "0s",    opacity: 0.9 },
+          { emoji: "🪥", top: "6%",  left: "40%", size: 44, anim: "float2", delay: "0.4s",  opacity: 0.7 },
+          { emoji: "💉", top: "10%", left: "78%", size: 48, anim: "float3", delay: "0.8s",  opacity: 0.8 },
+          { emoji: "🔬", top: "72%", left: "6%",  size: 46, anim: "float4", delay: "1.0s",  opacity: 0.75 },
+          { emoji: "🩺", top: "78%", left: "42%", size: 50, anim: "float5", delay: "0.2s",  opacity: 0.85 },
+          { emoji: "🧴", top: "70%", left: "80%", size: 44, anim: "float6", delay: "0.6s",  opacity: 0.7 },
+          { emoji: "💊", top: "40%", left: "3%",  size: 38, anim: "float2", delay: "1.2s",  opacity: 0.5 },
+          { emoji: "🧲", top: "38%", left: "90%", size: 36, anim: "float1", delay: "0.9s",  opacity: 0.45 },
+        ].map(({ emoji, top, left, size, anim, delay, opacity }) => (
+          <div
+            key={emoji}
+            style={{
+              position: "absolute",
+              top, left,
+              fontSize: size,
+              animation: `${anim} 3.5s ease-in-out infinite`,
+              animationDelay: delay,
+              opacity,
+              filter: "drop-shadow(0 4px 16px rgba(26,188,156,0.2))",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            {emoji}
+          </div>
+        ))}
+
+        {/* Central scan indicator */}
         <div
           style={{
-            width: 64,
-            height: 64,
+            width: 88,
+            height: 88,
             borderRadius: "50%",
-            border: "4px solid #2A3330",
-            borderTopColor: "#1ABC9C",
-            animation: "spin 1s linear infinite",
+            background: "rgba(26,188,156,0.1)",
+            border: "2px solid rgba(26,188,156,0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 40,
+            animation: "scanPulse 2s ease-in-out infinite",
+            marginBottom: 28,
           }}
-        />
-        <div style={{ textAlign: "center" }}>
+        >
+          🦷
+        </div>
+
+        {/* Title */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div
             style={{
               fontFamily: "'Playfair Display', serif",
               fontSize: 26,
               color: "#F0EBE3",
-              marginBottom: 8,
+              marginBottom: 6,
+              animation: "fadeSlideUp 0.6s ease both",
             }}
           >
             Scanning your clinic...
           </div>
-          <div style={{ fontSize: 14, color: "#6B7B78" }}>{url}</div>
+          <div style={{ fontSize: 13, color: "#4A5E58", letterSpacing: "0.03em" }}>{url}</div>
         </div>
+
+        {/* Active step label */}
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-            minWidth: 320,
+            fontSize: 14,
+            color: "#1ABC9C",
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500,
+            marginBottom: 16,
+            minHeight: 20,
+            animation: "fadeSlideUp 0.4s ease both",
+            key: loadingStep,
           }}
         >
-          {loadingSteps.map((step, i) => {
-            const isDone = i < loadingStep;
-            const isActive = i === loadingStep;
-            return (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                  padding: "14px 20px",
-                  borderRadius: 12,
-                  background: isDone
-                    ? "rgba(46,204,113,0.08)"
-                    : isActive
-                      ? "rgba(26,188,156,0.08)"
-                      : "#151918",
-                  border: `1px solid ${isDone ? "rgba(46,204,113,0.2)" : isActive ? "rgba(26,188,156,0.2)" : "#2A3330"}`,
-                  opacity: i > loadingStep ? 0.4 : 1,
-                  transition: "all 0.4s ease",
-                }}
-              >
-                <div style={{ fontSize: 20 }}>{isDone ? "✅" : step.icon}</div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: isDone
-                      ? "#2ECC71"
-                      : isActive
-                        ? "#F0EBE3"
-                        : "#6B7B78",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  {step.label}
-                </div>
-                {isActive && (
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-                    {[0, 1, 2].map((j) => (
-                      <div
-                        key={j}
-                        style={{
-                          width: 5,
-                          height: 5,
-                          borderRadius: "50%",
-                          background: "#1ABC9C",
-                          animation: "spin 1s linear infinite",
-                          animationDelay: `${j * 0.15}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {loadingSteps[loadingStep]?.emoji} {loadingSteps[loadingStep]?.label}
+        </div>
+
+        {/* Dot progress */}
+        <div style={{ display: "flex", gap: 8 }}>
+          {loadingSteps.map((_, i) => (
+            <div
+              key={i}
+              style={{
+                width: i === loadingStep ? 24 : 8,
+                height: 8,
+                borderRadius: 4,
+                background: i < loadingStep ? "#2ECC71" : i === loadingStep ? "#1ABC9C" : "#2A3330",
+                transition: "all 0.4s ease",
+                animation: i === loadingStep ? "dotBounce 1s ease-in-out infinite" : "none",
+              }}
+            />
+          ))}
         </div>
       </div>
     );
@@ -1415,7 +1432,7 @@ function DashboardContent() {
                     .replace(/\b\w/g, (l) => l.toUpperCase())
                     .trim()
                 : "Your Clinic")}
-            &apos;s Growth Intelligence Report
+ — Competitive Dashboard
           </h1>
           <div
             style={{
