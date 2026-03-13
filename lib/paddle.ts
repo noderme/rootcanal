@@ -82,7 +82,9 @@ function openCheckout({
   setTimeout(() => {
     window.Paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
-      customer: email ? { email } : undefined,
+      customer: email
+        ? { email, address: { countryCode: "US" } }
+        : { address: { countryCode: "US" } },
       customData: {
         clinicUrl: clinicUrl ?? "",
       },
