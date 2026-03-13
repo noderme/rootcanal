@@ -1504,18 +1504,6 @@ function DashboardContent() {
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#B0BDB9" }}>{f.title}</div>
                   </div>
                 ))}
-                <button
-                  onClick={() => setShowUpgradeModal(true)}
-                  style={{
-                    marginTop: 10, width: "100%",
-                    background: isPro ? "#D4A843" : "#1ABC9C",
-                    color: "#000", border: "none", borderRadius: 8,
-                    padding: "8px 0", fontSize: 11, fontWeight: 700,
-                    cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  {isPro ? "Get Growth — $99/mo →" : "Get Pro — $49/mo →"}
-                </button>
               </div>
             )}
           </div>
