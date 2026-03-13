@@ -1533,39 +1533,41 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* ── ALWAYS-VISIBLE SCORE STRIP ──────────────────── */}
-        <div className="card" style={{
-          display: "flex",
-          alignItems: "center",
-          background: "#151918",
-          border: "1px solid #2A3330",
-          borderRadius: 12,
-          marginBottom: 24,
-          overflow: "hidden",
-        }}>
-          <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderRight: "1px solid #2A3330", flexShrink: 0 }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 34, fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{data.overallScore}</div>
-            <div>
-              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1 }}>Your Website on Google</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: gradeColor }}>{gradeLabel}</div>
+        {/* ── COMPETITORS: rank strip ──────────────────────── */}
+        {activeTab === "competitors" && (
+          <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
+            <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
+              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Your Google Rank</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{userRank}</div>
+              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>vs other clinics in {city}</div>
+            </div>
+            <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
+              {typeof userRank === "number" && userRank <= 3
+                ? "🏆 You're in the top 3 — most patients in your area can find you on Google."
+                : `📉 You're ranked #${userRank}. Top 3 clinics get ~70% of all patient clicks — patients below that are rarely seen.`}
             </div>
           </div>
-          {([
-            { icon: "🏆", value: `#${userRank}`, label: "Google Search Rank", sublabel: "vs competitors in your city", color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C" },
-            { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore, label: "Website Speed", sublabel: "how fast your site loads", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
-            { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore, label: "Google Findability", sublabel: "how easily patients find you", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
-            { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore, label: "Website Usability", sublabel: "how easy your site is to use", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
-          ] as { icon: string; value: string | number; label: string; sublabel: string; color: string }[]).map((m, i, arr) => (
-            <div key={i} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, borderRight: i < arr.length - 1 ? "1px solid #2A3330" : "none" }}>
-              <span style={{ fontSize: 18 }}>{m.icon}</span>
-              <div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.value}</div>
-                <div style={{ fontSize: 11, color: "#B0BDB9", marginTop: 2, fontWeight: 600 }}>{m.label}</div>
-                <div style={{ fontSize: 10, color: "#4A5A57", marginTop: 1 }}>{m.sublabel}</div>
+        )}
+
+        {/* ── HEALTH: website metrics strip ────────────────── */}
+        {activeTab === "health" && (
+          <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
+            {([
+              { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore, label: "Website Speed", sublabel: "how fast your site loads for patients", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
+              { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore, label: "Google Findability", sublabel: "how easily patients find you on Google", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
+              { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore, label: "Website Usability", sublabel: "how easy your site is to navigate", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
+            ] as { icon: string; value: string | number; label: string; sublabel: string; color: string }[]).map((m, i, arr) => (
+              <div key={i} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderRight: i < arr.length - 1 ? "1px solid #2A3330" : "none" }}>
+                <span style={{ fontSize: 20 }}>{m.icon}</span>
+                <div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.value}</div>
+                  <div style={{ fontSize: 11, color: "#B0BDB9", marginTop: 2, fontWeight: 600 }}>{m.label}</div>
+                  <div style={{ fontSize: 10, color: "#4A5A57", marginTop: 1 }}>{m.sublabel}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* ── COMPETITORS TAB CONTENT ─────────────────────── */}
         {activeTab === "competitors" && (<>
