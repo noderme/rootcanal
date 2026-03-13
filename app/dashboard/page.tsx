@@ -2595,7 +2595,7 @@ function DashboardContent() {
               const behindComps = [...data.competitors].filter(
                 (c) => c.score < data.overallScore,
               );
-              const stepsToShow = isPro ? aheadComps : aheadComps.slice(0, 1);
+              const stepsToShow = aheadComps; // all steps shown; locking handled per-row below
               return (
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 12 }}
@@ -2669,7 +2669,7 @@ function DashboardContent() {
                                   "..."
                                 : comp.name || "Competitor"}
                             </div>
-                            {!isLocked && (
+                            {i === 0 && (
                               <span
                                 style={{
                                   fontSize: 10,
