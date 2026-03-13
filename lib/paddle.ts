@@ -84,7 +84,7 @@ function openCheckout({
       items: [{ priceId, quantity: 1 }],
       customer: email
         ? { email, address: { countryCode: "US" } }
-        : { address: { countryCode: "US" } },
+        : undefined,
       customData: {
         clinicUrl: clinicUrl ?? "",
       },
