@@ -370,7 +370,7 @@ function HomeInner() {
                 color: "#D4A843",
               },
               {
-                label: "📩 Review Requests",
+                label: "📩 Review Requests & Replies",
                 value: "Automated ✓",
                 color: "#1ABC9C",
               },
@@ -1046,13 +1046,14 @@ function HomeInner() {
                 fontFamily: "Playfair Display, serif",
               }}
             >
-              Get more 5-star reviews — on autopilot
+              Get more 5-star reviews — and respond to every one automatically
             </h3>
             <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
-              Our AI reads every Google review and tells you what patients love,
-              what they complain about, and what to fix first. Then send a
-              direct Google review link to any patient in 2 clicks — no login
-              required for them, no chasing required for you.
+              Send a direct Google review link to any patient in 2 clicks. When
+              a new review comes in, our AI reads the sentiment and drafts a
+              reply — a warm thank you for positive reviews, a professional
+              apology for negative ones. You can customise the tone, or let it
+              post automatically.
             </p>
           </div>
           <div
@@ -1123,16 +1124,21 @@ function HomeInner() {
             ))}
             <div
               style={{
-                marginTop: 16,
-                background: "rgba(26,188,156,0.1)",
+                marginTop: 12,
+                background: "rgba(26,188,156,0.08)",
+                border: "1px solid rgba(26,188,156,0.2)",
                 borderRadius: 8,
                 padding: "10px 14px",
-                fontSize: 13,
-                color: "#1ABC9C",
-                fontWeight: 600,
               }}
             >
-              ⭐ Send a review request to a patient in 2 clicks →
+              <div style={{ fontSize: 11, color: "rgba(247,243,237,0.5)", marginBottom: 6, letterSpacing: 1, textTransform: "uppercase" }}>AI Reply drafted</div>
+              <div style={{ fontSize: 12, color: "rgba(247,243,237,0.75)", lineHeight: 1.6, marginBottom: 8 }}>
+                &ldquo;Thank you so much for the kind words! We&apos;re thrilled you had a great experience at our clinic.&rdquo;
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1, background: "#1ABC9C", borderRadius: 6, padding: "6px 10px", textAlign: "center", fontSize: 11, fontWeight: 700, color: "#000", cursor: "pointer" }}>Post Reply</div>
+                <div style={{ flex: 1, border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "6px 10px", textAlign: "center", fontSize: 11, color: "rgba(247,243,237,0.5)", cursor: "pointer" }}>Edit</div>
+              </div>
             </div>
           </div>
         </div>
