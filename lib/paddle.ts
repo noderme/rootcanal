@@ -82,10 +82,7 @@ function openCheckout({
   setTimeout(() => {
     window.Paddle.Checkout.open({
       items: [{ priceId, quantity: 1 }],
-      // Default to US so checkout shows USD pricing without GST
-      customer: email
-        ? { email, address: { countryCode: "US" } }
-        : { address: { countryCode: "US" } },
+      customer: email ? { email } : undefined,
       customData: {
         clinicUrl: clinicUrl ?? "",
       },
