@@ -1533,275 +1533,76 @@ function DashboardContent() {
           </div>
         </div>
 
+        {/* ── ALWAYS-VISIBLE SCORE STRIP ──────────────────── */}
+        <div className="card" style={{
+          display: "flex",
+          alignItems: "center",
+          background: "#151918",
+          border: "1px solid #2A3330",
+          borderRadius: 12,
+          marginBottom: 24,
+          overflow: "hidden",
+        }}>
+          <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderRight: "1px solid #2A3330", flexShrink: 0 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 34, fontWeight: 900, color: gradeColor, lineHeight: 1 }}>{data.overallScore}</div>
+            <div>
+              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1 }}>Google Score</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: gradeColor }}>{gradeLabel}</div>
+            </div>
+          </div>
+          {([
+            { icon: "🏆", value: `#${userRank}`, label: "Rank", color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C" },
+            { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore, label: "Speed", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
+            { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore, label: "Findability", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
+            { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore, label: "Usability", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
+          ] as { icon: string; value: string | number; label: string; color: string }[]).map((m, i, arr) => (
+            <div key={i} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, borderRight: i < arr.length - 1 ? "1px solid #2A3330" : "none" }}>
+              <span style={{ fontSize: 18 }}>{m.icon}</span>
+              <div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.value}</div>
+                <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 2 }}>{m.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* ── COMPETITORS TAB CONTENT ─────────────────────── */}
         {activeTab === "competitors" && (<>
 
-        {/* SCORE HERO */}
-        {(() => (
-          <div
-            className="card rc-score-hero"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "260px 1fr",
-              gap: 24,
+        {/* RANK VISIBILITY BANNER */}
+        {data.competitors.length > 0 && (() => {
+          const inTopThree = (typeof userRank === "number" ? userRank : 8) <= 3;
+          return (
+            <div className="card" style={{
+              background: inTopThree ? "rgba(46,204,113,0.08)" : "rgba(231,76,60,0.08)",
+              border: `1px solid ${inTopThree ? "rgba(46,204,113,0.25)" : "rgba(231,76,60,0.25)"}`,
+              borderRadius: 16,
+              padding: "16px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
               marginBottom: 24,
-              animationDelay: "0.1s",
-            }}
-          >
-            <div
-              style={{
-                background: "#151918",
-                border: "1px solid #2A3330",
-                borderRadius: 16,
-                padding: 32,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-              }}
-            >
-              <ScoreRing score={data.overallScore} />
-              <div
-                style={{
-                  marginTop: 16,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: gradeColor,
-                  background: gradeBg,
-                  padding: "4px 14px",
-                  borderRadius: 20,
-                }}
-              >
-                {gradeLabel}
-              </div>
-              <div style={{ fontSize: 13, color: "#6B7B78", marginTop: 8 }}>
-                Your Google Score
-              </div>
-            </div>
-            <div
-              className="rc-metric-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 16,
-              }}
-            >
-              {[
-                {
-                  icon: "🏆",
-                  value: `#${userRank}`,
-                  label: "Google Search Position",
-                  sublabel: "Estimated — actual rank varies by location",
-                  color:
-                    typeof userRank === "number" && userRank <= 3
-                      ? "#1ABC9C"
-                      : "#E74C3C",
-                  bg:
-                    typeof userRank === "number" && userRank <= 3
-                      ? "rgba(26,188,156,0.12)"
-                      : "rgba(231,76,60,0.12)",
-                },
-                {
-                  icon: "⚡",
-                  value:
-                    data.performanceScore === 0 && data.seoScore === 0
-                      ? "—"
-                      : data.performanceScore,
-                  label: "Website Speed",
-                  sublabel:
-                    data.performanceScore < 60
-                      ? "Slow site = patients leave before booking"
-                      : "Fast site keeps patients engaged",
-                  color:
-                    data.performanceScore >= 70
-                      ? "#2ECC71"
-                      : data.performanceScore >= 40
-                        ? "#F0A500"
-                        : "#E74C3C",
-                  bg:
-                    data.performanceScore >= 70
-                      ? "rgba(46,204,113,0.12)"
-                      : "rgba(240,165,0,0.12)",
-                },
-                {
-                  icon: "🔍",
-                  value:
-                    data.performanceScore === 0 && data.seoScore === 0
-                      ? "—"
-                      : data.seoScore,
-                  label: "Google Findability",
-                  sublabel:
-                    data.seoScore < 60
-                      ? "Low score = fewer calls from Google Maps"
-                      : "Patients can find you easily on Google",
-                  color:
-                    data.seoScore >= 70
-                      ? "#2ECC71"
-                      : data.seoScore >= 40
-                        ? "#F0A500"
-                        : "#E74C3C",
-                  bg:
-                    data.seoScore >= 70
-                      ? "rgba(46,204,113,0.12)"
-                      : "rgba(240,165,0,0.12)",
-                },
-                {
-                  icon: "👆",
-                  value:
-                    data.performanceScore === 0 && data.seoScore === 0
-                      ? "—"
-                      : data.accessibilityScore,
-                  label: "Website Usability",
-                  sublabel:
-                    data.accessibilityScore < 70
-                      ? "Hard to use = patients call competitors instead"
-                      : "Easy to navigate = more appointment calls",
-                  color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500",
-                  bg: "rgba(240,165,0,0.12)",
-                },
-              ].map((m, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "#151918",
-                    border: "1px solid #2A3330",
-                    borderRadius: 12,
-                    padding: 20,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 16,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 10,
-                      background: m.bg,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 22,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {m.icon}
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 24 }}>{inTopThree ? "🏆" : "📉"}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#F0EBE3" }}>
+                    {inTopThree ? `You're in the top 3 in ${city}!` : `You're outside the top 3 — most patients never scroll that far`}
                   </div>
-                  <div>
-                    <div
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        fontSize: 32,
-                        fontWeight: 900,
-                        color: m.color,
-                        lineHeight: 1,
-                      }}
-                    >
-                      {m.value}
-                    </div>
-                    <div
-                      style={{ fontSize: 13, color: "#6B7B78", marginTop: 4 }}
-                    >
-                      {m.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "rgba(107,123,120,0.6)",
-                        marginTop: 2,
-                        fontStyle: "italic",
-                      }}
-                    >
-                      {m.sublabel}
-                    </div>
+                  <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>
+                    {inTopThree ? "Top 3 clinics receive ~70% of all patient clicks on Google." : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
                   </div>
                 </div>
-              ))}
-
-              {/* Visibility banner */}
-              {data.competitors.length > 0 &&
-                (() => {
-                  const yourRankNum =
-                    typeof userRank === "number" ? userRank : 8;
-                  const inTopThree = yourRankNum <= 3;
-                  return (
-                    <div
-                      style={{
-                        gridColumn: "1 / -1",
-                        background: inTopThree
-                          ? "rgba(46,204,113,0.08)"
-                          : "rgba(231,76,60,0.08)",
-                        border: `1px solid ${inTopThree ? "rgba(46,204,113,0.25)" : "rgba(231,76,60,0.25)"}`,
-                        borderRadius: 12,
-                        padding: "16px 20px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 16,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
-                        }}
-                      >
-                        <span style={{ fontSize: 24 }}>
-                          {inTopThree ? "🏆" : "📉"}
-                        </span>
-                        <div>
-                          <div
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 700,
-                              color: "#F0EBE3",
-                            }}
-                          >
-                            {inTopThree
-                              ? `You're in the top 3 in ${city}!`
-                              : `You're outside the top 3 — most patients never scroll that far`}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: "#6B7B78",
-                              marginTop: 2,
-                            }}
-                          >
-                            {inTopThree
-                              ? "Top 3 clinics receive ~70% of all patient clicks on Google."
-                              : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
-                          </div>
-                        </div>
-                      </div>
-                      {!inTopThree && !isGrowth && (
-                        <button
-                          onClick={() => setShowUpgradeModal(true)}
-                          style={{
-                            background: "#E74C3C",
-                            color: "#fff",
-                            border: "none",
-                            padding: "10px 20px",
-                            borderRadius: 8,
-                            fontSize: 13,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            fontFamily: "'DM Sans', sans-serif",
-                            whiteSpace: "nowrap",
-                            flexShrink: 0,
-                          }}
-                        >
-                          Get Into Top 3 →
-                        </button>
-                      )}
-                    </div>
-                  );
-                })()}
+              </div>
+              {!inTopThree && !isGrowth && (
+                <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#E74C3C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  Get Into Top 3 →
+                </button>
+              )}
             </div>
-          </div>
-        ))()}
+          );
+        })()}
 
         {/* UPGRADE BANNER — free users with low score */}
         {data.overallScore < 70 && !isPro && !isGrowth && (
