@@ -1458,6 +1458,100 @@ function DashboardContent() {
               {item.label}
             </button>
           ))}
+
+          {/* SIDEBAR FEATURE BLOCK */}
+          <div style={{ marginTop: "auto", padding: "20px 16px 8px" }}>
+            {!isPro && !isGrowth ? (
+              <div style={{
+                background: "linear-gradient(135deg, #0f2a20, #0D1F18)",
+                border: "1px solid rgba(26,188,156,0.25)",
+                borderRadius: 12,
+                padding: "16px 14px",
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#1ABC9C", marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>
+                  Unlock with Pro
+                </div>
+                {[
+                  "Monthly Google rescans",
+                  "Full competitor tracking",
+                  "Review automation",
+                  "AI reply drafts",
+                  "Step-by-step fix guides",
+                ].map((f) => (
+                  <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7, fontSize: 12, color: "#6B7B78", fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: "#1ABC9C", flexShrink: 0 }}>✓</span> {f}
+                  </div>
+                ))}
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  style={{
+                    marginTop: 12,
+                    width: "100%",
+                    background: "#1ABC9C",
+                    color: "#000",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "9px 0",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  Get Pro — $49/mo →
+                </button>
+              </div>
+            ) : isPro && !isGrowth ? (
+              <div style={{
+                background: "linear-gradient(135deg, #2a1f0a, #1f1500)",
+                border: "1px solid rgba(212,168,67,0.25)",
+                borderRadius: 12,
+                padding: "16px 14px",
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#D4A843", marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>
+                  Unlock with Growth
+                </div>
+                {[
+                  "Done-for-you SEO fixes",
+                  "Weekly ranking updates",
+                  "Priority support",
+                  "Accelerated growth plan",
+                ].map((f) => (
+                  <div key={f} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7, fontSize: 12, color: "#6B7B78", fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ color: "#D4A843", flexShrink: 0 }}>✓</span> {f}
+                  </div>
+                ))}
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  style={{
+                    marginTop: 12,
+                    width: "100%",
+                    background: "#D4A843",
+                    color: "#000",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "9px 0",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  Get Growth — $99/mo →
+                </button>
+              </div>
+            ) : (
+              <div style={{
+                background: "rgba(26,188,156,0.06)",
+                border: "1px solid rgba(26,188,156,0.15)",
+                borderRadius: 12,
+                padding: "14px",
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#1ABC9C", marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>🚀 Growth Active</div>
+                <div style={{ fontSize: 11, color: "#6B7B78", lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif" }}>All features unlocked. Your clinic is on the path to #1.</div>
+              </div>
+            )}
+          </div>
         </aside>
 
         {/* MAIN */}
