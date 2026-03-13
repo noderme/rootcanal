@@ -1110,7 +1110,7 @@ function DashboardContent() {
             animation: "fadeSlideUp 0.4s ease both",
           }}
         >
-          {loadingSteps[loadingStep]?.emoji} {loadingSteps[loadingStep]?.label}
+          {loadingSteps[loadingStep]?.icon} {loadingSteps[loadingStep]?.label}
         </div>
 
         {/* Dot progress */}
