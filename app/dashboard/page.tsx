@@ -1482,24 +1482,6 @@ function DashboardContent() {
                     <span style={{ color: "#1ABC9C", flexShrink: 0 }}>✓</span> {f}
                   </div>
                 ))}
-                <button
-                  onClick={() => setShowUpgradeModal(true)}
-                  style={{
-                    marginTop: 12,
-                    width: "100%",
-                    background: "#1ABC9C",
-                    color: "#000",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "9px 0",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Get Pro — $49/mo →
-                </button>
               </div>
             ) : isPro && !isGrowth ? (
               <div style={{
@@ -1521,24 +1503,6 @@ function DashboardContent() {
                     <span style={{ color: "#D4A843", flexShrink: 0 }}>✓</span> {f}
                   </div>
                 ))}
-                <button
-                  onClick={() => setShowUpgradeModal(true)}
-                  style={{
-                    marginTop: 12,
-                    width: "100%",
-                    background: "#D4A843",
-                    color: "#000",
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "9px 0",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    fontFamily: "'DM Sans', sans-serif",
-                  }}
-                >
-                  Get Growth — $99/mo →
-                </button>
               </div>
             ) : (
               <div style={{
