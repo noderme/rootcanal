@@ -830,6 +830,8 @@ function DashboardContent() {
   // Upgrade modal
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  const displayCity = city || data?.city || "";
+
   // "I'm already Pro" re-auth modal (for free users who lost localStorage)
   const [showProLogin, setShowProLogin] = useState(false);
   const [proLoginEmail, setProLoginEmail] = useState("");
@@ -1001,7 +1003,7 @@ function DashboardContent() {
   const loadingSteps = [
     { icon: "⚡", label: "Checking website speed..." },
     { icon: "🔍", label: "Analyzing Google visibility..." },
-    { icon: "🏆", label: `Finding competitors in ${city}...` },
+    { icon: "🏆", label: `Finding competitors in ${displayCity}...` },
     { icon: "⭐", label: "Reading patient reviews..." },
   ];
 
@@ -1321,7 +1323,7 @@ function DashboardContent() {
             fontFamily: "'DM Mono', monospace",
           }}
         >
-          {url} · {city}
+          {url} · {displayCity}
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
@@ -1597,7 +1599,7 @@ function DashboardContent() {
             <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
               <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Your Google Rank</div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{userRank}</div>
-              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>vs other clinics in {city}</div>
+              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>vs other clinics in {displayCity}</div>
             </div>
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
               {typeof userRank === "number" && userRank <= 3
@@ -1649,7 +1651,7 @@ function DashboardContent() {
                 <span style={{ fontSize: 24 }}>{inTopThree ? "🏆" : "📉"}</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#F0EBE3" }}>
-                    {inTopThree ? `You're in the top 3 in ${city}!` : `You're outside the top 3 — most patients never scroll that far`}
+                    {inTopThree ? `You're in the top 3 in ${displayCity}!` : `You're outside the top 3 — most patients never scroll that far`}
                   </div>
                   <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>
                     {inTopThree ? "Top 3 clinics receive ~70% of all patient clicks on Google." : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
@@ -1855,7 +1857,7 @@ function DashboardContent() {
                   marginBottom: 6,
                 }}
               >
-                🚀 Ready to dominate {city}?
+                🚀 Ready to dominate {displayCity}?
               </div>
               <div style={{ fontSize: 14, color: "#6B7B78" }}>
                 Upgrade to Growth for done-for-you SEO fixes, priority support,
@@ -2347,7 +2349,7 @@ function DashboardContent() {
                 <div
                   style={{ fontSize: 13, color: "#6B7B78", marginBottom: 16 }}
                 >
-                  {city}
+                  {displayCity}
                 </div>
                 <div style={{ display: "flex", gap: 16 }}>
                   <div>
@@ -2758,8 +2760,8 @@ function DashboardContent() {
                         >
                           Final Goal:{" "}
                           {(typeof userRank === "number" ? userRank : 8) <= 3
-                            ? `Rank #1 in ${city}`
-                            : `Top 3 in ${city}`}
+                            ? `Rank #1 in ${displayCity}`
+                            : `Top 3 in ${displayCity}`}
                         </div>
                         {isGrowth ? (
                           <div style={{ fontSize: 12, color: "#2ECC71" }}>
