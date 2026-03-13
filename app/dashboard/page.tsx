@@ -1099,6 +1099,7 @@ function DashboardContent() {
 
         {/* Active step label */}
         <div
+          key={loadingStep}
           style={{
             fontSize: 14,
             color: "#1ABC9C",
@@ -1107,7 +1108,6 @@ function DashboardContent() {
             marginBottom: 16,
             minHeight: 20,
             animation: "fadeSlideUp 0.4s ease both",
-            key: loadingStep,
           }}
         >
           {loadingSteps[loadingStep]?.emoji} {loadingSteps[loadingStep]?.label}
