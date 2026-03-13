@@ -1838,16 +1838,18 @@ function DashboardContent() {
               { emoji: "📧", label: "You enter", sub: "patient email" },
               { emoji: "📩", label: "Patient gets", sub: "review link" },
               { emoji: "⭐", label: "Patient leaves", sub: "Google review" },
-              { emoji: "📈", label: "Your ranking", sub: "improves" },
+              { emoji: "🤖", label: "We auto-reply", sub: "on your behalf" },
+              { emoji: "📈", label: "Ranking improves", sub: "you rise on Google" },
+              { emoji: "🏥", label: "More patients", sub: "book your clinic" },
             ].map((step, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ textAlign: "center", minWidth: 90 }}>
-                  <div style={{ fontSize: 28, marginBottom: 4 }}>{step.emoji}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#F0EBE3" }}>{step.label}</div>
-                  <div style={{ fontSize: 10, color: "rgba(247,243,237,0.4)" }}>{step.sub}</div>
+                <div style={{ textAlign: "center", minWidth: 80 }}>
+                  <div style={{ fontSize: 26, marginBottom: 4 }}>{step.emoji}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#F0EBE3" }}>{step.label}</div>
+                  <div style={{ fontSize: 9, color: "rgba(247,243,237,0.4)" }}>{step.sub}</div>
                 </div>
-                {i < 4 && (
-                  <div style={{ fontSize: 18, color: "#1ABC9C", padding: "0 6px", marginBottom: 18 }}>→</div>
+                {i < 6 && (
+                  <div style={{ fontSize: 16, color: "#1ABC9C", padding: "0 4px", marginBottom: 18 }}>→</div>
                 )}
               </div>
             ))}
