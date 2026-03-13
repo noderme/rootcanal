@@ -1832,7 +1832,7 @@ function DashboardContent() {
           <div style={{ fontSize: 11, letterSpacing: 2, color: "#1ABC9C", textTransform: "uppercase", marginBottom: 16 }}>
             How it works
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
             {[
               { emoji: "🦷", label: "Patient visits", sub: "your clinic" },
               { emoji: "📧", label: "You enter", sub: "patient email" },
@@ -1843,7 +1843,7 @@ function DashboardContent() {
               { emoji: "🏥", label: "More patients", sub: "book your clinic" },
             ].map((step, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ textAlign: "center", minWidth: 80 }}>
+                <div style={{ textAlign: "center", flex: 1 }}>
                   <div style={{ fontSize: 26, marginBottom: 4 }}>{step.emoji}</div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: "#F0EBE3" }}>{step.label}</div>
                   <div style={{ fontSize: 9, color: "rgba(247,243,237,0.4)" }}>{step.sub}</div>
