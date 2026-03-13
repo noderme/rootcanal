@@ -1533,6 +1533,9 @@ function DashboardContent() {
           </div>
         </div>
 
+        {/* ── COMPETITORS TAB CONTENT ─────────────────────── */}
+        {activeTab === "competitors" && (<>
+
         {/* SCORE HERO */}
         {(() => (
           <div
@@ -1870,6 +1873,12 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* ── end competitors part 1 ── */}
+        </>)}
+
+        {/* ── REVIEWS TAB CONTENT ─────────────────────────── */}
+        {activeTab === "reviews" && (<>
+
         {/* HERO REVIEW BLOCK */}
         <div
           className="card no-print rc-hero-review"
@@ -2083,6 +2092,12 @@ function DashboardContent() {
           </div>
         )}
 
+        {/* ── end reviews part 1 ── */}
+        </>)}
+
+        {/* ── COMPETITORS TAB — part 2 (top priorities) ─── */}
+        {activeTab === "competitors" && (<>
+
         {/* TOP 3 PRIORITIES */}
         {(() => {
           const priorities: string[] = [];
@@ -2176,6 +2191,9 @@ function DashboardContent() {
             </div>
           );
         })()}
+
+        {/* ── end competitors part 2 ── */}
+        </>)}
 
         {/* BOTTOM TABS — mobile only */}
         <div
