@@ -1258,9 +1258,9 @@ function HomeInner() {
           © 2026 RootCanal. Built for dental clinics who want more patients.
         </div>
         <div style={{ display: "flex", gap: 24 }}>
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-          <a href="#">Contact</a>
+          <a href="/privacy-policy">Privacy</a>
+          <a href="/terms-and-conditions">Terms</a>
+          <a href="mailto:hello@rootcanal.app">Contact</a>
         </div>
       </footer>
 
