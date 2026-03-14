@@ -1242,30 +1242,6 @@ function HomeInner() {
         </div>
       </section>
 
-
-      {/* CTA */}
-      <section className="rc-cta-section">
-        <h2>
-          Your competitor is ranking #1.
-          <br />
-          Are you?
-        </h2>
-        <p>
-          Get your free dental SEO audit in 60 seconds. No credit card. No
-          jargon. Just results.
-        </p>
-        <form className="rc-cta-form" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Enter your clinic website e.g. smilesdental.com"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            required
-          />
-          <button type="submit">Check Your Clinic for Free →</button>
-        </form>
-      </section>
-
       {/* FOOTER */}
       <footer className="rc-footer">
         <div
