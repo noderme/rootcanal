@@ -161,9 +161,6 @@ function HomeInner() {
           <a href="#features" className="rc-nav-link">
             Features
           </a>
-          <a href="#audit" className="rc-nav-link rc-nav-cta">
-            Free Audit →
-          </a>
         </div>
       </nav>
 
