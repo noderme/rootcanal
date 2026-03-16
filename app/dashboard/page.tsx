@@ -810,7 +810,8 @@ function DashboardContent() {
 
   // ── AUTH STATE ──────────────────────────────────────────────────────────────
   const [authState, setAuthState] = useState<"checking" | "authenticated" | "enter-email" | "enter-otp">("checking");
-  const [authEmail, setAuthEmail] = useState("");
+  const [authEmail, setAuthEmail] = useState(""); // real email for OTP calls
+  const [authEmailDisplay, setAuthEmailDisplay] = useState(""); // masked email for display
   const [authOtp, setAuthOtp] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -930,9 +931,21 @@ function DashboardContent() {
       const saved = localStorage.getItem("rc_user_email");
       if (saved) {
         setAuthEmail(saved);
+        setAuthEmailDisplay(saved[0] + "***@" + saved.split("@")[1]);
         setAuthState("enter-otp");
         await supabase.auth.signInWithOtp({ email: saved, options: { shouldCreateUser: true, emailRedirectTo: undefined } });
         return;
+      }
+      // Check leads table by URL — send OTP if found
+      if (url) {
+        const res = await fetch(`/api/lookup-user?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        if (data.found) {
+          setAuthEmail(data.email);
+          setAuthEmailDisplay(data.maskedEmail);
+          setAuthState("enter-otp");
+          return;
+        }
       }
       // Anonymous user — load dashboard freely, show save banner after 60s
       setAuthState("authenticated");
@@ -1136,7 +1149,7 @@ function DashboardContent() {
           ) : (
             <>
               <p style={{ color: "#6B7B78", fontSize: 14, marginBottom: 4, marginTop: 8 }}>We sent a 6-digit code to</p>
-              <p style={{ color: "#F7F3ED", fontSize: 14, marginBottom: 28 }}>{authEmail}</p>
+              <p style={{ color: "#F7F3ED", fontSize: 14, marginBottom: 28 }}>{authEmailDisplay || authEmail}</p>
               <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <input
