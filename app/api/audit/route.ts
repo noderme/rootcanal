@@ -47,6 +47,7 @@ interface AuditResult {
   yelpRating?: number;
   yelpReviewCount?: number;
   yelpUrl?: string;
+  yelpRank?: number;
   healthgradesFound?: boolean;
   healthgradesRating?: number;
   healthgradesReviews?: number;
@@ -917,20 +918,34 @@ export async function GET(request: NextRequest) {
     let yelpRating: number | undefined;
     let yelpReviewCount: number | undefined;
     let yelpUrl: string | undefined;
+    let yelpRank: number | undefined;
     if (serpapiKey && clinicName) {
       try {
-        const yelpQuery = encodeURIComponent(clinicName);
+        const yelpQuery = encodeURIComponent("dentist");
         const yelpLocation = encodeURIComponent(city || "New York");
         const yelpRes = await fetch(
           `https://serpapi.com/search.json?engine=yelp&find_desc=${yelpQuery}&find_loc=${yelpLocation}&api_key=${serpapiKey}`,
           { signal: AbortSignal.timeout(10000) }
         );
         const yelpData = await yelpRes.json();
-        const biz = yelpData?.organic_results?.[0];
-        if (biz) {
+        const results: { name?: string; rating?: number; reviews?: number; link?: string }[] = yelpData?.organic_results || [];
+        // Find clinic by name match
+        const clinicNameLower = clinicName.toLowerCase();
+        const matchIndex = results.findIndex(r =>
+          r.name?.toLowerCase().includes(clinicNameLower.split(" ")[0]) ||
+          clinicNameLower.includes((r.name ?? "").toLowerCase().split(" ")[0])
+        );
+        if (matchIndex !== -1) {
+          const biz = results[matchIndex];
+          yelpRank = matchIndex + 1;
           yelpRating = biz.rating;
           yelpReviewCount = biz.reviews;
           yelpUrl = biz.link;
+        } else if (results[0]) {
+          // no match — still show first result rating for context
+          yelpRating = results[0].rating;
+          yelpReviewCount = results[0].reviews;
+          yelpUrl = results[0].link;
         }
       } catch (yelpError) {
         console.error("Yelp error:", yelpError);
@@ -987,6 +1002,7 @@ export async function GET(request: NextRequest) {
       yelpRating,
       yelpReviewCount,
       yelpUrl,
+      yelpRank,
       healthgradesFound,
       healthgradesRating,
       healthgradesReviews,

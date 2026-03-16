@@ -38,6 +38,7 @@ interface AuditData {
   yelpRating?: number;
   yelpReviewCount?: number;
   yelpUrl?: string;
+  yelpRank?: number;
   healthgradesFound?: boolean;
   healthgradesRating?: number;
   healthgradesReviews?: number;
@@ -1831,6 +1832,13 @@ function DashboardContent() {
                 <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Review Rank</div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: reviewRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{reviewRank}</div>
                 <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>by review count</div>
+              </div>
+            )}
+            {data.yelpRank != null && (
+              <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
+                <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Yelp Rank</div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: data.yelpRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{data.yelpRank}</div>
+                <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>on Yelp</div>
               </div>
             )}
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
