@@ -1904,7 +1904,7 @@ function DashboardContent() {
                   </button>
                 )}
                 {!inTopThree && data.healthgradesFound === false && (
-                  <div style={{ background: "rgba(231,76,60,0.12)", border: "1px solid rgba(231,76,60,0.3)", borderRadius: 8, padding: "8px 12px", textAlign: "right", maxWidth: 220 }}>
+                  <div style={{ background: "rgba(231,76,60,0.12)", border: "1px solid rgba(231,76,60,0.3)", borderRadius: 8, padding: "8px 12px", textAlign: "left", maxWidth: 220 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#E74C3C" }}>⚠️ You are losing patients right now</div>
                     <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 3 }}>Not in top 3 + invisible on Healthgrades = patients choosing your competitors daily.</div>
                   </div>
