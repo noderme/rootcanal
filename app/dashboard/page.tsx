@@ -968,6 +968,7 @@ function DashboardContent() {
     if (!bannerEmail.includes("@")) return;
     const email = bannerEmail.toLowerCase().trim();
     localStorage.setItem("rc_user_email", email);
+    localStorage.setItem("rc_auth_time", Date.now().toString());
     const { error: dbError } = await supabase.from("leads").insert({ email, url: url || null });
     if (dbError) console.error("Leads DB error:", dbError);
     setBannerSent(true);
