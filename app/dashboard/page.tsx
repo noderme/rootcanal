@@ -142,7 +142,7 @@ function UpgradeModal({
     "Monthly automated checks",
     "Full 30-point Google report",
     "Competitor tracking (3 clinics)",
-    "Review request automation",
+    "Google & Yelp review request automation",
     "Monthly progress report",
     "Step-by-step fix guides",
   ];
@@ -150,7 +150,7 @@ function UpgradeModal({
   const growthFeatures = [
     "Everything in Pro",
     "Connect Google Business Profile via OAuth",
-    "Full review history AI analysis (all reviews)",
+    "Google + Yelp review history AI analysis",
     "Competitor tracking (10 clinics)",
     "Priority email support",
     "Quarterly strategy call",
