@@ -806,6 +806,14 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const url = searchParams.get("url") || "";
   const city = searchParams.get("city") || "";
+  const emailParam = searchParams.get("email") || "";
+
+  // ── AUTH STATE ──────────────────────────────────────────────────────────────
+  const [authState, setAuthState] = useState<"checking" | "authenticated" | "enter-email" | "enter-otp">("checking");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authOtp, setAuthOtp] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const [data, setData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -827,6 +835,11 @@ function DashboardContent() {
     if (val.includes("@")) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     return /^\+?[1-9]\d{9,14}$/.test(val.replace(/[\s\-().]/g, ""));
   };
+
+  // Soft email capture banner (anonymous users)
+  const [showSaveBanner, setShowSaveBanner] = useState(false);
+  const [bannerEmail, setBannerEmail] = useState("");
+  const [bannerSent, setBannerSent] = useState(false);
 
   // Plan state
   const [isPro, setIsPro] = useState(false);
@@ -895,6 +908,74 @@ function DashboardContent() {
       }
     } catch {}
     return false;
+  };
+
+  // ── AUTH LOGIC ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const init = async () => {
+      // Cold email link — has email param, skip OTP entirely
+      if (emailParam) {
+        localStorage.setItem("rc_user_email", emailParam.toLowerCase().trim());
+        setAuthState("authenticated");
+        return;
+      }
+      // Check existing Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setAuthState("authenticated");
+        return;
+      }
+      // Known email in localStorage — auto-send OTP, skip email entry screen
+      const saved = localStorage.getItem("rc_user_email");
+      if (saved) {
+        setAuthEmail(saved);
+        setAuthState("enter-otp");
+        await supabase.auth.signInWithOtp({ email: saved, options: { shouldCreateUser: true } });
+        return;
+      }
+      // Anonymous user — load dashboard freely, show save banner after 60s
+      setAuthState("authenticated");
+      const timer = setTimeout(() => setShowSaveBanner(true), 60000);
+      return () => clearTimeout(timer);
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submitBannerEmail = async () => {
+    if (!bannerEmail.includes("@")) return;
+    const email = bannerEmail.toLowerCase().trim();
+    localStorage.setItem("rc_user_email", email);
+    await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    setBannerSent(true);
+  };
+
+  const sendOtp = async () => {
+    if (!authEmail.trim()) return;
+    setAuthLoading(true);
+    setAuthError("");
+    const { error } = await supabase.auth.signInWithOtp({
+      email: authEmail.toLowerCase().trim(),
+      options: { shouldCreateUser: true },
+    });
+    setAuthLoading(false);
+    if (error) { setAuthError("Failed to send code. Try again."); return; }
+    setAuthState("enter-otp");
+  };
+
+  const verifyOtp = async () => {
+    if (!authOtp.trim()) return;
+    setAuthLoading(true);
+    setAuthError("");
+    const { error } = await supabase.auth.verifyOtp({
+      email: authEmail.toLowerCase().trim(),
+      token: authOtp.trim(),
+      type: "email",
+    });
+    setAuthLoading(false);
+    if (error) { setAuthError("Invalid or expired code. Try again."); return; }
+    localStorage.setItem("rc_user_email", authEmail.toLowerCase().trim());
+    setAuthState("authenticated");
   };
 
   // On mount: check by clinic_url first, then localStorage email
@@ -1014,6 +1095,69 @@ function DashboardContent() {
     { icon: "🏆", label: `Finding competitors in ${displayCity}...` },
     { icon: "⭐", label: "Reading patient reviews..." },
   ];
+
+  // ── AUTH SCREENS ────────────────────────────────────────────────────────────
+  if (authState === "checking") return null;
+
+  if (authState === "enter-email" || authState === "enter-otp") {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0D0F0E", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: "48px 40px", width: "100%", maxWidth: 400, textAlign: "center" }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, color: "#F7F3ED", marginBottom: 8 }}>
+            Root<span style={{ color: "#C0392B" }}>Canal</span>
+          </div>
+          {authState === "enter-email" ? (
+            <>
+              <p style={{ color: "#6B7B78", fontSize: 14, marginBottom: 28, marginTop: 8 }}>Enter your email to access your report</p>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={e => setAuthEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && sendOtp()}
+                placeholder="your@email.com"
+                autoFocus
+                style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #2A3330", background: "#0D0F0E", color: "#F7F3ED", fontSize: 14, marginBottom: 12, boxSizing: "border-box" }}
+              />
+              {authError && <div style={{ color: "#E74C3C", fontSize: 13, marginBottom: 12 }}>{authError}</div>}
+              <button
+                onClick={sendOtp}
+                disabled={authLoading || !authEmail.includes("@")}
+                style={{ width: "100%", padding: "13px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", opacity: authLoading || !authEmail.includes("@") ? 0.5 : 1 }}
+              >
+                {authLoading ? "Sending..." : "Send Code →"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ color: "#6B7B78", fontSize: 14, marginBottom: 4, marginTop: 8 }}>We sent a 6-digit code to</p>
+              <p style={{ color: "#F7F3ED", fontSize: 14, marginBottom: 28 }}>{authEmail}</p>
+              <input
+                type="text"
+                value={authOtp}
+                onChange={e => setAuthOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                onKeyDown={e => e.key === "Enter" && verifyOtp()}
+                placeholder="123456"
+                autoFocus
+                maxLength={6}
+                style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #2A3330", background: "#0D0F0E", color: "#F7F3ED", fontSize: 22, letterSpacing: 8, textAlign: "center", marginBottom: 12, boxSizing: "border-box" }}
+              />
+              {authError && <div style={{ color: "#E74C3C", fontSize: 13, marginBottom: 12 }}>{authError}</div>}
+              <button
+                onClick={verifyOtp}
+                disabled={authLoading || authOtp.length < 6}
+                style={{ width: "100%", padding: "13px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", opacity: authLoading || authOtp.length < 6 ? 0.5 : 1 }}
+              >
+                {authLoading ? "Verifying..." : "Verify →"}
+              </button>
+              <button onClick={() => { setAuthState("enter-email"); setAuthOtp(""); setAuthError(""); }} style={{ marginTop: 12, background: "none", border: "none", color: "#6B7B78", fontSize: 13, cursor: "pointer" }}>
+                Use a different email
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading)
     return (
@@ -4084,6 +4228,34 @@ function DashboardContent() {
               Close
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── SAVE REPORT BANNER (anonymous users) ── */}
+      {showSaveBanner && (
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#151918", borderTop: "1px solid #2A3330", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 1000, fontFamily: "'DM Sans', sans-serif" }}>
+          {bannerSent ? (
+            <>
+              <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>✓ Check your email for the code to revisit this report anytime.</span>
+              <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </>
+          ) : (
+            <>
+              <span style={{ color: "#F7F3ED", fontSize: 14 }}>Want to revisit this report?</span>
+              <input
+                type="email"
+                value={bannerEmail}
+                onChange={e => setBannerEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && submitBannerEmail()}
+                placeholder="your@email.com"
+                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2A3330", background: "#0D0F0E", color: "#F7F3ED", fontSize: 14, width: 220 }}
+              />
+              <button onClick={submitBannerEmail} disabled={!bannerEmail.includes("@")} style={{ padding: "8px 16px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer", opacity: !bannerEmail.includes("@") ? 0.5 : 1 }}>
+                Save →
+              </button>
+              <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </>
+          )}
         </div>
       )}
     </div>
