@@ -2730,27 +2730,6 @@ function DashboardContent() {
                       >
                         {comp.name}
                       </div>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 800,
-                          padding: "3px 8px",
-                          borderRadius: 4,
-                          background:
-                            comp.score > data.overallScore
-                              ? "rgba(231,76,60,0.12)"
-                              : "rgba(46,204,113,0.12)",
-                          color:
-                            comp.score > data.overallScore
-                              ? "#E74C3C"
-                              : "#2ECC71",
-                          fontFamily: "'DM Mono', monospace",
-                          whiteSpace: "nowrap",
-                          flexShrink: 0,
-                        }}
-                      >
-                        #{i + 1 + 1}
-                      </div>
                     </div>
                     <div
                       style={{
