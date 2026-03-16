@@ -1867,9 +1867,9 @@ function DashboardContent() {
         {activeTab === "health" && (
           <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
             {([
-              { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore, label: "Website Speed", sublabel: "how fast your site loads for patients", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
-              { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore, label: "Google Findability", sublabel: "how easily patients find you on Google", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
-              { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore, label: "Website Usability", sublabel: "how easy your site is to navigate", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
+              { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore >= 80 ? "A" : data.performanceScore >= 60 ? "B" : data.performanceScore >= 40 ? "C" : "F", label: "Website Speed", sublabel: "how fast your site loads for patients", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
+              { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore >= 80 ? "A" : data.seoScore >= 60 ? "B" : data.seoScore >= 40 ? "C" : "F", label: "Google Findability", sublabel: "how easily patients find you on Google", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
+              { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore >= 80 ? "A" : data.accessibilityScore >= 60 ? "B" : data.accessibilityScore >= 40 ? "C" : "F", label: "Website Usability", sublabel: "how easy your site is to navigate", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
             ] as { icon: string; value: string | number; label: string; sublabel: string; color: string }[]).map((m, i, arr) => (
               <div key={i} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderRight: i < arr.length - 1 ? "1px solid #2A3330" : "none" }}>
                 <span style={{ fontSize: 20 }}>{m.icon}</span>
@@ -2488,12 +2488,6 @@ function DashboardContent() {
                               </div>
                               <div style={{ fontSize: 11, color: "#6B7B78" }}>Reviews</div>
                             </div>
-                            <div>
-                              <div style={{ fontSize: 22, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>
-                                {data.overallScore}
-                              </div>
-                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Score</div>
-                            </div>
                           </div>
                           {/* Divider */}
                           {data.yelpRating != null && (
@@ -2621,21 +2615,6 @@ function DashboardContent() {
                               </span>
                             </div>
                           </div>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 22,
-                                fontWeight: 900,
-                                color: "#E74C3C",
-                                fontFamily: "'Playfair Display', serif",
-                              }}
-                            >
-                              {topComp.score}
-                            </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              Google Score
-                            </div>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -2716,21 +2695,6 @@ function DashboardContent() {
                       {reviews?.total ?? 0} reviews
                     </div>
                   </div>
-                  <div>
-                    <div
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        fontSize: 24,
-                        fontWeight: 900,
-                        color: "#1ABC9C",
-                      }}
-                    >
-                      {data.overallScore}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                      Google score
-                    </div>
-                  </div>
                 </div>
               </div>
               {/* Competitor cards */}
@@ -2797,7 +2761,7 @@ function DashboardContent() {
                     >
                       {comp.address}
                     </div>
-                    <div style={{ display: "flex", gap: 16 }}>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
                       <div>
                         <div
                           style={{
@@ -2816,23 +2780,15 @@ function DashboardContent() {
                           {comp.reviews} reviews
                         </div>
                       </div>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: 20,
-                            fontWeight: 900,
-                            color:
-                              comp.score > data.overallScore
-                                ? "#E74C3C"
-                                : "#2ECC71",
-                          }}
-                        >
-                          {comp.score}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                          Google score
-                        </div>
+                      <div style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: "4px 10px",
+                        borderRadius: 20,
+                        background: comp.score > data.overallScore ? "rgba(231,76,60,0.1)" : "rgba(46,204,113,0.1)",
+                        color: comp.score > data.overallScore ? "#E74C3C" : "#2ECC71",
+                      }}>
+                        {comp.score > data.overallScore ? "Ahead of you" : "Behind you"}
                       </div>
                     </div>
                   </div>
@@ -3443,59 +3399,33 @@ function DashboardContent() {
                     >
                       HOW PATIENTS FEEL
                     </div>
-                    {[
-                      {
-                        label: "Positive",
-                        pct: reviews.sentimentBreakdown?.positive ?? 0,
-                        color: "#2ECC71",
-                      },
-                      {
-                        label: "Neutral",
-                        pct: reviews.sentimentBreakdown?.neutral ?? 0,
-                        color: "#F0A500",
-                      },
-                      {
-                        label: "Negative",
-                        pct: reviews.sentimentBreakdown?.negative ?? 0,
-                        color: "#E74C3C",
-                      },
-                    ].map(({ label, pct, color }) => (
-                      <div key={label} style={{ marginBottom: 12 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginBottom: 4,
-                          }}
-                        >
-                          <span style={{ fontSize: 13, color: "#F0EBE3" }}>
-                            {label}
-                          </span>
-                          <span
-                            style={{ fontSize: 13, color, fontWeight: 700 }}
-                          >
-                            {pct}%
-                          </span>
+                    {(() => {
+                      const pos = reviews.sentimentBreakdown?.positive ?? 0;
+                      const neg = reviews.sentimentBreakdown?.negative ?? 0;
+                      const verdict = pos >= 70 ? { label: "Mostly Positive", color: "#2ECC71", bg: "rgba(46,204,113,0.1)", emoji: "😊" }
+                        : neg >= 30 ? { label: "Needs Attention", color: "#E74C3C", bg: "rgba(231,76,60,0.1)", emoji: "⚠️" }
+                        : { label: "Mixed", color: "#F0A500", bg: "rgba(240,165,0,0.1)", emoji: "😐" };
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 10, background: verdict.bg }}>
+                            <span style={{ fontSize: 20 }}>{verdict.emoji}</span>
+                            <span style={{ fontSize: 15, fontWeight: 700, color: verdict.color }}>{verdict.label}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 10 }}>
+                            {[
+                              { label: "Happy", pct: pos, color: "#2ECC71" },
+                              { label: "Neutral", pct: reviews.sentimentBreakdown?.neutral ?? 0, color: "#F0A500" },
+                              { label: "Unhappy", pct: neg, color: "#E74C3C" },
+                            ].map(({ label, pct, color }) => (
+                              <div key={label} style={{ flex: 1, textAlign: "center", padding: "8px 4px", background: "#0D1210", borderRadius: 8 }}>
+                                <div style={{ fontSize: 16, fontWeight: 900, color, fontFamily: "'Playfair Display', serif" }}>{pct}%</div>
+                                <div style={{ fontSize: 10, color: "#6B7B78", marginTop: 2 }}>{label}</div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div
-                          style={{
-                            height: 6,
-                            background: "#2A3330",
-                            borderRadius: 3,
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: 6,
-                              background: color,
-                              borderRadius: 3,
-                              width: `${pct}%`,
-                              transition: "width 1s ease",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })()}
                     <div
                       style={{
                         marginTop: 16,
@@ -3580,46 +3510,16 @@ function DashboardContent() {
                         marginBottom: 4,
                       }}
                     >
-                      HOW OFTEN YOU REPLY TO REVIEWS
+                      REPLYING TO REVIEWS
                     </div>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        color: "#F0EBE3",
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      You respond to{" "}
-                      <strong
-                        style={{
-                          color:
-                            (reviews.responseRate ?? 0) < 50
-                              ? "#E74C3C"
-                              : "#2ECC71",
-                        }}
-                      >
-                        {reviews.responseRate ?? 0}%
-                      </strong>{" "}
-                      of patient reviews. Top clinics respond to{" "}
-                      <strong style={{ color: "#2ECC71" }}>70%+</strong> —
-                      responding improves trust and Google ranking.
+                    <div style={{ fontSize: 14, color: "#F0EBE3", lineHeight: 1.6 }}>
+                      {(reviews.responseRate ?? 0) >= 70
+                        ? "✅ You reply to most reviews — this builds trust and boosts your Google ranking."
+                        : (reviews.responseRate ?? 0) >= 40
+                        ? "⚠️ You reply to some reviews but not all. Try to respond to every patient — it shows you care."
+                        : "❌ You rarely reply to reviews. Responding to patients is one of the easiest ways to improve your ranking."}
                     </div>
                   </div>
-                  {(reviews.responseRate ?? 0) < 50 && (
-                    <div
-                      style={{
-                        background: "rgba(231,76,60,0.1)",
-                        border: "1px solid rgba(231,76,60,0.2)",
-                        borderRadius: 8,
-                        padding: "8px 16px",
-                        fontSize: 13,
-                        color: "#E74C3C",
-                        fontWeight: 600,
-                      }}
-                    >
-                      ⚠️ Respond to more reviews!
-                    </div>
-                  )}
                 </div>
 
                 <div
