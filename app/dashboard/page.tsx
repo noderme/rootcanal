@@ -1888,21 +1888,23 @@ function DashboardContent() {
                   </div>
                 </div>
               </div>
-              {inTopThree && !isGrowth && (
-                <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#1ABC9C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>
-                  Protect Your Rank →
-                </button>
-              )}
-              {!inTopThree && data.healthgradesFound === false && (
-                <div style={{ fontSize: 12, color: "#E74C3C", fontWeight: 600, marginTop: 6, paddingTop: 6, borderTop: "1px solid #2A3330", width: "100%" }}>
-                  ❌ Also missing from Healthgrades — 25% of patients searching there can&apos;t find you either.
-                </div>
-              )}
-              {!inTopThree && !isGrowth && (
-                <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#E74C3C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>
-                  Get Into Top 3 →
-                </button>
-              )}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                {inTopThree && !isGrowth && (
+                  <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#1ABC9C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>
+                    Protect Your Rank →
+                  </button>
+                )}
+                {!inTopThree && !isGrowth && (
+                  <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#E74C3C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>
+                    Get Into Top 3 →
+                  </button>
+                )}
+                {!inTopThree && data.healthgradesFound === false && (
+                  <div style={{ fontSize: 11, color: "#E74C3C", fontWeight: 600, textAlign: "right" }}>
+                    ❌ Also missing from Healthgrades
+                  </div>
+                )}
+              </div>
             </div>
           );
         })()}
