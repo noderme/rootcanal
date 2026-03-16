@@ -356,13 +356,32 @@ export async function GET(request: NextRequest) {
 
   const cacheKey = url.toLowerCase(); // city excluded — city is always re-detected
 
-  // ── Check cache first (skip if placeId missing — re-fetch to get it) ──
+  // ── Check Supabase cache first (persistent across serverless invocations) ──
+  try {
+    const since = new Date(Date.now() - CACHE_TTL).toISOString();
+    const { data: cachedRow } = await supabase
+      .from("scans")
+      .select("result, scanned_at")
+      .eq("url", url)
+      .not("result", "is", null)
+      .gte("scanned_at", since)
+      .order("scanned_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (cachedRow?.result) {
+      console.log("Supabase cache hit:", cacheKey);
+      return NextResponse.json({ ...cachedRow.result, cached: true });
+    }
+  } catch {
+    // No cache hit — proceed with full audit
+  }
+
+  // ── Check in-memory cache (fallback for same instance) ──
   const cached = getCached(cacheKey);
   if (cached && cached.placeId) {
-    console.log("Cache hit:", cacheKey);
+    console.log("Memory cache hit:", cacheKey);
     return NextResponse.json(cached);
-  } else if (cached) {
-    console.log("Cache hit but no placeId — re-fetching:", cacheKey);
   }
 
   try {
@@ -832,28 +851,7 @@ export async function GET(request: NextRequest) {
       console.error("Places error:", placesError);
     }
 
-    // ── 4. SAVE TO SUPABASE ───────────────────────────
-    try {
-      const { error: dbError } = await supabase.from("scans").insert({
-        url,
-        city,
-        overall_score: overallScore,
-        performance_score: performanceScore,
-        seo_score: seoScore,
-        accessibility_score: accessibilityScore,
-      });
-
-      if (dbError) {
-        console.error("Supabase insert error:", dbError.message);
-      } else {
-        console.log("✅ Scan saved to Supabase:", url, city);
-      }
-    } catch (dbErr) {
-      // Never crash the API if DB fails
-      console.error("Supabase error:", dbErr);
-    }
-
-    // ── 5. Cache & return ─────────────────────────────
+    // ── 4. Build result ───────────────────────────────
     const result: AuditResult = {
       url,
       city,
@@ -869,6 +867,25 @@ export async function GET(request: NextRequest) {
     };
 
     setCache(cacheKey, result);
+
+    // ── 5. SAVE TO SUPABASE ───────────────────────────
+    try {
+      const { error: dbError } = await supabase.from("scans").insert({
+        url,
+        city,
+        overall_score: overallScore,
+        performance_score: performanceScore,
+        seo_score: seoScore,
+        accessibility_score: accessibilityScore,
+        result,
+        scanned_at: result.scannedAt,
+      });
+      if (dbError) console.error("Supabase insert error:", dbError.message);
+      else console.log("✅ Scan saved to Supabase:", url, city);
+    } catch (dbErr) {
+      console.error("Supabase error:", dbErr);
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error("Audit error:", error);
