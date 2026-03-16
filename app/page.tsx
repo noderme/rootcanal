@@ -221,7 +221,7 @@ function HomeInner() {
 
           <form id="audit" onSubmit={handleSubmit} className="rc-form-wrap">
             {/* Mode toggle */}
-            <div style={{ display: "flex", background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: 4, marginBottom: 12, border: "1px solid rgba(255,255,255,0.12)" }}>
+            <div style={{ display: "flex", background: "rgba(0,0,0,0.07)", borderRadius: 10, padding: 4, marginBottom: 12, border: "1px solid rgba(0,0,0,0.1)" }}>
               <button
                 type="button"
                 onClick={() => setMode("website")}
@@ -235,7 +235,7 @@ function HomeInner() {
                   fontWeight: 600,
                   transition: "all 0.15s",
                   background: mode === "website" ? "#fff" : "transparent",
-                  color: mode === "website" ? "#1a1a1a" : "rgba(255,255,255,0.6)",
+                  color: mode === "website" ? "#1a1a1a" : "rgba(0,0,0,0.4)",
                   boxShadow: mode === "website" ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
                 }}
               >
@@ -254,7 +254,7 @@ function HomeInner() {
                   fontWeight: 600,
                   transition: "all 0.15s",
                   background: mode === "gbp" ? "#fff" : "transparent",
-                  color: mode === "gbp" ? "#1a1a1a" : "rgba(255,255,255,0.6)",
+                  color: mode === "gbp" ? "#1a1a1a" : "rgba(0,0,0,0.4)",
                   boxShadow: mode === "gbp" ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
                 }}
               >
