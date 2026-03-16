@@ -48,6 +48,10 @@ interface AuditResult {
   yelpReviewCount?: number;
   yelpUrl?: string;
   healthgradesFound?: boolean;
+  healthgradesRating?: number;
+  healthgradesReviews?: number;
+  healthgradesClaimed?: boolean;
+  healthgradesUrl?: string;
   cached?: boolean;
 }
 
@@ -895,17 +899,34 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 4b. HEALTHGRADES EXISTENCE CHECK ─────────────
+    // ── 4b. HEALTHGRADES VIA APIFY ────────────────────
     let healthgradesFound = false;
-    if (clinicName) {
+    let healthgradesRating: number | undefined;
+    let healthgradesReviews: number | undefined;
+    let healthgradesClaimed: boolean | undefined;
+    let healthgradesUrl: string | undefined;
+    const apifyKey = process.env.APIFY_API_KEY;
+    if (apifyKey && clinicName) {
       try {
-        const hgQuery = encodeURIComponent(clinicName + " dentist");
-        const hgRes = await fetch(
-          `https://www.healthgrades.com/usearch?what=${hgQuery}`,
-          { headers: { "User-Agent": "Mozilla/5.0 (compatible; RootCanal/1.0)" }, signal: AbortSignal.timeout(5000) }
+        const searchQuery = `${clinicName} ${city || ""} dentist`.trim();
+        const runRes = await fetch(
+          `https://api.apify.com/v2/acts/jaybird~healthgrades-scraper/run-sync-get-dataset-items?token=${apifyKey}&timeout=30`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ search: searchQuery, maxResults: 1 }),
+            signal: AbortSignal.timeout(35000),
+          }
         );
-        const hgText = await hgRes.text();
-        healthgradesFound = hgText.includes("healthgrades.com/dentist") || hgText.includes('"dentist"');
+        const hgData = await runRes.json();
+        const hg = Array.isArray(hgData) ? hgData[0] : null;
+        if (hg) {
+          healthgradesFound = true;
+          healthgradesRating = hg.rating ?? hg.overallRating;
+          healthgradesReviews = hg.reviewCount ?? hg.numberOfRatings;
+          healthgradesClaimed = hg.isClaimed ?? hg.claimed;
+          healthgradesUrl = hg.url ?? hg.profileUrl;
+        }
       } catch {
         // silently fail — not critical
       }
@@ -930,6 +951,10 @@ export async function GET(request: NextRequest) {
       yelpReviewCount,
       yelpUrl,
       healthgradesFound,
+      healthgradesRating,
+      healthgradesReviews,
+      healthgradesClaimed,
+      healthgradesUrl,
     };
 
     setCache(cacheKey, result);
