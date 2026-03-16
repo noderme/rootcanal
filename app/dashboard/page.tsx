@@ -912,6 +912,7 @@ function DashboardContent() {
 
   // ── AUTH LOGIC ──────────────────────────────────────────────────────────────
   useEffect(() => {
+    let bannerTimer: ReturnType<typeof setTimeout>;
     const init = async () => {
       // Cold email link — has email param, skip OTP entirely
       if (emailParam) {
@@ -930,15 +931,15 @@ function DashboardContent() {
       if (saved) {
         setAuthEmail(saved);
         setAuthState("enter-otp");
-        await supabase.auth.signInWithOtp({ email: saved, options: { shouldCreateUser: true } });
+        await supabase.auth.signInWithOtp({ email: saved, options: { shouldCreateUser: true, emailRedirectTo: undefined } });
         return;
       }
       // Anonymous user — load dashboard freely, show save banner after 60s
       setAuthState("authenticated");
-      const timer = setTimeout(() => setShowSaveBanner(true), 60000);
-      return () => clearTimeout(timer);
+      bannerTimer = setTimeout(() => setShowSaveBanner(true), 60000);
     };
     init();
+    return () => clearTimeout(bannerTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -946,7 +947,7 @@ function DashboardContent() {
     if (!bannerEmail.includes("@")) return;
     const email = bannerEmail.toLowerCase().trim();
     localStorage.setItem("rc_user_email", email);
-    await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: undefined } });
     await supabase.from("leads").upsert({ email, clinic_url: url || null }, { onConflict: "email" });
     setBannerSent(true);
   };
@@ -957,7 +958,7 @@ function DashboardContent() {
     setAuthError("");
     const { error } = await supabase.auth.signInWithOtp({
       email: authEmail.toLowerCase().trim(),
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: true, emailRedirectTo: undefined },
     });
     setAuthLoading(false);
     if (error) { setAuthError("Failed to send code. Try again."); return; }
