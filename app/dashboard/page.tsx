@@ -35,6 +35,10 @@ interface AuditData {
   scannedAt: string;
   userRank?: number;
   userReviewCount?: number;
+  yelpRating?: number;
+  yelpReviewCount?: number;
+  yelpUrl?: string;
+  healthgradesFound?: boolean;
 }
 
 interface ReviewData {
@@ -2453,6 +2457,40 @@ function DashboardContent() {
                               Google Score
                             </div>
                           </div>
+                          {data.yelpRating != null && (
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 22,
+                                  fontWeight: 900,
+                                  color: "#FF1A1A",
+                                  fontFamily: "'Playfair Display', serif",
+                                }}
+                              >
+                                {data.yelpRating.toFixed(1)} ⭐
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>
+                                {data.yelpUrl ? (
+                                  <a href={data.yelpUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#6B7B78", textDecoration: "underline" }}>Yelp Rating</a>
+                                ) : "Yelp Rating"}
+                              </div>
+                            </div>
+                          )}
+                          {data.yelpReviewCount != null && (
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 22,
+                                  fontWeight: 900,
+                                  color: "#FF1A1A",
+                                  fontFamily: "'Playfair Display', serif",
+                                }}
+                              >
+                                {data.yelpReviewCount}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Yelp Reviews</div>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div
@@ -4046,6 +4084,26 @@ function DashboardContent() {
                 </div>
               );
             })}
+
+            {/* Healthgrades check */}
+            {data.healthgradesFound != null && (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 0", borderTop: "1px solid #1A2421" }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: data.healthgradesFound ? "#2ECC71" : "#E74C3C", flexShrink: 0, marginTop: 4 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3" }}>
+                    {data.healthgradesFound ? "Found on Healthgrades ✅" : "Not found on Healthgrades"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>
+                    {data.healthgradesFound
+                      ? "Your clinic has a Healthgrades presence — patients searching there can find you."
+                      : "You have no Healthgrades profile — you're invisible to 25% of patients looking for a dentist online."}
+                  </div>
+                </div>
+                {!data.healthgradesFound && (
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "rgba(231,76,60,0.12)", color: "#E74C3C", fontFamily: "'DM Mono', monospace", flexShrink: 0 }}>HIGH</span>
+                )}
+              </div>
+            )}
 
             <div
               style={{

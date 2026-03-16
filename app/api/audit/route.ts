@@ -44,6 +44,10 @@ interface AuditResult {
   scannedAt: string;
   userRank?: number;
   userReviewCount?: number;
+  yelpRating?: number;
+  yelpReviewCount?: number;
+  yelpUrl?: string;
+  healthgradesFound?: boolean;
   cached?: boolean;
 }
 
@@ -866,7 +870,48 @@ export async function GET(request: NextRequest) {
       console.error("Places error:", placesError);
     }
 
-    // ── 4. Build result ───────────────────────────────
+    // ── 4. YELP LOOKUP ────────────────────────────────
+    let yelpRating: number | undefined;
+    let yelpReviewCount: number | undefined;
+    let yelpUrl: string | undefined;
+    const yelpApiKey = process.env.YELP_API_KEY;
+    if (yelpApiKey && clinicName) {
+      try {
+        const yelpQuery = encodeURIComponent(clinicName);
+        const yelpLocation = encodeURIComponent(city || "USA");
+        const yelpRes = await fetch(
+          `https://api.yelp.com/v3/businesses/search?term=${yelpQuery}&location=${yelpLocation}&categories=dentists&limit=1`,
+          { headers: { Authorization: `Bearer ${yelpApiKey}` } }
+        );
+        const yelpData = await yelpRes.json();
+        const biz = yelpData?.businesses?.[0];
+        if (biz) {
+          yelpRating = biz.rating;
+          yelpReviewCount = biz.review_count;
+          yelpUrl = biz.url;
+        }
+      } catch (yelpError) {
+        console.error("Yelp error:", yelpError);
+      }
+    }
+
+    // ── 4b. HEALTHGRADES EXISTENCE CHECK ─────────────
+    let healthgradesFound = false;
+    if (clinicName) {
+      try {
+        const hgQuery = encodeURIComponent(clinicName + " dentist");
+        const hgRes = await fetch(
+          `https://www.healthgrades.com/usearch?what=${hgQuery}`,
+          { headers: { "User-Agent": "Mozilla/5.0 (compatible; RootCanal/1.0)" }, signal: AbortSignal.timeout(5000) }
+        );
+        const hgText = await hgRes.text();
+        healthgradesFound = hgText.includes("healthgrades.com/dentist") || hgText.includes('"dentist"');
+      } catch {
+        // silently fail — not critical
+      }
+    }
+
+    // ── 5. Build result ───────────────────────────────
     const result: AuditResult = {
       url,
       city,
@@ -881,6 +926,10 @@ export async function GET(request: NextRequest) {
       scannedAt: new Date().toISOString(),
       userRank,
       userReviewCount: clinicReviewCount,
+      yelpRating,
+      yelpReviewCount,
+      yelpUrl,
+      healthgradesFound,
     };
 
     setCache(cacheKey, result);
