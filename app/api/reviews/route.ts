@@ -108,10 +108,11 @@ export async function GET(request: NextRequest) {
         const yelpSearchData = await yelpSearchRes.json();
         const yelpResults = yelpSearchData?.organic_results || [];
         const clinicNameLower = clinicName.toLowerCase();
-        const yelpBiz = yelpResults.find((r: { name?: string }) =>
-          r.name?.toLowerCase().includes(clinicNameLower.split(" ")[0]) ||
-          clinicNameLower.includes((r.name ?? "").toLowerCase().split(" ")[0])
-        );
+        // SerpAPI Yelp uses `title` for the business name
+        const yelpBiz = yelpResults.find((r: { title?: string; name?: string }) => {
+          const n = (r.title || r.name || "").toLowerCase();
+          return n.includes(clinicNameLower.split(" ")[0]) || clinicNameLower.includes(n.split(" ")[0]);
+        });
 
         if (yelpBiz?.place_ids?.yelp) {
           const yelpId = yelpBiz.place_ids.yelp;
