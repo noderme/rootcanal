@@ -138,8 +138,9 @@ function UpgradeModal({
 
   const growthFeatures = [
     "Everything in Pro",
+    "Connect Google Business Profile via OAuth",
+    "Full review history AI analysis (all reviews)",
     "Competitor tracking (10 clinics)",
-    "Google Ads automation",
     "Priority email support",
     "Quarterly strategy call",
   ];
