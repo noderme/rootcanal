@@ -806,6 +806,14 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const url = searchParams.get("url") || "";
   const city = searchParams.get("city") || "";
+  const emailParam = searchParams.get("email") || "";
+
+  // ── AUTH STATE ──────────────────────────────────────────────────────────────
+  const [authState, setAuthState] = useState<"checking" | "authenticated" | "enter-email" | "enter-otp">("checking");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authOtp, setAuthOtp] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const [data, setData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -827,6 +835,11 @@ function DashboardContent() {
     if (val.includes("@")) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     return /^\+?[1-9]\d{9,14}$/.test(val.replace(/[\s\-().]/g, ""));
   };
+
+  // Soft email capture banner (anonymous users)
+  const [showSaveBanner, setShowSaveBanner] = useState(false);
+  const [bannerEmail, setBannerEmail] = useState("");
+  const [bannerSent, setBannerSent] = useState(false);
 
   // Plan state
   const [isPro, setIsPro] = useState(false);
@@ -897,6 +910,76 @@ function DashboardContent() {
     return false;
   };
 
+  // ── AUTH LOGIC ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    let bannerTimer: ReturnType<typeof setTimeout>;
+    const init = async () => {
+      // Cold email link — has email param, skip OTP entirely
+      if (emailParam) {
+        localStorage.setItem("rc_user_email", emailParam.toLowerCase().trim());
+        setAuthState("authenticated");
+        return;
+      }
+      // Check existing Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setAuthState("authenticated");
+        return;
+      }
+      // Known email in localStorage — auto-send OTP, skip email entry screen
+      const saved = localStorage.getItem("rc_user_email");
+      if (saved) {
+        setAuthEmail(saved);
+        setAuthState("enter-otp");
+        await supabase.auth.signInWithOtp({ email: saved, options: { shouldCreateUser: true, emailRedirectTo: undefined } });
+        return;
+      }
+      // Anonymous user — load dashboard freely, show save banner after 60s
+      setAuthState("authenticated");
+      bannerTimer = setTimeout(() => setShowSaveBanner(true), 60000);
+    };
+    init();
+    return () => clearTimeout(bannerTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const submitBannerEmail = async () => {
+    if (!bannerEmail.includes("@")) return;
+    const email = bannerEmail.toLowerCase().trim();
+    localStorage.setItem("rc_user_email", email);
+    const { error: dbError } = await supabase.from("leads").insert({ email, url: url || null });
+    if (dbError) console.error("Leads DB error:", dbError);
+    setBannerSent(true);
+  };
+
+  const sendOtp = async () => {
+    if (!authEmail.trim()) return;
+    setAuthLoading(true);
+    setAuthError("");
+    const { error } = await supabase.auth.signInWithOtp({
+      email: authEmail.toLowerCase().trim(),
+      options: { shouldCreateUser: true, emailRedirectTo: undefined },
+    });
+    setAuthLoading(false);
+    if (error) { setAuthError("Failed to send code. Try again."); return; }
+    setAuthState("enter-otp");
+  };
+
+  const verifyOtp = async () => {
+    if (!authOtp.trim()) return;
+    setAuthLoading(true);
+    setAuthError("");
+    const { error } = await supabase.auth.verifyOtp({
+      email: authEmail.toLowerCase().trim(),
+      token: authOtp.trim(),
+      type: "email",
+    });
+    setAuthLoading(false);
+    if (error) { setAuthError("Invalid or expired code. Try again."); return; }
+    localStorage.setItem("rc_user_email", authEmail.toLowerCase().trim());
+    setAuthState("authenticated");
+  };
+
   // On mount: check by clinic_url first, then localStorage email
   useEffect(() => {
     const detect = async () => {
@@ -915,13 +998,13 @@ function DashboardContent() {
   // Fetch audit data
   useEffect(() => {
     if (!url) return;
-    const steps = [0, 1, 2, 3];
+    const totalSteps = 8;
     let i = 0;
     const interval = setInterval(() => {
       i++;
-      if (i < steps.length) setLoadingStep(i);
+      if (i < totalSteps - 1) setLoadingStep(i);
       else clearInterval(interval);
-    }, 4000);
+    }, 2200);
     fetch(
       `/api/audit?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
     )
@@ -1009,136 +1092,150 @@ function DashboardContent() {
   };
 
   const loadingSteps = [
-    { icon: "⚡", label: "Checking website speed..." },
-    { icon: "🔍", label: "Analyzing Google visibility..." },
-    { icon: "🏆", label: `Finding competitors in ${displayCity}...` },
-    { icon: "⭐", label: "Reading patient reviews..." },
+    { label: "Crawling live website structure & metadata..." },
+    { label: "Running real-time PageSpeed & SEO analysis..." },
+    { label: "Fetching live Google Places data..." },
+    { label: `Mapping local competitors in ${displayCity || "your area"} in real-time...` },
+    { label: "Pulling latest patient reviews from Google..." },
+    { label: "Running AI sentiment analysis on review data..." },
+    { label: "Generating personalized growth insights..." },
+    { label: "Building your report..." },
   ];
+
+  // ── AUTH SCREENS ────────────────────────────────────────────────────────────
+  if (authState === "checking") return null;
+
+  if (authState === "enter-email" || authState === "enter-otp") {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0D0F0E", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: "48px 40px", width: "100%", maxWidth: 400, textAlign: "center" }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, color: "#F7F3ED", marginBottom: 8 }}>
+            Root<span style={{ color: "#C0392B" }}>Canal</span>
+          </div>
+          {authState === "enter-email" ? (
+            <>
+              <p style={{ color: "#6B7B78", fontSize: 14, marginBottom: 28, marginTop: 8 }}>Enter your email to access your report</p>
+              <input
+                type="email"
+                value={authEmail}
+                onChange={e => setAuthEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && sendOtp()}
+                placeholder="your@email.com"
+                autoFocus
+                style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #2A3330", background: "#0D0F0E", color: "#F7F3ED", fontSize: 14, marginBottom: 12, boxSizing: "border-box" }}
+              />
+              {authError && <div style={{ color: "#E74C3C", fontSize: 13, marginBottom: 12 }}>{authError}</div>}
+              <button
+                onClick={sendOtp}
+                disabled={authLoading || !authEmail.includes("@")}
+                style={{ width: "100%", padding: "13px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", opacity: authLoading || !authEmail.includes("@") ? 0.5 : 1 }}
+              >
+                {authLoading ? "Sending..." : "Send Code →"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ color: "#6B7B78", fontSize: 14, marginBottom: 4, marginTop: 8 }}>We sent a 6-digit code to</p>
+              <p style={{ color: "#F7F3ED", fontSize: 14, marginBottom: 28 }}>{authEmail}</p>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <input
+                    key={i}
+                    id={`otp-${i}`}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    autoFocus={i === 0}
+                    value={authOtp[i] || ""}
+                    placeholder="🦷"
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      const arr = authOtp.split("");
+                      arr[i] = val;
+                      const next = arr.join("").slice(0, 6);
+                      setAuthOtp(next);
+                      if (val && i < 5) document.getElementById(`otp-${i + 1}`)?.focus();
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Backspace" && !authOtp[i] && i > 0) document.getElementById(`otp-${i - 1}`)?.focus();
+                      if (e.key === "Enter") verifyOtp();
+                    }}
+                    style={{ width: 44, height: 52, borderRadius: 10, border: `1px solid ${authOtp[i] ? "#1ABC9C" : "#2A3330"}`, background: "#0D0F0E", color: "#F7F3ED", fontSize: authOtp[i] ? 22 : 18, textAlign: "center", outline: "none", fontFamily: "'DM Sans', sans-serif" }}
+                  />
+                ))}
+              </div>
+              {authError && <div style={{ color: "#E74C3C", fontSize: 13, marginBottom: 12 }}>{authError}</div>}
+              <button
+                onClick={verifyOtp}
+                disabled={authLoading || authOtp.length < 6}
+                style={{ width: "100%", padding: "13px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", opacity: authLoading || authOtp.length < 6 ? 0.5 : 1 }}
+              >
+                {authLoading ? "Verifying..." : "Verify →"}
+              </button>
+              <button onClick={() => { setAuthState("enter-email"); setAuthOtp(""); setAuthError(""); }} style={{ marginTop: 12, background: "none", border: "none", color: "#6B7B78", fontSize: 13, cursor: "pointer" }}>
+                Use a different email
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (loading)
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#0D0F0E",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 0,
-          overflow: "hidden",
-          position: "relative",
-        }}
-      >
+      <div style={{ minHeight: "100vh", background: "#0D0F0E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", padding: "0 16px" }}>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-          @keyframes float1 { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-18px) rotate(4deg); } }
-          @keyframes float2 { 0%,100% { transform: translateY(0) rotate(3deg); } 50% { transform: translateY(-22px) rotate(-5deg); } }
-          @keyframes float3 { 0%,100% { transform: translateY(0) rotate(6deg); } 50% { transform: translateY(-14px) rotate(-3deg); } }
-          @keyframes float4 { 0%,100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-20px) rotate(6deg); } }
-          @keyframes float5 { 0%,100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(-16px) rotate(-4deg); } }
-          @keyframes float6 { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-24px) rotate(5deg); } }
-          @keyframes scanPulse { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(26,188,156,0.4); } 50% { transform: scale(1.06); box-shadow: 0 0 0 18px rgba(26,188,156,0); } }
-          @keyframes dotBounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
-          @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+          @keyframes progressBar { from { width: 0%; } to { width: 100%; } }
         `}</style>
 
-        {/* Floating dental tools — scattered around */}
-        {[
-          { emoji: "🦷", top: "8%",  left: "8%",  size: 52, anim: "float1", delay: "0s",    opacity: 0.9 },
-          { emoji: "🪥", top: "6%",  left: "40%", size: 44, anim: "float2", delay: "0.4s",  opacity: 0.7 },
-          { emoji: "💉", top: "10%", left: "78%", size: 48, anim: "float3", delay: "0.8s",  opacity: 0.8 },
-          { emoji: "🔬", top: "72%", left: "6%",  size: 46, anim: "float4", delay: "1.0s",  opacity: 0.75 },
-          { emoji: "🩺", top: "78%", left: "42%", size: 50, anim: "float5", delay: "0.2s",  opacity: 0.85 },
-          { emoji: "🧴", top: "70%", left: "80%", size: 44, anim: "float6", delay: "0.6s",  opacity: 0.7 },
-          { emoji: "💊", top: "40%", left: "3%",  size: 38, anim: "float2", delay: "1.2s",  opacity: 0.5 },
-          { emoji: "🧲", top: "38%", left: "90%", size: 36, anim: "float1", delay: "0.9s",  opacity: 0.45 },
-        ].map(({ emoji, top, left, size, anim, delay, opacity }) => (
-          <div
-            key={emoji}
-            style={{
-              position: "absolute",
-              top, left,
-              fontSize: size,
-              animation: `${anim} 3.5s ease-in-out infinite`,
-              animationDelay: delay,
-              opacity,
-              filter: "drop-shadow(0 4px 16px rgba(26,188,156,0.2))",
-              pointerEvents: "none",
-              userSelect: "none",
-            }}
-          >
-            {emoji}
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: "#F7F3ED", marginBottom: 6 }}>
+            Root<span style={{ color: "#C0392B" }}>Canal</span>
           </div>
-        ))}
-
-        {/* Central scan indicator */}
-        <div
-          style={{
-            width: 88,
-            height: 88,
-            borderRadius: "50%",
-            background: "rgba(26,188,156,0.1)",
-            border: "2px solid rgba(26,188,156,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 40,
-            animation: "scanPulse 2s ease-in-out infinite",
-            marginBottom: 28,
-          }}
-        >
-          🦷
+          <div style={{ fontSize: 13, color: "#4A5E58" }}>{url}</div>
         </div>
 
-        {/* Title */}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 26,
-              color: "#F0EBE3",
-              marginBottom: 6,
-              animation: "fadeSlideUp 0.6s ease both",
-            }}
-          >
-            Scanning your clinic...
+        {/* Terminal card */}
+        <div style={{ width: "100%", maxWidth: 520, background: "#0A0C0B", border: "1px solid #1E2A27", borderRadius: 12, overflow: "hidden" }}>
+          {/* Terminal title bar */}
+          <div style={{ background: "#111513", borderBottom: "1px solid #1E2A27", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
+            <span style={{ marginLeft: 8, fontSize: 11, color: "#3A5349", letterSpacing: 1 }}>rootcanal — live scan</span>
+            <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#1ABC9C" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1ABC9C", display: "inline-block", animation: "blink 1.2s step-end infinite" }} />
+              LIVE
+            </span>
           </div>
-          <div style={{ fontSize: 13, color: "#4A5E58", letterSpacing: "0.03em" }}>{url}</div>
+
+          {/* Step log */}
+          <div style={{ padding: "20px 20px 16px" }}>
+            {loadingSteps.map((step, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, animation: i <= loadingStep ? `fadeSlideUp 0.3s ease both` : "none", opacity: i <= loadingStep ? 1 : 0.15 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, width: 16, textAlign: "right", color: i < loadingStep ? "#2ECC71" : i === loadingStep ? "#1ABC9C" : "#2A3330", flexShrink: 0 }}>
+                  {i < loadingStep ? "✓" : i === loadingStep ? "›" : "·"}
+                </span>
+                <span style={{ fontSize: 13, color: i < loadingStep ? "#4A7A6A" : i === loadingStep ? "#F0EBE3" : "#2A3330", fontFamily: "monospace", letterSpacing: "0.02em" }}>
+                  {step.label}
+                  {i === loadingStep && <span style={{ animation: "blink 1s step-end infinite", color: "#1ABC9C" }}>▋</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ height: 3, background: "#1E2A27" }}>
+            <div style={{ height: "100%", background: "linear-gradient(90deg, #1ABC9C, #2ECC71)", width: `${((loadingStep + 1) / loadingSteps.length) * 100}%`, transition: "width 0.8s ease" }} />
+          </div>
         </div>
 
-        {/* Active step label */}
-        <div
-          key={loadingStep}
-          style={{
-            fontSize: 14,
-            color: "#1ABC9C",
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 500,
-            marginBottom: 16,
-            minHeight: 20,
-            animation: "fadeSlideUp 0.4s ease both",
-          }}
-        >
-          {loadingSteps[loadingStep]?.icon} {loadingSteps[loadingStep]?.label}
-        </div>
-
-        {/* Dot progress */}
-        <div style={{ display: "flex", gap: 8 }}>
-          {loadingSteps.map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: i === loadingStep ? 24 : 8,
-                height: 8,
-                borderRadius: 4,
-                background: i < loadingStep ? "#2ECC71" : i === loadingStep ? "#1ABC9C" : "#2A3330",
-                transition: "all 0.4s ease",
-                animation: i === loadingStep ? "dotBounce 1s ease-in-out infinite" : "none",
-              }}
-            />
-          ))}
-        </div>
+        <div style={{ marginTop: 20, fontSize: 12, color: "#2A3330" }}>Powered by AI + Google data</div>
       </div>
     );
 
@@ -4084,6 +4181,34 @@ function DashboardContent() {
               Close
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── SAVE REPORT BANNER (anonymous users) ── */}
+      {showSaveBanner && (
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#151918", borderTop: "1px solid #2A3330", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 1000, fontFamily: "'DM Sans', sans-serif" }}>
+          {bannerSent ? (
+            <>
+              <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>✓ Check your email for the code to revisit this report anytime.</span>
+              <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </>
+          ) : (
+            <>
+              <span style={{ color: "#F7F3ED", fontSize: 14 }}>Want to revisit this report?</span>
+              <input
+                type="email"
+                value={bannerEmail}
+                onChange={e => setBannerEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && submitBannerEmail()}
+                placeholder="your@email.com"
+                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2A3330", background: "#0D0F0E", color: "#F7F3ED", fontSize: 14, width: 220 }}
+              />
+              <button onClick={submitBannerEmail} disabled={!bannerEmail.includes("@")} style={{ padding: "8px 16px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer", opacity: !bannerEmail.includes("@") ? 0.5 : 1 }}>
+                Save →
+              </button>
+              <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
+            </>
+          )}
         </div>
       )}
     </div>
