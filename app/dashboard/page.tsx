@@ -1531,25 +1531,7 @@ function DashboardContent() {
           {url} · {displayCity}
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button
-            onClick={() => window.print()}
-            className="rc-nav-export"
-            style={{
-              background: "transparent",
-              color: "#6B7B78",
-              border: "1px solid #2A3330",
-              padding: "10px 16px",
-              borderRadius: 8,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            📄 Export PDF
-          </button>
-
-          {isGrowth ? (
+{isGrowth ? (
             <div
               style={{
                 background: "rgba(212,168,67,0.1)",
