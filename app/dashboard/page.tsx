@@ -1531,7 +1531,31 @@ function DashboardContent() {
           {url} · {displayCity}
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-{isGrowth ? (
+          {!isPro && !isGrowth && (
+            <a
+              href="https://calendly.com/hello-rootcanal/30min"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: "10px 16px",
+                borderRadius: 8,
+                border: "1px solid #2A3330",
+                background: "transparent",
+                color: "#6B7B78",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "'DM Sans', sans-serif",
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#1ABC9C"; e.currentTarget.style.color = "#1ABC9C"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "#2A3330"; e.currentTarget.style.color = "#6B7B78"; }}
+            >
+              📅 Book a Demo
+            </a>
+          )}
+          {isGrowth ? (
             <div
               style={{
                 background: "rgba(212,168,67,0.1)",
