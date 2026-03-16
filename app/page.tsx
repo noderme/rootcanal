@@ -262,8 +262,8 @@ function HomeInner() {
               </button>
             </div>
 
-            <div className="rc-scan-box">
-              {mode === "website" ? (
+            {mode === "website" ? (
+              <div className="rc-scan-box">
                 <input
                   className="rc-input"
                   type="text"
@@ -272,19 +272,21 @@ function HomeInner() {
                   onChange={(e) => setUrl(e.target.value)}
                   required
                 />
-              ) : (
-                <div style={{ display: "flex", width: "100%", alignItems: "center" }}>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 0 }}>
+                <div className="rc-scan-box" style={{ flex: 1, borderRight: "none", borderRadius: "8px 0 0 8px", boxShadow: "none" }}>
                   <input
                     className="rc-input"
                     type="text"
-                    placeholder="Clinic name e.g. Smiles Dental"
+                    placeholder="Clinic name"
                     value={clinicName}
                     onChange={(e) => setClinicName(e.target.value)}
-                    style={{ flex: 1 }}
                     required
                   />
-                  <div style={{ width: 1, height: 28, background: "#e0e0e0", flexShrink: 0 }} />
-                  <div style={{ position: "relative", flex: 1 }}>
+                </div>
+                <div style={{ position: "relative", flex: 1 }}>
+                  <div className="rc-scan-box" style={{ borderRadius: "0 8px 8px 0", boxShadow: "6px 6px 0 var(--dark)" }}>
                     <input
                       className="rc-input"
                       type="text"
@@ -300,47 +302,48 @@ function HomeInner() {
                       style={{ width: "100%" }}
                       required
                     />
-                    {showCitySuggestions && citySuggestions.length > 0 && (
-                      <div style={{
-                        position: "absolute",
-                        top: "100%",
-                        left: 0,
-                        right: 0,
-                        background: "#fff",
-                        border: "2px solid #1a1a1a",
-                        borderTop: "none",
-                        borderRadius: "0 0 8px 8px",
-                        zIndex: 100,
-                        boxShadow: "4px 4px 0 #1a1a1a",
-                      }}>
-                        {citySuggestions.map((s) => (
-                          <div
-                            key={s}
-                            onMouseDown={() => {
-                              setClinicCity(s);
-                              setCityQuery(s);
-                              setCitySuggestions([]);
-                              setShowCitySuggestions(false);
-                            }}
-                            style={{
-                              padding: "10px 16px",
-                              fontSize: 14,
-                              cursor: "pointer",
-                              borderTop: "1px solid #f0f0f0",
-                              color: "#1a1a1a",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = "#f8f4ef")}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-                          >
-                            {s}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
+                  {showCitySuggestions && citySuggestions.length > 0 && (
+                    <div style={{
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      background: "#fff",
+                      border: "2px solid #1a1a1a",
+                      borderTop: "none",
+                      borderRadius: "0 0 8px 8px",
+                      zIndex: 100,
+                      boxShadow: "4px 4px 0 #1a1a1a",
+                      marginTop: -2,
+                    }}>
+                      {citySuggestions.map((s) => (
+                        <div
+                          key={s}
+                          onMouseDown={() => {
+                            setClinicCity(s);
+                            setCityQuery(s);
+                            setCitySuggestions([]);
+                            setShowCitySuggestions(false);
+                          }}
+                          style={{
+                            padding: "10px 16px",
+                            fontSize: 14,
+                            cursor: "pointer",
+                            borderTop: "1px solid #f0f0f0",
+                            color: "#1a1a1a",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "#f8f4ef")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                        >
+                          {s}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <button className="rc-btn" type="submit" disabled={loading}>
               {loading
