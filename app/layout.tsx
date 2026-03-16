@@ -30,7 +30,7 @@ export default function RootLayout({
         {/* Paddle.js — payment checkout */}
         <script src="https://cdn.paddle.com/paddle/v2/paddle.js" async></script>
         {/* Contentsquare */}
-        <script src="https://t.contentsquare.net/uxa/d9829673fa46e.js"></script>
+        <script src="https://t.contentsquare.net/uxa/d9829673fa46e.js" async></script>
         {/* Service worker registration */}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
