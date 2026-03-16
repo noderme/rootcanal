@@ -4089,14 +4089,19 @@ function DashboardContent() {
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 0", borderTop: "1px solid #1A2421" }}>
               <div style={{ width: 10, height: 10, borderRadius: "50%", background: data.healthgradesFound ? "#2ECC71" : "#E74C3C", flexShrink: 0, marginTop: 4 }} />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3" }}>
-                  {data.healthgradesFound ? "Found on Healthgrades ✅" : "Not found on Healthgrades"}
+                <div style={{ fontSize: 14, fontWeight: 600, color: data.healthgradesFound ? "#F0EBE3" : "#E74C3C" }}>
+                  {data.healthgradesFound ? "Found on Healthgrades ✅" : "❌ No Healthgrades Profile — Action Required"}
                 </div>
                 <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>
                   {data.healthgradesFound
                     ? "Your clinic has a Healthgrades presence — patients searching there can find you."
-                    : "You have no Healthgrades profile — you're invisible to 25% of patients looking for a dentist online."}
+                    : "25% of patients search Healthgrades before choosing a dentist. Your clinic is invisible to them. Create a free profile at healthgrades.com immediately."}
                 </div>
+                {!data.healthgradesFound && (
+                  <a href="https://www.healthgrades.com/office-registration" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 8, fontSize: 11, fontWeight: 700, color: "#1ABC9C", textDecoration: "underline" }}>
+                    Create your free Healthgrades profile →
+                  </a>
+                )}
               </div>
               {!data.healthgradesFound && (
                 <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "rgba(231,76,60,0.12)", color: "#E74C3C", fontFamily: "'DM Mono', monospace", flexShrink: 0 }}>HIGH</span>
