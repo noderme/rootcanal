@@ -6,6 +6,9 @@ function HomeInner() {
   const [url, setUrl] = useState("");
   const [clinicName, setClinicName] = useState("");
   const [clinicCity, setClinicCity] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const [mode, setMode] = useState<"website" | "gbp">("website");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -26,6 +29,16 @@ function HomeInner() {
       router.push(`/dashboard?name=${encodeURIComponent(nameParam)}&city=${encodeURIComponent(cityParam)}`);
     }
   }, [searchParams, router]);
+
+  useEffect(() => {
+    if (cityQuery.length < 2) { setCitySuggestions([]); return; }
+    const t = setTimeout(() => {
+      fetch(`/api/cities?input=${encodeURIComponent(cityQuery)}`)
+        .then(r => r.json())
+        .then(d => setCitySuggestions(d.suggestions || []));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [cityQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,23 +273,71 @@ function HomeInner() {
                   required
                 />
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                <div style={{ display: "flex", width: "100%", alignItems: "center" }}>
                   <input
                     className="rc-input"
                     type="text"
                     placeholder="Clinic name e.g. Smiles Dental"
                     value={clinicName}
                     onChange={(e) => setClinicName(e.target.value)}
+                    style={{ flex: 1 }}
                     required
                   />
-                  <input
-                    className="rc-input"
-                    type="text"
-                    placeholder="City e.g. Austin, TX"
-                    value={clinicCity}
-                    onChange={(e) => setClinicCity(e.target.value)}
-                    required
-                  />
+                  <div style={{ width: 1, height: 28, background: "#e0e0e0", flexShrink: 0 }} />
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <input
+                      className="rc-input"
+                      type="text"
+                      placeholder="City e.g. Austin, TX"
+                      value={cityQuery || clinicCity}
+                      onChange={(e) => {
+                        setCityQuery(e.target.value);
+                        setClinicCity("");
+                        setShowCitySuggestions(true);
+                      }}
+                      onFocus={() => setShowCitySuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
+                      style={{ width: "100%" }}
+                      required
+                    />
+                    {showCitySuggestions && citySuggestions.length > 0 && (
+                      <div style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        background: "#fff",
+                        border: "2px solid #1a1a1a",
+                        borderTop: "none",
+                        borderRadius: "0 0 8px 8px",
+                        zIndex: 100,
+                        boxShadow: "4px 4px 0 #1a1a1a",
+                      }}>
+                        {citySuggestions.map((s) => (
+                          <div
+                            key={s}
+                            onMouseDown={() => {
+                              setClinicCity(s);
+                              setCityQuery(s);
+                              setCitySuggestions([]);
+                              setShowCitySuggestions(false);
+                            }}
+                            style={{
+                              padding: "10px 16px",
+                              fontSize: 14,
+                              cursor: "pointer",
+                              borderTop: "1px solid #f0f0f0",
+                              color: "#1a1a1a",
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = "#f8f4ef")}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+                          >
+                            {s}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
