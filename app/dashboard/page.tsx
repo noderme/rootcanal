@@ -33,6 +33,7 @@ interface AuditData {
   }[];
   placeId: string;
   scannedAt: string;
+  userRank?: number;
 }
 
 interface ReviewData {
@@ -1220,17 +1221,7 @@ function DashboardContent() {
   const passIssues = data.issues.filter((i) => i.status === "pass");
   const warnIssues = data.issues.filter((i) => i.status === "warn");
 
-  const userRank =
-    data.competitors.length > 0
-      ? (() => {
-          const allScores = [
-            ...data.competitors.map((c) => c.score),
-            data.overallScore,
-          ];
-          allScores.sort((a, b) => b - a);
-          return allScores.indexOf(data.overallScore) + 1;
-        })()
-      : 1;
+  const userRank = data.userRank ?? (data.competitors.length > 0 ? data.competitors.length + 1 : undefined);
 
   return (
     <div
