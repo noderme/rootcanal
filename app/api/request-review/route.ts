@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import twilio from "twilio";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,11 @@ const supabase = createClient(
 );
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN,
+);
 
 export async function POST(request: NextRequest) {
   try {
@@ -68,6 +74,20 @@ export async function POST(request: NextRequest) {
         console.error("Resend error:", emailError);
         return NextResponse.json(
           { error: "Failed to send email" },
+          { status: 500 },
+        );
+      }
+    } else if (type === "phone") {
+      try {
+        await twilioClient.messages.create({
+          from: process.env.TWILIO_FROM_NUMBER,
+          to: contact,
+          body: `Hi! Thank you for visiting ${clinicName}. We'd love your feedback — leave us a quick Google review here: ${reviewLink} (takes less than 1 min!)`,
+        });
+      } catch (smsError) {
+        console.error("Twilio error:", smsError);
+        return NextResponse.json(
+          { error: "Failed to send SMS" },
           { status: 500 },
         );
       }

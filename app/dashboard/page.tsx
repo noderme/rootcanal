@@ -819,6 +819,11 @@ function DashboardContent() {
   const [reviewSending, setReviewSending] = useState(false);
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const isValidContact = (v: string) => {
+    const val = v.trim();
+    if (val.includes("@")) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+    return /^\+?[1-9]\d{9,14}$/.test(val.replace(/[\s\-().]/g, ""));
+  };
 
   // Plan state
   const [isPro, setIsPro] = useState(false);
@@ -1730,10 +1735,13 @@ function DashboardContent() {
                 type="text"
                 value={reviewContact}
                 onChange={(e) => {
-                  setReviewContact(e.target.value);
+                  const val = e.target.value;
+                  const isPhone = !val.includes("@") && /^[0-9\s\-+().]*$/.test(val);
+                  if (isPhone && val.replace(/[\s\-().]/g, "").length > 16) return;
+                  setReviewContact(val);
                   setReviewError("");
                 }}
-                placeholder="patient@email.com"
+                placeholder="Email or phone number"
                 style={{
                   flex: 1,
                   background: "rgba(0,0,0,0.3)",
@@ -1748,7 +1756,7 @@ function DashboardContent() {
               />
               <button
                 onClick={async () => {
-                  if (!reviewContact.trim() || !data.placeId) return;
+                  if (!isValidContact(reviewContact) || !data.placeId) return;
                   setReviewSending(true);
                   setReviewError("");
                   const isEmail = reviewContact.includes("@");
@@ -1779,11 +1787,11 @@ function DashboardContent() {
                   }
                 }}
                 disabled={
-                  reviewSending || !reviewContact.trim() || !data.placeId
+                  reviewSending || !isValidContact(reviewContact) || !data.placeId
                 }
                 style={{
                   background:
-                    reviewContact.trim() && data.placeId
+                    isValidContact(reviewContact) && data.placeId
                       ? "#1ABC9C"
                       : "#1A2320",
                   color:
