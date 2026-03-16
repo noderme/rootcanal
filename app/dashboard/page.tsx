@@ -1896,12 +1896,13 @@ function DashboardContent() {
                 )}
                 {!inTopThree && !isGrowth && (
                   <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#E74C3C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" }}>
-                    Get Into Top 3 →
+                    Fix This Now →
                   </button>
                 )}
                 {!inTopThree && data.healthgradesFound === false && (
-                  <div style={{ fontSize: 11, color: "#E74C3C", fontWeight: 600, textAlign: "right" }}>
-                    ❌ Also missing from Healthgrades
+                  <div style={{ background: "rgba(231,76,60,0.12)", border: "1px solid rgba(231,76,60,0.3)", borderRadius: 8, padding: "8px 12px", textAlign: "right", maxWidth: 220 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#E74C3C" }}>⚠️ You are losing patients right now</div>
+                    <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 3 }}>Not in top 3 + invisible on Healthgrades = patients choosing your competitors daily.</div>
                   </div>
                 )}
               </div>
