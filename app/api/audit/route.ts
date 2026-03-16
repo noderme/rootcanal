@@ -48,6 +48,7 @@ interface AuditResult {
   yelpReviewCount?: number;
   yelpUrl?: string;
   yelpRank?: number;
+  yelpCompetitors?: { name: string; rating: number; reviews: number; rank: number; url?: string }[];
   healthgradesFound?: boolean;
   healthgradesRating?: number;
   healthgradesReviews?: number;
@@ -919,6 +920,7 @@ export async function GET(request: NextRequest) {
     let yelpReviewCount: number | undefined;
     let yelpUrl: string | undefined;
     let yelpRank: number | undefined;
+    let yelpCompetitors: { name: string; rating: number; reviews: number; rank: number; url?: string }[] | undefined;
     if (serpapiKey && clinicName) {
       try {
         const yelpQuery = encodeURIComponent("dentist");
@@ -947,6 +949,14 @@ export async function GET(request: NextRequest) {
           yelpReviewCount = results[0].reviews;
           yelpUrl = results[0].link;
         }
+        // Save top 7 Yelp results as competitor leaderboard
+        yelpCompetitors = results.slice(0, 7).map((r, i) => ({
+          name: r.name || "Unknown",
+          rating: r.rating ?? 0,
+          reviews: r.reviews ?? 0,
+          rank: i + 1,
+          url: r.link,
+        }));
       } catch (yelpError) {
         console.error("Yelp error:", yelpError);
       }
@@ -1003,6 +1013,7 @@ export async function GET(request: NextRequest) {
       yelpReviewCount,
       yelpUrl,
       yelpRank,
+      yelpCompetitors,
       healthgradesFound,
       healthgradesRating,
       healthgradesReviews,

@@ -39,6 +39,7 @@ interface AuditData {
   yelpReviewCount?: number;
   yelpUrl?: string;
   yelpRank?: number;
+  yelpCompetitors?: { name: string; rating: number; reviews: number; rank: number; url?: string }[];
   healthgradesFound?: boolean;
   healthgradesRating?: number;
   healthgradesReviews?: number;
@@ -2875,6 +2876,75 @@ function DashboardContent() {
                 </div>
               )}
             </div>
+
+          {/* ── YELP LEADERBOARD ─────────────────────────── */}
+          {data.yelpCompetitors && data.yelpCompetitors.length > 0 && (
+            <div className="card" style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: 24, marginTop: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M21.111 18.226c-.141.969-2.119 3.483-3.029 3.847-.311.124-.623.094-.867-.09-.148-.11-.258-.24-2.458-3.699l-.633-1.013a.866.866 0 0 1 .171-1.078.875.875 0 0 1 1.084-.036l.658.476c2.262 1.639 2.393 1.734 2.541 1.843.276.204.586.181.849-.046.373-.319.38-.856.08-1.247a.858.858 0 0 1-.077-.1l-.009-.013c-.111-.18-3.089-5.033-3.089-5.033a.868.868 0 0 1 .259-1.191.869.869 0 0 1 1.201.231c.021.033 2.954 4.768 2.954 4.768l.006.009c.138.212.325.341.53.363.22.024.437-.07.599-.255.232-.265.248-.649.049-.934-.006-.007-.008-.014-.014-.021L12.673 5.11a.907.907 0 0 1 .104-1.202.912.912 0 0 1 1.221.02l7.064 7.432c.012.012.025.025.037.039 1.223 1.486 1.276 4.046.012 6.827zm-10.6 3.569c-.14.622-.777 1.069-1.617 1.153-.828.083-2.885-.241-4.516-.784-.869-.286-1.305-.738-1.275-1.306.019-.368.199-.665.511-.837l4.168-2.328a.866.866 0 0 1 1.182.318l1.41 2.513a.867.867 0 0 1 .137.471v.8zM9.64 13.48a.865.865 0 0 1-.618.765l-4.664 1.338a.876.876 0 0 1-1.07-.569C3.018 13.973 2.876 12.04 3.21 10.32c.193-.993.629-1.483 1.294-1.458.381.014.659.168.818.318l4.178 3.326a.864.864 0 0 1 .317.69l-.177.284zm-.516-5.913L4.7 9.714a.878.878 0 0 1-1.136-.329.867.867 0 0 1 .001-.875C4.42 7.246 6.137 5.58 7.286 4.84c.618-.398 1.152-.429 1.542-.089.234.204.336.479.314.801L9 8.808a.862.862 0 0 1-.876.759z" fill="#FF1A1A"/></svg>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: "#F0EBE3" }}>
+                  Yelp Rankings — Who&apos;s Ahead of You
+                </div>
+                {data.yelpRank && (
+                  <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: data.yelpRank <= 3 ? "rgba(26,188,156,0.12)" : "rgba(231,76,60,0.1)", color: data.yelpRank <= 3 ? "#1ABC9C" : "#E74C3C", fontFamily: "'DM Mono', monospace" }}>
+                    You are #{data.yelpRank} on Yelp
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                {/* Header */}
+                <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px", gap: "0 16px", padding: "6px 12px", fontSize: 10, color: "#4A5A57", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700, borderBottom: "1px solid #2A3330" }}>
+                  <div>#</div>
+                  <div>Clinic</div>
+                  <div style={{ textAlign: "right" }}>Rating</div>
+                  <div style={{ textAlign: "right" }}>Reviews</div>
+                </div>
+                {data.yelpCompetitors.map((biz) => {
+                  const isYou = data.yelpRank === biz.rank;
+                  return (
+                    <div
+                      key={biz.rank}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "32px 1fr 80px 80px",
+                        gap: "0 16px",
+                        padding: "10px 12px",
+                        borderBottom: "1px solid #1A2320",
+                        background: isYou ? "rgba(26,188,156,0.07)" : "transparent",
+                        borderLeft: isYou ? "3px solid #1ABC9C" : "3px solid transparent",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 900, color: biz.rank <= 3 ? "#F0A500" : "#6B7B78" }}>
+                        #{biz.rank}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: isYou ? 700 : 500, color: isYou ? "#1ABC9C" : "#F0EBE3" }}>
+                          {isYou ? `${biz.name} (You)` : biz.name}
+                        </div>
+                        {biz.url && !isYou && (
+                          <a href={biz.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: "#FF1A1A", textDecoration: "none" }}>
+                            View on Yelp →
+                          </a>
+                        )}
+                      </div>
+                      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 600, color: "#F0EBE3" }}>
+                        {biz.rating > 0 ? `${biz.rating.toFixed(1)} ⭐` : "—"}
+                      </div>
+                      <div style={{ textAlign: "right", fontSize: 13, color: "#6B7B78" }}>
+                        {biz.reviews > 0 ? biz.reviews.toLocaleString() : "—"}
+                      </div>
+                    </div>
+                  );
+                })}
+                {!data.yelpRank && (
+                  <div style={{ padding: "16px 12px", fontSize: 13, color: "#6B7B78" }}>
+                    Your clinic wasn&apos;t found in the top Yelp results for your city. Consider claiming your Yelp profile.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           </>
         )}
 
