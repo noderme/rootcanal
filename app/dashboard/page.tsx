@@ -4207,7 +4207,7 @@ function DashboardContent() {
             </>
           ) : (
             <>
-              <span style={{ color: "#F7F3ED", fontSize: 14 }}>Want to revisit this report?</span>
+              <span style={{ color: "#F7F3ED", fontSize: 14 }}>Secure your dashboard</span>
               <input
                 type="email"
                 value={bannerEmail}
