@@ -913,28 +913,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 4. YELP LOOKUP VIA APIFY ──────────────────────
+    // ── 4. YELP LOOKUP VIA SERPAPI ────────────────────
     let yelpRating: number | undefined;
     let yelpReviewCount: number | undefined;
     let yelpUrl: string | undefined;
-    const apifyKeyYelp = process.env.APIFY_API_KEY;
-    if (apifyKeyYelp && clinicName) {
+    if (serpapiKey && clinicName) {
       try {
+        const yelpQuery = encodeURIComponent(clinicName);
+        const yelpLocation = encodeURIComponent(city || "New York");
         const yelpRes = await fetch(
-          `https://api.apify.com/v2/acts/apify~yelp-scraper/run-sync-get-dataset-items?token=${apifyKeyYelp}&timeout=30`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ searchTerm: clinicName, location: city || "USA", searchLimit: 1 }),
-            signal: AbortSignal.timeout(35000),
-          }
+          `https://serpapi.com/search.json?engine=yelp&find_desc=${yelpQuery}&find_loc=${yelpLocation}&api_key=${serpapiKey}`,
+          { signal: AbortSignal.timeout(10000) }
         );
         const yelpData = await yelpRes.json();
-        const biz = Array.isArray(yelpData) ? yelpData[0] : null;
+        const biz = yelpData?.organic_results?.[0];
         if (biz) {
-          yelpRating = biz.aggregatedRating;
-          yelpReviewCount = biz.reviewCount;
-          yelpUrl = biz.directUrl;
+          yelpRating = biz.rating;
+          yelpReviewCount = biz.reviews;
+          yelpUrl = biz.link;
         }
       } catch (yelpError) {
         console.error("Yelp error:", yelpError);
