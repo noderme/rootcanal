@@ -908,13 +908,12 @@ export async function GET(request: NextRequest) {
     const apifyKey = process.env.APIFY_API_KEY;
     if (apifyKey && clinicName) {
       try {
-        const searchQuery = `${clinicName} ${city || ""} dentist`.trim();
         const runRes = await fetch(
           `https://api.apify.com/v2/acts/jaybird~healthgrades-scraper/run-sync-get-dataset-items?token=${apifyKey}&timeout=30`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ search: searchQuery, maxResults: 1 }),
+            body: JSON.stringify({ specialty: clinicName, location: city || "USA", maxResults: 1, maxPages: 1 }),
             signal: AbortSignal.timeout(35000),
           }
         );
