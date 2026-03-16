@@ -810,7 +810,8 @@ function DashboardContent() {
 
   // ── AUTH STATE ──────────────────────────────────────────────────────────────
   const [authState, setAuthState] = useState<"checking" | "authenticated" | "enter-email" | "enter-otp">("checking");
-  const [authEmail, setAuthEmail] = useState("");
+  const [authEmail, setAuthEmail] = useState(""); // real email for OTP calls
+  const [authEmailDisplay, setAuthEmailDisplay] = useState(""); // masked email for display
   const [authOtp, setAuthOtp] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
@@ -930,9 +931,21 @@ function DashboardContent() {
       const saved = localStorage.getItem("rc_user_email");
       if (saved) {
         setAuthEmail(saved);
+        setAuthEmailDisplay(saved[0] + "***@" + saved.split("@")[1]);
         setAuthState("enter-otp");
         await supabase.auth.signInWithOtp({ email: saved, options: { shouldCreateUser: true, emailRedirectTo: undefined } });
         return;
+      }
+      // Check leads table by URL — send OTP if found
+      if (url) {
+        const res = await fetch(`/api/lookup-user?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        if (data.found) {
+          setAuthEmail(data.email);
+          setAuthEmailDisplay(data.maskedEmail);
+          setAuthState("enter-otp");
+          return;
+        }
       }
       // Anonymous user — load dashboard freely, show save banner after 60s
       setAuthState("authenticated");
@@ -1136,7 +1149,7 @@ function DashboardContent() {
           ) : (
             <>
               <p style={{ color: "#6B7B78", fontSize: 14, marginBottom: 4, marginTop: 8 }}>We sent a 6-digit code to</p>
-              <p style={{ color: "#F7F3ED", fontSize: 14, marginBottom: 28 }}>{authEmail}</p>
+              <p style={{ color: "#F7F3ED", fontSize: 14, marginBottom: 28 }}>{authEmailDisplay || authEmail}</p>
               <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <input
@@ -4189,12 +4202,12 @@ function DashboardContent() {
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#151918", borderTop: "1px solid #2A3330", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 1000, fontFamily: "'DM Sans', sans-serif" }}>
           {bannerSent ? (
             <>
-              <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>✓ Check your email for the code to revisit this report anytime.</span>
+              <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>✓ Your dashboard is secured.</span>
               <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
             </>
           ) : (
             <>
-              <span style={{ color: "#F7F3ED", fontSize: 14 }}>Want to revisit this report?</span>
+              <span style={{ color: "#F7F3ED", fontSize: 14 }}>Secure your dashboard</span>
               <input
                 type="email"
                 value={bannerEmail}
