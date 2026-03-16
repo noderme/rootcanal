@@ -948,7 +948,7 @@ function DashboardContent() {
     const email = bannerEmail.toLowerCase().trim();
     localStorage.setItem("rc_user_email", email);
     await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: undefined } });
-    await supabase.from("leads").upsert({ email, clinic_url: url || null }, { onConflict: "email" });
+    await supabase.from("leads").upsert({ email, url: url || null }, { onConflict: "email" });
     setBannerSent(true);
   };
 
