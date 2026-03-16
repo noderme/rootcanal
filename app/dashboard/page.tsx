@@ -1010,22 +1010,24 @@ function DashboardContent() {
 
   const submitExitIntent = async (answer: string) => {
     setShowExitIntent(false);
-    await supabase.from("feedback").insert({
+    const { error } = await supabase.from("feedback").insert({
       type: "exit_intent",
       message: answer,
       clinic_url: url || null,
       created_at: new Date().toISOString(),
     });
+    if (error) console.error("Exit intent feedback error:", error);
   };
 
   const submitFeedback = async () => {
     if (!feedbackText.trim()) return;
-    await supabase.from("feedback").insert({
+    const { error } = await supabase.from("feedback").insert({
       type: "manual",
       message: feedbackText.trim(),
       clinic_url: url || null,
       created_at: new Date().toISOString(),
     });
+    if (error) { console.error("Feedback error:", error); return; }
     setFeedbackText("");
     setFeedbackSent(true);
     setTimeout(() => { setFeedbackSent(false); setShowFeedbackModal(false); }, 2000);
@@ -1256,9 +1258,6 @@ function DashboardContent() {
                 style={{ width: "100%", padding: "13px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", opacity: authLoading || authOtp.length < 6 ? 0.5 : 1 }}
               >
                 {authLoading ? "Verifying..." : "Verify →"}
-              </button>
-              <button onClick={() => { setAuthState("enter-email"); setAuthOtp(""); setAuthError(""); }} style={{ marginTop: 12, background: "none", border: "none", color: "#6B7B78", fontSize: 13, cursor: "pointer" }}>
-                Use a different email
               </button>
             </>
           )}
