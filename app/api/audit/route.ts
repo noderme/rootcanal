@@ -42,6 +42,8 @@ interface AuditResult {
   }[];
   placeId: string;
   scannedAt: string;
+  userRank?: number;
+  userReviewCount?: number;
   cached?: boolean;
 }
 
@@ -540,6 +542,7 @@ export async function GET(request: NextRequest) {
     // ── 3. GOOGLE BUSINESS PROFILE CHECK ────────────
     let clinicPlaceId = "";
     let clinicName: string | undefined;
+    let clinicReviewCount: number | undefined;
     try {
       const clinicSearchName = url
         .replace(/https?:\/\//, "")
@@ -713,6 +716,7 @@ export async function GET(request: NextRequest) {
         });
       }
       if (place?.name) clinicName = place.name;
+      if (place?.user_ratings_total != null) clinicReviewCount = place.user_ratings_total;
     } catch (gbpError) {
       console.error("GBP check error:", gbpError);
     }
@@ -793,6 +797,7 @@ export async function GET(request: NextRequest) {
       address: string;
       score: number;
     }[] = [];
+    let userRank: number | undefined;
 
     try {
       const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+clinic+in+${encodeURIComponent(city)}&key=${apiKey}`;
@@ -818,6 +823,19 @@ export async function GET(request: NextRequest) {
           !NON_CLINIC_KEYWORDS.some((kw) => p.name.toLowerCase().includes(kw)),
       );
 
+      // Find clinic's actual rank by matching place_id in the results array
+      if (clinicPlaceId) {
+        const rankIndex = filteredPlaces.findIndex(
+          (p: { place_id?: string }) => p.place_id === clinicPlaceId,
+        );
+        if (rankIndex !== -1) {
+          userRank = rankIndex + 1;
+          console.log(`📍 Clinic actual rank: #${userRank}`);
+        } else {
+          console.log("📍 Clinic not found in top Places results — rank unknown");
+        }
+      }
+
       if (filteredPlaces.length > 0) {
         competitors = filteredPlaces.slice(0, 7).map(
           (
@@ -833,9 +851,6 @@ export async function GET(request: NextRequest) {
             rating: place.rating ?? 0,
             reviews: place.user_ratings_total ?? 0,
             address: place.formatted_address ?? "",
-            // Score based on Google ranking position
-            // Position 1 = 90, Position 2 = 85, etc.
-            // Adjusted by rating quality
             score: Math.min(
               95,
               Math.max(
@@ -864,6 +879,8 @@ export async function GET(request: NextRequest) {
       competitors,
       placeId: clinicPlaceId,
       scannedAt: new Date().toISOString(),
+      userRank,
+      userReviewCount: clinicReviewCount,
     };
 
     setCache(cacheKey, result);
