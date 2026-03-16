@@ -2874,10 +2874,11 @@ function DashboardContent() {
               const aheadComps = [...data.competitors]
                 .filter((c) => c.score >= data.overallScore)
                 .sort((a, b) => a.score - b.score);
-              const behindComps = [...data.competitors].filter(
-                (c) => c.score < data.overallScore,
-              );
-              const stepsToShow = aheadComps; // all steps shown; locking handled per-row below
+              const behindComps = [...data.competitors]
+                .filter((c) => c.score < data.overallScore)
+                .sort((a, b) => b.score - a.score);
+              // Always show all competitors — ahead first (easiest to catch), then behind (defend lead)
+              const stepsToShow = [...aheadComps, ...behindComps];
               return (
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 12 }}
@@ -3093,70 +3094,6 @@ function DashboardContent() {
                     </div>
                   )}
 
-                  {behindComps.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: 20,
-                        paddingTop: 16,
-                        borderTop: "1px solid #2A3330",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "#6B7B78",
-                          fontWeight: 600,
-                          marginBottom: 10,
-                          letterSpacing: 1,
-                          textTransform: "uppercase",
-                          fontFamily: "'DM Mono', monospace",
-                        }}
-                      >
-                        Clinics Behind You — Don&apos;t Let Them Catch Up!
-                      </div>
-                      {behindComps.map((comp, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                            padding: "10px 0",
-                            borderBottom: "1px solid #1A1F1E",
-                          }}
-                        >
-                          <span style={{ fontSize: 14 }}>👇</span>
-                          <div
-                            style={{ flex: 1, fontSize: 13, color: "#6B7B78" }}
-                          >
-                            {comp.name}
-                          </div>
-                          <div
-                            style={{
-                              fontFamily: "'DM Mono', monospace",
-                              fontSize: 13,
-                              color: "#6B7B78",
-                            }}
-                          >
-                            Score: {comp.score}{" "}
-                            <span
-                              style={{
-                                color:
-                                  data.overallScore - comp.score === 0
-                                    ? "#F0A500"
-                                    : "#2ECC71",
-                                marginLeft: 4,
-                              }}
-                            >
-                              {data.overallScore - comp.score === 0
-                                ? "⚠️ Tied!"
-                                : `(${data.overallScore - comp.score} behind)`}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })()}
