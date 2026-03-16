@@ -949,7 +949,7 @@ function DashboardContent() {
     localStorage.setItem("rc_user_email", email);
     const { error: otpError } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: undefined } });
     if (otpError) console.error("OTP error:", otpError);
-    const { error: dbError } = await supabase.from("leads").upsert({ email, url: url || null }, { onConflict: "email" });
+    const { error: dbError } = await supabase.from("leads").insert({ email, url: url || null }).select();
     if (dbError) console.error("Leads DB error:", dbError);
     setBannerSent(true);
   };
