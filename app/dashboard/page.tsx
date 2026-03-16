@@ -1597,7 +1597,7 @@ function DashboardContent() {
             </div>
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
               {typeof userRank === "number" && userRank <= 3
-                ? "🏆 You're in the top 3 — most patients in your area can find you on Google."
+                ? `🏆 You're ranked #${userRank} — great position. But Google rankings shift constantly. Keep collecting reviews to protect your spot.`
                 : `📉 You're ranked #${userRank}. Top 3 clinics get ~70% of all patient clicks — patients below that are rarely seen.`}
             </div>
           </div>
@@ -1645,13 +1645,18 @@ function DashboardContent() {
                 <span style={{ fontSize: 24 }}>{inTopThree ? "🏆" : "📉"}</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "#F0EBE3" }}>
-                    {inTopThree ? `You're in the top 3 in ${displayCity}!` : `You're outside the top 3 — most patients never scroll that far`}
+                    {inTopThree ? `You're in the top 3 in ${displayCity} — for now.` : `You're outside the top 3 — most patients never scroll that far`}
                   </div>
                   <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>
-                    {inTopThree ? "Top 3 clinics receive ~70% of all patient clicks on Google." : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
+                    {inTopThree ? "Google rankings change every week. Clinics that keep collecting reviews stay on top — those that stop, drop." : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
                   </div>
                 </div>
               </div>
+              {inTopThree && !isGrowth && (
+                <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#1ABC9C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>
+                  Protect Your Rank →
+                </button>
+              )}
               {!inTopThree && !isGrowth && (
                 <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#E74C3C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>
                   Get Into Top 3 →
