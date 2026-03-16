@@ -1091,13 +1091,13 @@ function DashboardContent() {
   };
 
   const loadingSteps = [
-    { label: "Crawling website structure & metadata..." },
-    { label: "Running PageSpeed & SEO analysis..." },
-    { label: "Querying Google Places API..." },
-    { label: `Mapping local competitors in ${displayCity || "your area"}...` },
-    { label: "Pulling patient reviews..." },
-    { label: "Running AI sentiment analysis..." },
-    { label: "Generating growth insights..." },
+    { label: "Crawling live website structure & metadata..." },
+    { label: "Running real-time PageSpeed & SEO analysis..." },
+    { label: "Fetching live Google Places data..." },
+    { label: `Mapping local competitors in ${displayCity || "your area"} in real-time...` },
+    { label: "Pulling latest patient reviews from Google..." },
+    { label: "Running AI sentiment analysis on review data..." },
+    { label: "Generating personalized growth insights..." },
     { label: "Building your report..." },
   ];
 
@@ -1189,7 +1189,11 @@ function DashboardContent() {
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
             <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
-            <span style={{ marginLeft: 8, fontSize: 11, color: "#3A5349", letterSpacing: 1 }}>rootcanal — deep scan</span>
+            <span style={{ marginLeft: 8, fontSize: 11, color: "#3A5349", letterSpacing: 1 }}>rootcanal — live scan</span>
+            <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#1ABC9C" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1ABC9C", display: "inline-block", animation: "blink 1.2s step-end infinite" }} />
+              LIVE
+            </span>
           </div>
 
           {/* Step log */}
