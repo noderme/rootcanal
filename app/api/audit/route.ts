@@ -874,25 +874,28 @@ export async function GET(request: NextRequest) {
       console.error("Places error:", placesError);
     }
 
-    // ── 4. YELP LOOKUP ────────────────────────────────
+    // ── 4. YELP LOOKUP VIA APIFY ──────────────────────
     let yelpRating: number | undefined;
     let yelpReviewCount: number | undefined;
     let yelpUrl: string | undefined;
-    const yelpApiKey = process.env.YELP_API_KEY;
-    if (yelpApiKey && clinicName) {
+    const apifyKeyYelp = process.env.APIFY_API_KEY;
+    if (apifyKeyYelp && clinicName) {
       try {
-        const yelpQuery = encodeURIComponent(clinicName);
-        const yelpLocation = encodeURIComponent(city || "USA");
         const yelpRes = await fetch(
-          `https://api.yelp.com/v3/businesses/search?term=${yelpQuery}&location=${yelpLocation}&categories=dentists&limit=1`,
-          { headers: { Authorization: `Bearer ${yelpApiKey}` } }
+          `https://api.apify.com/v2/acts/apify~yelp-scraper/run-sync-get-dataset-items?token=${apifyKeyYelp}&timeout=30`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ searchTerm: clinicName, location: city || "USA", searchLimit: 1 }),
+            signal: AbortSignal.timeout(35000),
+          }
         );
         const yelpData = await yelpRes.json();
-        const biz = yelpData?.businesses?.[0];
+        const biz = Array.isArray(yelpData) ? yelpData[0] : null;
         if (biz) {
-          yelpRating = biz.rating;
-          yelpReviewCount = biz.review_count;
-          yelpUrl = biz.url;
+          yelpRating = biz.aggregatedRating;
+          yelpReviewCount = biz.reviewCount;
+          yelpUrl = biz.directUrl;
         }
       } catch (yelpError) {
         console.error("Yelp error:", yelpError);
