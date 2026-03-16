@@ -1893,6 +1893,11 @@ function DashboardContent() {
                   Protect Your Rank →
                 </button>
               )}
+              {!inTopThree && data.healthgradesFound === false && (
+                <div style={{ fontSize: 12, color: "#E74C3C", fontWeight: 600, marginTop: 6, paddingTop: 6, borderTop: "1px solid #2A3330", width: "100%" }}>
+                  ❌ Also missing from Healthgrades — 25% of patients searching there can&apos;t find you either.
+                </div>
+              )}
               {!inTopThree && !isGrowth && (
                 <button onClick={() => setShowUpgradeModal(true)} style={{ background: "#E74C3C", color: "#fff", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>
                   Get Into Top 3 →
