@@ -957,7 +957,7 @@ function DashboardContent() {
       }
       // Anonymous user — load dashboard freely, show save banner after 60s
       setAuthState("authenticated");
-      bannerTimer = setTimeout(() => setShowSaveBanner(true), 60000);
+      bannerTimer = setTimeout(() => setShowSaveBanner(true), 30000);
     };
     init();
     return () => clearTimeout(bannerTimer);
