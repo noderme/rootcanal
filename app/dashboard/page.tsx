@@ -2884,7 +2884,7 @@ function DashboardContent() {
                   style={{ display: "flex", flexDirection: "column", gap: 12 }}
                 >
                   {stepsToShow.map((comp, i) => {
-                    const gap = comp.score - data.overallScore;
+                    const gap = Math.abs(comp.score - data.overallScore);
                     const reviewGap = Math.max(
                       0,
                       (comp.reviews || 0) - (reviews?.total || 0),
@@ -2946,7 +2946,7 @@ function DashboardContent() {
                                 color: isLocked ? "#6B7B78" : "#F0EBE3",
                               }}
                             >
-                              Step {i + 1}: Overtake{" "}
+                              Step {i + 1}: {comp.score >= data.overallScore ? "Overtake" : "Stay ahead of"}{" "}
                               {(comp.name || "Competitor").length > 25
                                 ? (comp.name || "Competitor").slice(0, 25) +
                                   "..."
@@ -2976,13 +2976,12 @@ function DashboardContent() {
                                 lineHeight: 1.6,
                               }}
                             >
-                              {reviewGap > 0
-                                ? `Get ${reviewGap} more reviews + improve score by ${gap} points`
-                                : `Improve your score by ${gap} points`}{" "}
-                              — estimated{" "}
-                              <span
-                                style={{ color: "#F0A500", fontWeight: 600 }}
-                              >
+                              {comp.score >= data.overallScore
+                                ? reviewGap > 0
+                                  ? `Get ${reviewGap} more reviews + improve score by ${gap} points — estimated `
+                                  : `Improve your score by ${gap} points — estimated `
+                                : `They're ${gap} points behind — keep collecting reviews or they'll catch up in `}
+                              <span style={{ color: "#F0A500", fontWeight: 600 }}>
                                 {weeks}
                               </span>
                             </div>
