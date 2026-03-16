@@ -23,7 +23,7 @@ export default function RootLayout({
         {/* Paddle.js — payment checkout */}
         <script src="https://cdn.paddle.com/paddle/v2/paddle.js" async></script>
         {/* Contentsquare (Hotjar) */}
-        <script src="https://t.contentsquare.net/uxa/d9829673fa46e.js" async></script>
+        <script src="https://t.contentsquare.net/uxa/d9829673fa46e.js"></script>
       </head>
       <body style={{ margin: 0, padding: 0 }}>{children}</body>
     </html>
