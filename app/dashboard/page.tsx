@@ -1489,18 +1489,37 @@ function DashboardContent() {
           borderBottom: "1px solid #2A3330",
         }}
       >
-        <a
-          href="/"
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 20,
-            fontWeight: 900,
-            color: "#F0EBE3",
-            textDecoration: "none",
-          }}
-        >
-          Root<span style={{ color: "#1ABC9C" }}>Canal</span>
-        </a>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <a
+            href="/"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 20,
+              fontWeight: 900,
+              color: "#F0EBE3",
+              textDecoration: "none",
+            }}
+          >
+            Root<span style={{ color: "#1ABC9C" }}>Canal</span>
+          </a>
+          <a
+            href="/"
+            style={{
+              fontSize: 12,
+              color: "#4A5A57",
+              textDecoration: "none",
+              fontFamily: "'DM Sans', sans-serif",
+              border: "1px solid #2A3330",
+              borderRadius: 6,
+              padding: "3px 8px",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget).style.color = "#6B7B78"; (e.currentTarget).style.borderColor = "#3A4A47"; }}
+            onMouseLeave={e => { (e.currentTarget).style.color = "#4A5A57"; (e.currentTarget).style.borderColor = "#2A3330"; }}
+          >
+            ← Home
+          </a>
+        </div>
         <div
           className="rc-nav-url"
           style={{
