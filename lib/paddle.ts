@@ -1,7 +1,7 @@
-export const PADDLE_PRO_PRICE_ID = "pri_01kkgn9fahgne08fqje1b8av43";
-export const PADDLE_GROWTH_PRICE_ID = "pri_01kkgnafpwdvqcs1tg4b0dtegh";
-export const PADDLE_TEST_PRICE_ID = "pri_01kkh9g8zsdygz5bktjsm0xj3p";
-export const PADDLE_CLIENT_TOKEN = "live_d1866540f39450348fb1e72d0c2";
+export const PADDLE_PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID!;
+export const PADDLE_GROWTH_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID!;
+export const PADDLE_TEST_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_TEST_PRICE_ID!;
+export const PADDLE_CLIENT_TOKEN = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!;
 
 declare global {
   interface Window {
