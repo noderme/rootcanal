@@ -48,6 +48,7 @@ interface AuditResult {
   yelpReviewCount?: number;
   yelpUrl?: string;
   yelpRank?: number;
+  yelpCompetitors?: { name: string; rating: number; reviews: number; rank: number; url?: string }[];
   healthgradesFound?: boolean;
   healthgradesRating?: number;
   healthgradesReviews?: number;
@@ -919,6 +920,7 @@ export async function GET(request: NextRequest) {
     let yelpReviewCount: number | undefined;
     let yelpUrl: string | undefined;
     let yelpRank: number | undefined;
+    let yelpCompetitors: { name: string; rating: number; reviews: number; rank: number; url?: string }[] | undefined;
     if (serpapiKey && clinicName) {
       try {
         const yelpQuery = encodeURIComponent("dentist");
@@ -928,25 +930,44 @@ export async function GET(request: NextRequest) {
           { signal: AbortSignal.timeout(10000) }
         );
         const yelpData = await yelpRes.json();
-        const results: { name?: string; rating?: number; reviews?: number; link?: string }[] = yelpData?.organic_results || [];
+        console.log("Yelp raw result[0]:", JSON.stringify(yelpData?.organic_results?.[0]).slice(0, 300));
+        type YelpResult = { title?: string; name?: string; rating?: number | { value?: number }; reviews?: number; review_count?: number; url?: string; link?: string };
+        const results: YelpResult[] = yelpData?.organic_results || [];
+        // Normalize helpers — SerpAPI Yelp uses `title`, rating may be nested
+        const bizName = (r: YelpResult) => r.title || r.name || "";
+        const bizRating = (r: YelpResult): number => {
+          if (typeof r.rating === "number") return r.rating;
+          if (typeof r.rating === "object" && r.rating?.value != null) return r.rating.value;
+          return 0;
+        };
+        const bizReviews = (r: YelpResult) => r.reviews ?? r.review_count ?? 0;
+        const bizUrl = (r: YelpResult) => r.url || r.link;
+
         // Find clinic by name match
         const clinicNameLower = clinicName.toLowerCase();
         const matchIndex = results.findIndex(r =>
-          r.name?.toLowerCase().includes(clinicNameLower.split(" ")[0]) ||
-          clinicNameLower.includes((r.name ?? "").toLowerCase().split(" ")[0])
+          bizName(r).toLowerCase().includes(clinicNameLower.split(" ")[0]) ||
+          clinicNameLower.includes(bizName(r).toLowerCase().split(" ")[0])
         );
         if (matchIndex !== -1) {
           const biz = results[matchIndex];
           yelpRank = matchIndex + 1;
-          yelpRating = biz.rating;
-          yelpReviewCount = biz.reviews;
-          yelpUrl = biz.link;
+          yelpRating = bizRating(biz);
+          yelpReviewCount = bizReviews(biz);
+          yelpUrl = bizUrl(biz);
         } else if (results[0]) {
-          // no match — still show first result rating for context
-          yelpRating = results[0].rating;
-          yelpReviewCount = results[0].reviews;
-          yelpUrl = results[0].link;
+          yelpRating = bizRating(results[0]);
+          yelpReviewCount = bizReviews(results[0]);
+          yelpUrl = bizUrl(results[0]);
         }
+        // Save top 7 Yelp results as competitor leaderboard
+        yelpCompetitors = results.slice(0, 7).map((r, i) => ({
+          name: bizName(r) || "—",
+          rating: bizRating(r),
+          reviews: bizReviews(r),
+          rank: i + 1,
+          url: bizUrl(r),
+        }));
       } catch (yelpError) {
         console.error("Yelp error:", yelpError);
       }
@@ -1003,6 +1024,7 @@ export async function GET(request: NextRequest) {
       yelpReviewCount,
       yelpUrl,
       yelpRank,
+      yelpCompetitors,
       healthgradesFound,
       healthgradesRating,
       healthgradesReviews,

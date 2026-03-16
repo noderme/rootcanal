@@ -39,6 +39,7 @@ interface AuditData {
   yelpReviewCount?: number;
   yelpUrl?: string;
   yelpRank?: number;
+  yelpCompetitors?: { name: string; rating: number; reviews: number; rank: number; url?: string }[];
   healthgradesFound?: boolean;
   healthgradesRating?: number;
   healthgradesReviews?: number;
@@ -49,7 +50,7 @@ interface AuditData {
 interface ReviewData {
   rating: number;
   total: number;
-  reviews: { author: string; rating: number; text: string; time: string }[];
+  reviews: { author: string; rating: number; text: string; time: string; source?: string }[];
   sentimentBreakdown: {
     positive: number;
     neutral: number;
@@ -64,6 +65,7 @@ interface ReviewData {
     sentiment: string;
     summary: string;
   } | null;
+  reviewSources?: { google: number; yelp: number };
 }
 
 // ─── UPGRADE MODAL ─────────────────────────────────────────────────────────────
@@ -840,6 +842,7 @@ function DashboardContent() {
   const [reviewSending, setReviewSending] = useState(false);
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const [reviewPlatform, setReviewPlatform] = useState<"google" | "yelp" | "both">("google");
   const isValidContact = (v: string) => {
     const val = v.trim();
     if (val.includes("@")) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
@@ -1086,7 +1089,7 @@ function DashboardContent() {
         setLoading(false);
         setReviewsLoading(true);
         fetch(
-          `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
+          `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}&name=${encodeURIComponent(d.clinicName || "")}&plan=${isGrowth ? "growth" : isPro ? "pro" : "free"}`,
         )
           .then((r) => r.json())
           .then((r) => {
@@ -1653,7 +1656,7 @@ function DashboardContent() {
           {([
             { id: "competitors", label: "🏆 Competitors" },
             { id: "roadmap",     label: "📈 Growth Plan" },
-            { id: "reviews",     label: "⭐ Reviews" },
+            { id: "reviews",     label: "⭐ Reviews (G+Y)" },
             { id: "score",       label: "🧠 Intelligence" },
             { id: "health",      label: "🔧 Health" },
           ] as const).map((item) => (
@@ -1814,7 +1817,7 @@ function DashboardContent() {
                 color: "#6B7B78",
               }}
             >
-              📡 Powered by Google Maps, Google PageSpeed & live web data
+              📡 Powered by Google Maps, Yelp, Google PageSpeed & live web data
             </span>
           </div>
         </div>
@@ -1823,20 +1826,29 @@ function DashboardContent() {
         {activeTab === "competitors" && (
           <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
             <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
-              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Google Rank</div>
+              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                Google Rank
+              </div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{userRank != null ? `#${userRank}` : "—"}</div>
               <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>search position</div>
             </div>
             {reviewRank != null && (
               <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
-                <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Review Rank</div>
+                <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                  Review Rank
+                </div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: reviewRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{reviewRank}</div>
                 <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>by review count</div>
               </div>
             )}
             {data.yelpRank != null && (
               <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
-                <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Yelp Rank</div>
+                <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24"><path d="M21.111 18.226c-.141.969-2.119 3.483-3.029 3.847-.311.124-.623.094-.867-.09-.148-.11-.258-.24-2.458-3.699l-.633-1.013a.866.866 0 0 1 .171-1.078.875.875 0 0 1 1.084-.036l.658.476c2.262 1.639 2.393 1.734 2.541 1.843.276.204.586.181.849-.046.373-.319.38-.856.08-1.247a.858.858 0 0 1-.077-.1l-.009-.013c-.111-.18-3.089-5.033-3.089-5.033a.868.868 0 0 1 .259-1.191.869.869 0 0 1 1.201.231c.021.033 2.954 4.768 2.954 4.768l.006.009c.138.212.325.341.53.363.22.024.437-.07.599-.255.232-.265.248-.649.049-.934-.006-.007-.008-.014-.014-.021L12.673 5.11a.907.907 0 0 1 .104-1.202.912.912 0 0 1 1.221.02l7.064 7.432c.012.012.025.025.037.039 1.223 1.486 1.276 4.046.012 6.827zm-10.6 3.569c-.14.622-.777 1.069-1.617 1.153-.828.083-2.885-.241-4.516-.784-.869-.286-1.305-.738-1.275-1.306.019-.368.199-.665.511-.837l4.168-2.328a.866.866 0 0 1 1.182.318l1.41 2.513a.867.867 0 0 1 .137.471v.8zM9.64 13.48a.865.865 0 0 1-.618.765l-4.664 1.338a.876.876 0 0 1-1.07-.569C3.018 13.973 2.876 12.04 3.21 10.32c.193-.993.629-1.483 1.294-1.458.381.014.659.168.818.318l4.178 3.326a.864.864 0 0 1 .317.69l-.177.284zm-.516-5.913L4.7 9.714a.878.878 0 0 1-1.136-.329.867.867 0 0 1 .001-.875C4.42 7.246 6.137 5.58 7.286 4.84c.618-.398 1.152-.429 1.542-.089.234.204.336.479.314.801L9 8.808a.862.862 0 0 1-.876.759z" fill="#FF1A1A"/></svg>
+                  Yelp Rank
+                </div>
                 <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: data.yelpRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{data.yelpRank}</div>
                 <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>on Yelp</div>
               </div>
@@ -1988,6 +2000,36 @@ function DashboardContent() {
               minWidth: 280,
             }}
           >
+            {/* Platform selector — pill switcher, only show Yelp if we have a URL */}
+            {data.yelpUrl && (
+              <div style={{ display: "inline-flex", background: "#0D1210", border: "1px solid #2A3330", borderRadius: 8, overflow: "hidden", alignSelf: "flex-start" }}>
+                {(["google", "yelp", "both"] as const).map((p, i) => (
+                  <button
+                    key={p}
+                    onClick={() => setReviewPlatform(p)}
+                    style={{
+                      padding: "6px 14px",
+                      background: reviewPlatform === p ? "rgba(26,188,156,0.15)" : "transparent",
+                      color: reviewPlatform === p ? "#1ABC9C" : "#6B7B78",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                      border: "none",
+                      borderLeft: i > 0 ? "1px solid #2A3330" : "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      transition: "background 0.15s, color 0.15s",
+                    }}
+                  >
+                    {p === "google" && <svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>}
+                    {p === "yelp" && <svg width="10" height="10" viewBox="0 0 24 24"><path d="M21.111 18.226c-.141.969-2.119 3.483-3.029 3.847-.311.124-.623.094-.867-.09-.148-.11-.258-.24-2.458-3.699l-.633-1.013a.866.866 0 0 1 .171-1.078.875.875 0 0 1 1.084-.036l.658.476c2.262 1.639 2.393 1.734 2.541 1.843.276.204.586.181.849-.046.373-.319.38-.856.08-1.247a.858.858 0 0 1-.077-.1l-.009-.013c-.111-.18-3.089-5.033-3.089-5.033a.868.868 0 0 1 .259-1.191.869.869 0 0 1 1.201.231c.021.033 2.954 4.768 2.954 4.768l.006.009c.138.212.325.341.53.363.22.024.437-.07.599-.255.232-.265.248-.649.049-.934-.006-.007-.008-.014-.014-.021L12.673 5.11a.907.907 0 0 1 .104-1.202.912.912 0 0 1 1.221.02l7.064 7.432c.012.012.025.025.037.039 1.223 1.486 1.276 4.046.012 6.827zm-10.6 3.569c-.14.622-.777 1.069-1.617 1.153-.828.083-2.885-.241-4.516-.784-.869-.286-1.305-.738-1.275-1.306.019-.368.199-.665.511-.837l4.168-2.328a.866.866 0 0 1 1.182.318l1.41 2.513a.867.867 0 0 1 .137.471v.8zM9.64 13.48a.865.865 0 0 1-.618.765l-4.664 1.338a.876.876 0 0 1-1.07-.569C3.018 13.973 2.876 12.04 3.21 10.32c.193-.993.629-1.483 1.294-1.458.381.014.659.168.818.318l4.178 3.326a.864.864 0 0 1 .317.69l-.177.284zm-.516-5.913L4.7 9.714a.878.878 0 0 1-1.136-.329.867.867 0 0 1 .001-.875C4.42 7.246 6.137 5.58 7.286 4.84c.618-.398 1.152-.429 1.542-.089.234.204.336.479.314.801L9 8.808a.862.862 0 0 1-.876.759z" fill="#FF1A1A"/></svg>}
+                    {p === "both" ? "Both" : p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )}
             <div
               className="rc-hero-review-input"
               style={{ display: "flex", gap: 10 }}
@@ -2034,6 +2076,8 @@ function DashboardContent() {
                           .split("/")[0],
                         clinicUrl: data.url,
                         placeId: data.placeId,
+                        platform: reviewPlatform,
+                        yelpUrl: data.yelpUrl,
                       }),
                     });
                     const result = await res.json();
@@ -2072,8 +2116,8 @@ function DashboardContent() {
             </div>
             {reviewSent && (
               <div style={{ fontSize: 12, color: "#2ECC71" }}>
-                🎉 Review request sent! Your patient will receive a direct
-                Google review link.
+                🎉 Sent! Your patient will receive a direct{" "}
+                {reviewPlatform === "both" ? "Google + Yelp review link" : reviewPlatform === "yelp" ? "Yelp review link" : "Google review link"}.
               </div>
             )}
             {reviewError && (
@@ -2425,91 +2469,62 @@ function DashboardContent() {
                         >
                           Your Clinic
                         </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 10,
-                          }}
-                        >
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 22,
-                                fontWeight: 900,
-                                color: "#1ABC9C",
-                                fontFamily: "'Playfair Display', serif",
-                              }}
-                            >
-                              {reviews.rating?.toFixed(1) ?? "—"} ⭐
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {/* Google row */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                            <span style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>Google</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                            <div>
+                              <div style={{ fontSize: 22, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>
+                                {reviews.rating?.toFixed(1) ?? "—"} ⭐
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Rating</div>
                             </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              Google Rating
+                            <div>
+                              <div style={{ fontSize: 22, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>
+                                {reviews.total ?? "—"}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Reviews</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 22, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>
+                                {data.overallScore}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Score</div>
                             </div>
                           </div>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 22,
-                                fontWeight: 900,
-                                color: "#1ABC9C",
-                                fontFamily: "'Playfair Display', serif",
-                              }}
-                            >
-                              {reviews.total ?? "—"}
-                            </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              Reviews
-                            </div>
-                          </div>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 22,
-                                fontWeight: 900,
-                                color: "#1ABC9C",
-                                fontFamily: "'Playfair Display', serif",
-                              }}
-                            >
-                              {data.overallScore}
-                            </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              Google Score
-                            </div>
-                          </div>
+                          {/* Divider */}
                           {data.yelpRating != null && (
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: 22,
-                                  fontWeight: 900,
-                                  color: "#FF1A1A",
-                                  fontFamily: "'Playfair Display', serif",
-                                }}
-                              >
-                                {data.yelpRating.toFixed(1)} ⭐
+                            <>
+                              <div style={{ borderTop: "1px solid #2A3330", marginBottom: 12 }} />
+                              {/* Yelp row */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24"><path d="M21.111 18.226c-.141.969-2.119 3.483-3.029 3.847-.311.124-.623.094-.867-.09-.148-.11-.258-.24-2.458-3.699l-.633-1.013a.866.866 0 0 1 .171-1.078.875.875 0 0 1 1.084-.036l.658.476c2.262 1.639 2.393 1.734 2.541 1.843.276.204.586.181.849-.046.373-.319.38-.856.08-1.247a.858.858 0 0 1-.077-.1l-.009-.013c-.111-.18-3.089-5.033-3.089-5.033a.868.868 0 0 1 .259-1.191.869.869 0 0 1 1.201.231c.021.033 2.954 4.768 2.954 4.768l.006.009c.138.212.325.341.53.363.22.024.437-.07.599-.255.232-.265.248-.649.049-.934-.006-.007-.008-.014-.014-.021L12.673 5.11a.907.907 0 0 1 .104-1.202.912.912 0 0 1 1.221.02l7.064 7.432c.012.012.025.025.037.039 1.223 1.486 1.276 4.046.012 6.827zm-10.6 3.569c-.14.622-.777 1.069-1.617 1.153-.828.083-2.885-.241-4.516-.784-.869-.286-1.305-.738-1.275-1.306.019-.368.199-.665.511-.837l4.168-2.328a.866.866 0 0 1 1.182.318l1.41 2.513a.867.867 0 0 1 .137.471v.8zM9.64 13.48a.865.865 0 0 1-.618.765l-4.664 1.338a.876.876 0 0 1-1.07-.569C3.018 13.973 2.876 12.04 3.21 10.32c.193-.993.629-1.483 1.294-1.458.381.014.659.168.818.318l4.178 3.326a.864.864 0 0 1 .317.69l-.177.284zm-.516-5.913L4.7 9.714a.878.878 0 0 1-1.136-.329.867.867 0 0 1 .001-.875C4.42 7.246 6.137 5.58 7.286 4.84c.618-.398 1.152-.429 1.542-.089.234.204.336.479.314.801L9 8.808a.862.862 0 0 1-.876.759z" fill="#FF1A1A"/></svg>
+                                <span style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>
+                                  {data.yelpUrl ? (
+                                    <a href={data.yelpUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#6B7B78", textDecoration: "none" }}>Yelp</a>
+                                  ) : "Yelp"}
+                                </span>
                               </div>
-                              <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                                {data.yelpUrl ? (
-                                  <a href={data.yelpUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#6B7B78", textDecoration: "underline" }}>Yelp Rating</a>
-                                ) : "Yelp Rating"}
+                              <div style={{ display: "flex", gap: 16 }}>
+                                <div>
+                                  <div style={{ fontSize: 22, fontWeight: 900, color: "#FF1A1A", fontFamily: "'Playfair Display', serif" }}>
+                                    {data.yelpRating.toFixed(1)} ⭐
+                                  </div>
+                                  <div style={{ fontSize: 11, color: "#6B7B78" }}>Rating</div>
+                                </div>
+                                {data.yelpReviewCount != null && (
+                                  <div>
+                                    <div style={{ fontSize: 22, fontWeight: 900, color: "#FF1A1A", fontFamily: "'Playfair Display', serif" }}>
+                                      {data.yelpReviewCount}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: "#6B7B78" }}>Reviews</div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          )}
-                          {data.yelpReviewCount != null && (
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: 22,
-                                  fontWeight: 900,
-                                  color: "#FF1A1A",
-                                  fontFamily: "'Playfair Display', serif",
-                                }}
-                              >
-                                {data.yelpReviewCount}
-                              </div>
-                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Yelp Reviews</div>
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>
@@ -2865,6 +2880,75 @@ function DashboardContent() {
                 </div>
               )}
             </div>
+
+          {/* ── YELP LEADERBOARD ─────────────────────────── */}
+          {data.yelpCompetitors && data.yelpCompetitors.length > 0 && (
+            <div className="card" style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: 24, marginTop: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24"><path d="M21.111 18.226c-.141.969-2.119 3.483-3.029 3.847-.311.124-.623.094-.867-.09-.148-.11-.258-.24-2.458-3.699l-.633-1.013a.866.866 0 0 1 .171-1.078.875.875 0 0 1 1.084-.036l.658.476c2.262 1.639 2.393 1.734 2.541 1.843.276.204.586.181.849-.046.373-.319.38-.856.08-1.247a.858.858 0 0 1-.077-.1l-.009-.013c-.111-.18-3.089-5.033-3.089-5.033a.868.868 0 0 1 .259-1.191.869.869 0 0 1 1.201.231c.021.033 2.954 4.768 2.954 4.768l.006.009c.138.212.325.341.53.363.22.024.437-.07.599-.255.232-.265.248-.649.049-.934-.006-.007-.008-.014-.014-.021L12.673 5.11a.907.907 0 0 1 .104-1.202.912.912 0 0 1 1.221.02l7.064 7.432c.012.012.025.025.037.039 1.223 1.486 1.276 4.046.012 6.827zm-10.6 3.569c-.14.622-.777 1.069-1.617 1.153-.828.083-2.885-.241-4.516-.784-.869-.286-1.305-.738-1.275-1.306.019-.368.199-.665.511-.837l4.168-2.328a.866.866 0 0 1 1.182.318l1.41 2.513a.867.867 0 0 1 .137.471v.8zM9.64 13.48a.865.865 0 0 1-.618.765l-4.664 1.338a.876.876 0 0 1-1.07-.569C3.018 13.973 2.876 12.04 3.21 10.32c.193-.993.629-1.483 1.294-1.458.381.014.659.168.818.318l4.178 3.326a.864.864 0 0 1 .317.69l-.177.284zm-.516-5.913L4.7 9.714a.878.878 0 0 1-1.136-.329.867.867 0 0 1 .001-.875C4.42 7.246 6.137 5.58 7.286 4.84c.618-.398 1.152-.429 1.542-.089.234.204.336.479.314.801L9 8.808a.862.862 0 0 1-.876.759z" fill="#FF1A1A"/></svg>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: "#F0EBE3" }}>
+                  Yelp Rankings — Who&apos;s Ahead of You
+                </div>
+                {data.yelpRank && (
+                  <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: data.yelpRank <= 3 ? "rgba(26,188,156,0.12)" : "rgba(231,76,60,0.1)", color: data.yelpRank <= 3 ? "#1ABC9C" : "#E74C3C", fontFamily: "'DM Mono', monospace" }}>
+                    You are #{data.yelpRank} on Yelp
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                {/* Header */}
+                <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 80px 80px", gap: "0 16px", padding: "6px 12px", fontSize: 10, color: "#4A5A57", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700, borderBottom: "1px solid #2A3330" }}>
+                  <div>#</div>
+                  <div>Clinic</div>
+                  <div style={{ textAlign: "right" }}>Rating</div>
+                  <div style={{ textAlign: "right" }}>Reviews</div>
+                </div>
+                {data.yelpCompetitors.map((biz) => {
+                  const isYou = data.yelpRank === biz.rank;
+                  return (
+                    <div
+                      key={biz.rank}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "32px 1fr 80px 80px",
+                        gap: "0 16px",
+                        padding: "10px 12px",
+                        borderBottom: "1px solid #1A2320",
+                        background: isYou ? "rgba(26,188,156,0.07)" : "transparent",
+                        borderLeft: isYou ? "3px solid #1ABC9C" : "3px solid transparent",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 900, color: biz.rank <= 3 ? "#F0A500" : "#6B7B78" }}>
+                        #{biz.rank}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: isYou ? 700 : 500, color: isYou ? "#1ABC9C" : "#F0EBE3" }}>
+                          {isYou ? `${biz.name} (You)` : biz.name}
+                        </div>
+                        {biz.url && !isYou && (
+                          <a href={biz.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: "#FF1A1A", textDecoration: "none" }}>
+                            View on Yelp →
+                          </a>
+                        )}
+                      </div>
+                      <div style={{ textAlign: "right", fontSize: 13, fontWeight: 600, color: "#F0EBE3" }}>
+                        {biz.rating > 0 ? `${biz.rating.toFixed(1)} ⭐` : "—"}
+                      </div>
+                      <div style={{ textAlign: "right", fontSize: 13, color: "#6B7B78" }}>
+                        {biz.reviews > 0 ? biz.reviews.toLocaleString() : "—"}
+                      </div>
+                    </div>
+                  );
+                })}
+                {!data.yelpRank && (
+                  <div style={{ padding: "16px 12px", fontSize: 13, color: "#6B7B78" }}>
+                    Your clinic wasn&apos;t found in the top Yelp results for your city. Consider claiming your Yelp profile.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           </>
         )}
 
@@ -3227,28 +3311,42 @@ function DashboardContent() {
                 marginBottom: 20,
               }}
             >
-              <div
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 20,
-                  fontWeight: 700,
-                }}
-              >
-                ⭐ What Patients Are Saying About You
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 20,
+                    fontWeight: 700,
+                  }}
+                >
+                  ⭐ What Patients Are Saying About You
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                  <span style={{ fontSize: 13, color: "#6B7B78" }}>+</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24"><path d="M21.111 18.226c-.141.969-2.119 3.483-3.029 3.847-.311.124-.623.094-.867-.09-.148-.11-.258-.24-2.458-3.699l-.633-1.013a.866.866 0 0 1 .171-1.078.875.875 0 0 1 1.084-.036l.658.476c2.262 1.639 2.393 1.734 2.541 1.843.276.204.586.181.849-.046.373-.319.38-.856.08-1.247a.858.858 0 0 1-.077-.1l-.009-.013c-.111-.18-3.089-5.033-3.089-5.033a.868.868 0 0 1 .259-1.191.869.869 0 0 1 1.201.231c.021.033 2.954 4.768 2.954 4.768l.006.009c.138.212.325.341.53.363.22.024.437-.07.599-.255.232-.265.248-.649.049-.934-.006-.007-.008-.014-.014-.021L12.673 5.11a.907.907 0 0 1 .104-1.202.912.912 0 0 1 1.221.02l7.064 7.432c.012.012.025.025.037.039 1.223 1.486 1.276 4.046.012 6.827zm-10.6 3.569c-.14.622-.777 1.069-1.617 1.153-.828.083-2.885-.241-4.516-.784-.869-.286-1.305-.738-1.275-1.306.019-.368.199-.665.511-.837l4.168-2.328a.866.866 0 0 1 1.182.318l1.41 2.513a.867.867 0 0 1 .137.471v.8zM9.64 13.48a.865.865 0 0 1-.618.765l-4.664 1.338a.876.876 0 0 1-1.07-.569C3.018 13.973 2.876 12.04 3.21 10.32c.193-.993.629-1.483 1.294-1.458.381.014.659.168.818.318l4.178 3.326a.864.864 0 0 1 .317.69l-.177.284zm-.516-5.913L4.7 9.714a.878.878 0 0 1-1.136-.329.867.867 0 0 1 .001-.875C4.42 7.246 6.137 5.58 7.286 4.84c.618-.398 1.152-.429 1.542-.089.234.204.336.479.314.801L9 8.808a.862.862 0 0 1-.876.759z" fill="#FF1A1A"/></svg>
+                </div>
               </div>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  padding: "4px 12px",
-                  borderRadius: 20,
-                  background: "rgba(26,188,156,0.12)",
-                  color: "#1ABC9C",
-                  fontFamily: "'DM Mono', monospace",
-                }}
-              >
-                AI Powered
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {reviews?.reviewSources && (
+                  <span style={{ fontSize: 11, color: "#6B7B78", fontFamily: "'DM Mono', monospace" }}>
+                    {reviews.reviewSources.google}G + {reviews.reviewSources.yelp}Y
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    padding: "4px 12px",
+                    borderRadius: 20,
+                    background: "rgba(26,188,156,0.12)",
+                    color: "#1ABC9C",
+                    fontFamily: "'DM Mono', monospace",
+                  }}
+                >
+                  AI Powered
+                </span>
+              </div>
             </div>
 
             {reviewsLoading ? (
