@@ -4202,7 +4202,7 @@ function DashboardContent() {
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#151918", borderTop: "1px solid #2A3330", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 1000, fontFamily: "'DM Sans', sans-serif" }}>
           {bannerSent ? (
             <>
-              <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>✓ Check your email for the code to revisit this report anytime.</span>
+              <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>✓ Your dashboard is secured.</span>
               <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
             </>
           ) : (
