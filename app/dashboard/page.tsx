@@ -918,6 +918,7 @@ function DashboardContent() {
       // Cold email link — has email param, skip OTP entirely
       if (emailParam) {
         localStorage.setItem("rc_user_email", emailParam.toLowerCase().trim());
+        localStorage.setItem("rc_auth_time", Date.now().toString());
         setAuthState("authenticated");
         return;
       }
@@ -927,8 +928,15 @@ function DashboardContent() {
         setAuthState("authenticated");
         return;
       }
-      // Known email in localStorage — auto-send OTP, skip email entry screen
+      // Known email in localStorage — check if verified within last 7 days
       const saved = localStorage.getItem("rc_user_email");
+      const lastAuth = localStorage.getItem("rc_auth_time");
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      if (saved && lastAuth && Date.now() - parseInt(lastAuth) < sevenDays) {
+        setAuthState("authenticated");
+        return;
+      }
+      // Email known but session expired — auto-send OTP
       if (saved) {
         setAuthEmail(saved);
         setAuthEmailDisplay(saved[0] + "***@" + saved.split("@")[1]);
@@ -990,6 +998,7 @@ function DashboardContent() {
     setAuthLoading(false);
     if (error) { setAuthError("Invalid or expired code. Try again."); return; }
     localStorage.setItem("rc_user_email", authEmail.toLowerCase().trim());
+    localStorage.setItem("rc_auth_time", Date.now().toString());
     setAuthState("authenticated");
   };
 
@@ -1018,11 +1027,16 @@ function DashboardContent() {
       if (i < totalSteps - 1) setLoadingStep(i);
       else clearInterval(interval);
     }, 2200);
+    const minLoadTime = new Promise((r) => setTimeout(r, 5000));
     fetch(
       `/api/audit?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
     )
       .then((res) => res.json())
-      .then((d) => {
+      .then(async (d) => {
+        await minLoadTime;
+        clearInterval(interval);
+        setLoadingStep(totalSteps - 1);
+        await new Promise((r) => setTimeout(r, 400));
         if (d.error === "not_dental") {
           setError(d.message);
           setLoading(false);
