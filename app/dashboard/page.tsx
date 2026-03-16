@@ -1817,7 +1817,7 @@ function DashboardContent() {
                 color: "#6B7B78",
               }}
             >
-              📡 Powered by Google Maps, Google PageSpeed & live web data
+              📡 Powered by Google Maps, Yelp, Google PageSpeed & live web data
             </span>
           </div>
         </div>

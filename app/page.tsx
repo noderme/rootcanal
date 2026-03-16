@@ -192,7 +192,7 @@ function HomeInner() {
               padding: "12px 16px",
             }}
           >
-            Get more Google reviews, Get more patients, track competitors, and
+            Get more Google & Yelp reviews, track competitors, and
             improve your clinic&apos;s visibility — all in one simple dashboard.
           </p>
 
