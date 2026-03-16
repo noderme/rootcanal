@@ -836,7 +836,10 @@ export async function GET(request: NextRequest) {
     let userRank: number | undefined;
 
     try {
-      const placesUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+clinic+in+${encodeURIComponent(city)}&key=${apiKey}`;
+      // Prefer lat/lng nearbysearch (consistent radius) over city textsearch (variable results)
+      const placesUrl = clinicLat != null && clinicLng != null
+        ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${clinicLat},${clinicLng}&radius=5000&type=dentist&key=${apiKey}`
+        : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+clinic+in+${encodeURIComponent(city)}&key=${apiKey}`;
       const placesRes = await fetch(placesUrl);
       const placesData = await placesRes.json();
 
