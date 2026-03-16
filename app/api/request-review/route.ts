@@ -17,7 +17,7 @@ const twilioClient = twilio(
 
 export async function POST(request: NextRequest) {
   try {
-    const { contact, type, clinicName, clinicUrl, placeId } =
+    const { contact, type, clinicName, clinicUrl, placeId, platform = "google", yelpUrl } =
       await request.json();
 
     if (!contact || !placeId) {
@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reviewLink = `https://search.google.com/local/writereview?placeid=${placeId}`;
+    const googleLink = `https://search.google.com/local/writereview?placeid=${placeId}`;
+    const reviewLink = platform === "yelp" && yelpUrl ? yelpUrl : googleLink;
 
     // ── 1. Save to Supabase ──
     const { error: dbError } = await supabase.from("review_requests").insert({
@@ -58,10 +59,9 @@ export async function POST(request: NextRequest) {
             <p style="color: #444; font-size: 15px; line-height: 1.7; margin-bottom: 24px;">
               We hope your experience was a great one. If you have a moment, we'd love to hear your feedback — it helps other patients find us and helps us keep improving our care.
             </p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${reviewLink}" style="background: #1ABC9C; color: #000000; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">
-                ⭐ Leave a Google Review
-              </a>
+            <div style="text-align: center; margin: 32px 0; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+              ${platform !== "yelp" ? `<a href="${googleLink}" style="background: #1ABC9C; color: #000000; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">⭐ Leave a Google Review</a>` : ""}
+              ${(platform === "yelp" || platform === "both") && yelpUrl ? `<a href="${yelpUrl}" style="background: #FF1A1A; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">⭐ Leave a Yelp Review</a>` : ""}
             </div>
             <p style="color: #bbb; font-size: 12px; text-align: center; margin-top: 32px;">Takes less than 1 minute · Your feedback means the world to us</p>
             <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 24px 0;" />
@@ -82,7 +82,9 @@ export async function POST(request: NextRequest) {
         await twilioClient.messages.create({
           from: process.env.TWILIO_FROM_NUMBER,
           to: contact,
-          body: `Hi! Thank you for visiting ${clinicName}. We'd love your feedback — leave us a quick Google review here: ${reviewLink} (takes less than 1 min!)`,
+          body: platform === "both" && yelpUrl
+            ? `Hi! Thank you for visiting ${clinicName}. We'd love your feedback!\nGoogle: ${googleLink}\nYelp: ${yelpUrl}\n(Takes less than 1 min!)`
+            : `Hi! Thank you for visiting ${clinicName}. We'd love your feedback — leave us a quick ${platform === "yelp" ? "Yelp" : "Google"} review here: ${reviewLink} (takes less than 1 min!)`,
         });
       } catch (smsError) {
         console.error("Twilio error:", smsError);
