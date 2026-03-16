@@ -4,6 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 function HomeInner() {
   const [url, setUrl] = useState("");
+  const [clinicName, setClinicName] = useState("");
+  const [clinicCity, setClinicCity] = useState("");
+  const [mode, setMode] = useState<"website" | "gbp">("website");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -11,26 +14,33 @@ function HomeInner() {
   // If ?url= is in the link, auto-fill and immediately redirect to dashboard
   useEffect(() => {
     const urlParam = searchParams.get("url");
+    const nameParam = searchParams.get("name");
+    const cityParam = searchParams.get("city");
     if (urlParam) {
       let cleanUrl = urlParam.trim().toLowerCase();
       if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
         cleanUrl = "https://" + cleanUrl;
       }
-      // Skip landing page entirely — go straight to their report
       router.push(`/dashboard?url=${encodeURIComponent(cleanUrl)}`);
+    } else if (nameParam && cityParam) {
+      router.push(`/dashboard?name=${encodeURIComponent(nameParam)}&city=${encodeURIComponent(cityParam)}`);
     }
   }, [searchParams, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url) return;
     setLoading(true);
-    // Clean URL — accept any format dentist types
-    let cleanUrl = url.trim().toLowerCase();
-    if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
-      cleanUrl = "https://" + cleanUrl;
+    if (mode === "website") {
+      if (!url) { setLoading(false); return; }
+      let cleanUrl = url.trim().toLowerCase();
+      if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+        cleanUrl = "https://" + cleanUrl;
+      }
+      router.push(`/dashboard?url=${encodeURIComponent(cleanUrl)}`);
+    } else {
+      if (!clinicName || !clinicCity) { setLoading(false); return; }
+      router.push(`/dashboard?name=${encodeURIComponent(clinicName.trim())}&city=${encodeURIComponent(clinicCity.trim())}`);
     }
-    router.push(`/dashboard?url=${encodeURIComponent(cleanUrl)}`);
   };
 
   return (
@@ -197,15 +207,78 @@ function HomeInner() {
           </p>
 
           <form id="audit" onSubmit={handleSubmit} className="rc-form-wrap">
+            {/* Mode toggle */}
+            <div style={{ display: "flex", background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: 4, marginBottom: 12, border: "1px solid rgba(255,255,255,0.12)" }}>
+              <button
+                type="button"
+                onClick={() => setMode("website")}
+                style={{
+                  flex: 1,
+                  padding: "8px 12px",
+                  borderRadius: 7,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  transition: "all 0.15s",
+                  background: mode === "website" ? "#fff" : "transparent",
+                  color: mode === "website" ? "#1a1a1a" : "rgba(255,255,255,0.6)",
+                  boxShadow: mode === "website" ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+                }}
+              >
+                🌐 I have a website
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("gbp")}
+                style={{
+                  flex: 1,
+                  padding: "8px 12px",
+                  borderRadius: 7,
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  transition: "all 0.15s",
+                  background: mode === "gbp" ? "#fff" : "transparent",
+                  color: mode === "gbp" ? "#1a1a1a" : "rgba(255,255,255,0.6)",
+                  boxShadow: mode === "gbp" ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+                }}
+              >
+                📍 Google listing only
+              </button>
+            </div>
+
             <div className="rc-scan-box">
-              <input
-                className="rc-input"
-                type="text"
-                placeholder="Enter your clinic website e.g. smilesdental.com"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                required
-              />
+              {mode === "website" ? (
+                <input
+                  className="rc-input"
+                  type="text"
+                  placeholder="Enter your clinic website e.g. smilesdental.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  required
+                />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                  <input
+                    className="rc-input"
+                    type="text"
+                    placeholder="Clinic name e.g. Smiles Dental"
+                    value={clinicName}
+                    onChange={(e) => setClinicName(e.target.value)}
+                    required
+                  />
+                  <input
+                    className="rc-input"
+                    type="text"
+                    placeholder="City e.g. Austin, TX"
+                    value={clinicCity}
+                    onChange={(e) => setClinicCity(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <button className="rc-btn" type="submit" disabled={loading}>

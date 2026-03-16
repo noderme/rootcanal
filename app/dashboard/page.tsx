@@ -816,7 +816,10 @@ function normalizeUrl(url: string): string {
 function DashboardContent() {
   const searchParams = useSearchParams();
   const url = searchParams.get("url") || "";
-  const city = searchParams.get("city") || "";
+  const nameParam = searchParams.get("name") || "";
+  const cityParam = searchParams.get("city") || "";
+  const hasWebsite = !!url;
+  const city = cityParam;
   const emailParam = searchParams.get("email") || "";
 
   // ── AUTH STATE ──────────────────────────────────────────────────────────────
@@ -1071,9 +1074,10 @@ function DashboardContent() {
       else clearInterval(interval);
     }, 2200);
     const minLoadTime = new Promise((r) => setTimeout(r, 5000));
-    fetch(
-      `/api/audit?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}`,
-    )
+    const auditQuery = hasWebsite
+      ? `/api/audit?url=${encodeURIComponent(url)}`
+      : `/api/audit?name=${encodeURIComponent(nameParam)}&city=${encodeURIComponent(city)}`;
+    fetch(auditQuery)
       .then((res) => res.json())
       .then(async (d) => {
         await minLoadTime;
@@ -1089,7 +1093,7 @@ function DashboardContent() {
         setLoading(false);
         setReviewsLoading(true);
         fetch(
-          `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}&name=${encodeURIComponent(d.clinicName || "")}&plan=${isGrowth ? "growth" : isPro ? "pro" : "free"}`,
+          `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}&name=${encodeURIComponent(d.clinicName || nameParam)}&plan=${isGrowth ? "growth" : isPro ? "pro" : "free"}`,
         )
           .then((r) => r.json())
           .then((r) => {
@@ -1103,7 +1107,7 @@ function DashboardContent() {
         setLoading(false);
       });
     return () => clearInterval(interval);
-  }, [url, city]);
+  }, [url, nameParam, city]);
 
   // Exit intent — desktop mouse leave + mobile back button
   useEffect(() => {
@@ -1658,7 +1662,7 @@ function DashboardContent() {
             { id: "roadmap",     label: "📈 Growth Plan" },
             { id: "reviews",     label: "⭐ Reviews (G+Y)" },
             { id: "score",       label: "🧠 Intelligence" },
-            { id: "health",      label: "🔧 Health" },
+            ...(hasWebsite ? [{ id: "health" as const, label: "🔧 Health" }] : []),
           ] as const).map((item) => (
             <button
               key={item.id}
@@ -1765,7 +1769,9 @@ function DashboardContent() {
             }}
           >
             {data?.clinicName ||
-              (url
+              (nameParam
+                ? nameParam
+                : url
                 ? url
                     .replace(/https?:\/\//, "")
                     .replace(/^www\./, "")
@@ -2070,11 +2076,11 @@ function DashboardContent() {
                       body: JSON.stringify({
                         contact: reviewContact.trim(),
                         type: isEmail ? "email" : "phone",
-                        clinicName: data.url
-                          .replace(/https?:\/\//, "")
-                          .replace(/www\./, "")
-                          .split("/")[0],
-                        clinicUrl: data.url,
+                        clinicName: data.clinicName ||
+                          (data.url
+                            ? data.url.replace(/https?:\/\//, "").replace(/www\./, "").split("/")[0]
+                            : nameParam),
+                        clinicUrl: data.url || "",
                         placeId: data.placeId,
                         platform: reviewPlatform,
                         yelpUrl: data.yelpUrl,

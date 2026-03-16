@@ -150,18 +150,22 @@ async function fetchPageSpeed(
 // ── MAIN HANDLER ──────────────────────────────────────────
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const url = searchParams.get("url");
-  // Never trust city from query param — always re-detect from GBP for accuracy
-  let city = "";
+  const url = searchParams.get("url") || "";
+  const nameParam = searchParams.get("name") || "";
+  const cityParam = searchParams.get("city") || "";
+  const hasWebsite = !!url;
 
-  if (!url) {
-    return NextResponse.json({ error: "URL is required" }, { status: 400 });
+  if (!hasWebsite && (!nameParam || !cityParam)) {
+    return NextResponse.json({ error: "Either url or name+city required" }, { status: 400 });
   }
+
+  // For no-website path, city is provided directly; for website path, we detect it
+  let city = hasWebsite ? "" : cityParam;
 
   const apiKey = process.env.GOOGLE_API_KEY || "";
 
   // ── Dental clinic check — reject non-dental websites ──
-  try {
+  if (hasWebsite) try {
     const dentalKeywords = [
       "dental",
       "dentist",
@@ -239,16 +243,14 @@ export async function GET(request: NextRequest) {
     console.error("Dental check error:", e);
   }
 
-  // ── Auto-detect city from website content + Google Places ──
+  // ── Auto-detect city from website content + Google Places (website mode only) ──
   let cityDetectionPlaceId: string | null = null;
   let cityDetectionName: string | null = null;
-  const inputDomain = url
-    .replace(/https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split("/")[0]
-    .toLowerCase();
+  const inputDomain = hasWebsite
+    ? url.replace(/https?:\/\//, "").replace(/^www\./, "").split("/")[0].toLowerCase()
+    : "";
 
-  if (!city) {
+  if (hasWebsite && !city) {
     try {
       // ── STRATEGY 1: Scrape the clinic website for address/city ──
       // Most reliable — the website itself knows where it is
@@ -366,7 +368,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const cacheKey = url.toLowerCase(); // city excluded — city is always re-detected
+  const cacheKey = hasWebsite
+    ? url.toLowerCase()
+    : `${nameParam.toLowerCase()}-${cityParam.toLowerCase()}`;
 
   // ── Check Supabase cache first (persistent across serverless invocations) ──
   try {
@@ -374,7 +378,7 @@ export async function GET(request: NextRequest) {
     const { data: cachedRow } = await supabase
       .from("scans")
       .select("result, scanned_at")
-      .eq("url", url)
+      .eq("url", hasWebsite ? url : cacheKey)
       .not("result", "is", null)
       .gte("scanned_at", since)
       .order("scanned_at", { ascending: false })
@@ -397,14 +401,26 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // ── 1. PAGESPEED ──────────────────────────────────
-    const { performanceScore, seoScore, accessibilityScore, audits } =
-      await fetchPageSpeed(url, apiKey);
+    // ── 1. PAGESPEED (website mode only) ──────────────
+    let performanceScore = 0;
+    let seoScore = 0;
+    let accessibilityScore = 0;
+    let audits: Record<string, { score: number | null }> = {};
+
+    if (hasWebsite) {
+      const ps = await fetchPageSpeed(url, apiKey);
+      performanceScore = ps.performanceScore;
+      seoScore = ps.seoScore;
+      accessibilityScore = ps.accessibilityScore;
+      audits = ps.audits;
+    }
 
     // If all 3 scores are 0, PageSpeed API failed — default to 50 to avoid showing 0/100
     const pageSpeedFailed =
       performanceScore === 0 && seoScore === 0 && accessibilityScore === 0;
-    const overallScore = pageSpeedFailed
+    const overallScore = !hasWebsite
+      ? 0
+      : pageSpeedFailed
       ? 50
       : Math.round((performanceScore + seoScore + accessibilityScore) / 3);
 
@@ -416,6 +432,7 @@ export async function GET(request: NextRequest) {
       status: string;
     }[] = [];
 
+    if (hasWebsite) {
     // Mobile
     if (audits?.viewport?.score === 0) {
       issues.push({
@@ -548,6 +565,7 @@ export async function GET(request: NextRequest) {
         status: "pass",
       });
     }
+    } // end hasWebsite issues block
 
     // ── 3. GOOGLE BUSINESS PROFILE CHECK ────────────
     let clinicPlaceId = "";
@@ -556,14 +574,16 @@ export async function GET(request: NextRequest) {
     let clinicLat: number | undefined;
     let clinicLng: number | undefined;
     try {
-      const clinicSearchName = url
-        .replace(/https?:\/\//, "")
-        .replace(/^www\./, "")
-        .split("/")[0]
-        .replace(/\.my\.canva\.site$/, "")
-        .replace(/\.(com|net|org|io|us)$/, "")
-        .replace(/[-_.]/g, " ")
-        .trim();
+      const clinicSearchName = hasWebsite
+        ? url
+            .replace(/https?:\/\//, "")
+            .replace(/^www\./, "")
+            .split("/")[0]
+            .replace(/\.my\.canva\.site$/, "")
+            .replace(/\.(com|net|org|io|us)$/, "")
+            .replace(/[-_.]/g, " ")
+            .trim()
+        : nameParam;
 
       // Helper: check if address is in India
       const isIndia = (p: { formatted_address?: string }) =>
@@ -646,13 +666,14 @@ export async function GET(request: NextRequest) {
       // Strategy 1: search by "clinic name dentist city"
       if (!clinicPlaceId) {
         const gbpQuery = `${clinicSearchName} dentist ${city}`;
-        const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(gbpQuery)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status,formatted_address&key=${apiKey}`;
+        const gbpUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(gbpQuery)}&inputtype=textquery&fields=place_id,name,rating,user_ratings_total,business_status,formatted_address,geometry&key=${apiKey}`;
         const gbpRes = await fetch(gbpUrl);
         const gbpData = await gbpRes.json();
         place = gbpData.candidates?.[0];
 
         if (place?.place_id && !isIndia(place)) {
-          const matched = await websiteMatches(place.place_id);
+          // No-website mode: skip website match check — name+city is the identity
+          const matched = hasWebsite ? await websiteMatches(place.place_id) : true;
           if (matched) {
             clinicPlaceId = place.place_id;
             console.log(
@@ -673,8 +694,8 @@ export async function GET(request: NextRequest) {
         }
       } // end strategy 1
 
-      // Strategy 2: fallback — search by website URL via textsearch
-      if (!clinicPlaceId) {
+      // Strategy 2: fallback — search by website URL via textsearch (website mode only)
+      if (!clinicPlaceId && hasWebsite) {
         const normalizedUrl = url
           .replace(/https?:\/\//, "")
           .replace(/^www\./, "");
@@ -1037,7 +1058,7 @@ export async function GET(request: NextRequest) {
     // ── 5. SAVE TO SUPABASE ───────────────────────────
     try {
       const { error: dbError } = await supabase.from("scans").insert({
-        url,
+        url: hasWebsite ? url : cacheKey,
         city,
         overall_score: overallScore,
         performance_score: performanceScore,
