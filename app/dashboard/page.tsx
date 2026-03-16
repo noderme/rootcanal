@@ -1837,7 +1837,7 @@ function DashboardContent() {
                 Google Rank
               </div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{userRank != null ? `#${userRank}` : "—"}</div>
-              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>search position</div>
+              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>within 5 km</div>
             </div>
             {reviewRank != null && (
               <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
@@ -1863,8 +1863,8 @@ function DashboardContent() {
               {typeof userRank === "number" && reviewRank != null && userRank <= 3 && reviewRank > userRank
                 ? `You rank #${userRank} on Google but #${reviewRank} by reviews — competitors could overtake you as their reviews grow.`
                 : typeof userRank === "number" && userRank <= 3
-                ? `You're ranked #${userRank} — great position. But Google rankings shift constantly. Keep collecting reviews to protect your spot.`
-                : `📉 You're ranked #${userRank}. Top 3 clinics get ~70% of all patient clicks — patients below that are rarely seen.`}
+                ? `You're ranked #${userRank} among dentists within 5 km — great position. Keep collecting reviews to protect your spot.`
+                : `📉 You're ranked #${userRank} among dentists within 5 km. Top 3 clinics get ~70% of all patient clicks.`}
             </div>
           </div>
         )}
