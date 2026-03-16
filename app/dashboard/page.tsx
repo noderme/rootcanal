@@ -2436,91 +2436,62 @@ function DashboardContent() {
                         >
                           Your Clinic
                         </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 10,
-                          }}
-                        >
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 22,
-                                fontWeight: 900,
-                                color: "#1ABC9C",
-                                fontFamily: "'Playfair Display', serif",
-                              }}
-                            >
-                              {reviews.rating?.toFixed(1) ?? "—"} ⭐
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {/* Google row */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                            <span style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>Google</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                            <div>
+                              <div style={{ fontSize: 22, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>
+                                {reviews.rating?.toFixed(1) ?? "—"} ⭐
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Rating</div>
                             </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              Google Rating
+                            <div>
+                              <div style={{ fontSize: 22, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>
+                                {reviews.total ?? "—"}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Reviews</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 22, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>
+                                {data.overallScore}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Score</div>
                             </div>
                           </div>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 22,
-                                fontWeight: 900,
-                                color: "#1ABC9C",
-                                fontFamily: "'Playfair Display', serif",
-                              }}
-                            >
-                              {reviews.total ?? "—"}
-                            </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              Reviews
-                            </div>
-                          </div>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 22,
-                                fontWeight: 900,
-                                color: "#1ABC9C",
-                                fontFamily: "'Playfair Display', serif",
-                              }}
-                            >
-                              {data.overallScore}
-                            </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              Google Score
-                            </div>
-                          </div>
+                          {/* Divider */}
                           {data.yelpRating != null && (
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: 22,
-                                  fontWeight: 900,
-                                  color: "#FF1A1A",
-                                  fontFamily: "'Playfair Display', serif",
-                                }}
-                              >
-                                {data.yelpRating.toFixed(1)} ⭐
+                            <>
+                              <div style={{ borderTop: "1px solid #2A3330", marginBottom: 12 }} />
+                              {/* Yelp row */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24"><path d="M21.111 18.226c-.141.969-2.119 3.483-3.029 3.847-.311.124-.623.094-.867-.09-.148-.11-.258-.24-2.458-3.699l-.633-1.013a.866.866 0 0 1 .171-1.078.875.875 0 0 1 1.084-.036l.658.476c2.262 1.639 2.393 1.734 2.541 1.843.276.204.586.181.849-.046.373-.319.38-.856.08-1.247a.858.858 0 0 1-.077-.1l-.009-.013c-.111-.18-3.089-5.033-3.089-5.033a.868.868 0 0 1 .259-1.191.869.869 0 0 1 1.201.231c.021.033 2.954 4.768 2.954 4.768l.006.009c.138.212.325.341.53.363.22.024.437-.07.599-.255.232-.265.248-.649.049-.934-.006-.007-.008-.014-.014-.021L12.673 5.11a.907.907 0 0 1 .104-1.202.912.912 0 0 1 1.221.02l7.064 7.432c.012.012.025.025.037.039 1.223 1.486 1.276 4.046.012 6.827zm-10.6 3.569c-.14.622-.777 1.069-1.617 1.153-.828.083-2.885-.241-4.516-.784-.869-.286-1.305-.738-1.275-1.306.019-.368.199-.665.511-.837l4.168-2.328a.866.866 0 0 1 1.182.318l1.41 2.513a.867.867 0 0 1 .137.471v.8zM9.64 13.48a.865.865 0 0 1-.618.765l-4.664 1.338a.876.876 0 0 1-1.07-.569C3.018 13.973 2.876 12.04 3.21 10.32c.193-.993.629-1.483 1.294-1.458.381.014.659.168.818.318l4.178 3.326a.864.864 0 0 1 .317.69l-.177.284zm-.516-5.913L4.7 9.714a.878.878 0 0 1-1.136-.329.867.867 0 0 1 .001-.875C4.42 7.246 6.137 5.58 7.286 4.84c.618-.398 1.152-.429 1.542-.089.234.204.336.479.314.801L9 8.808a.862.862 0 0 1-.876.759z" fill="#FF1A1A"/></svg>
+                                <span style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, fontWeight: 700 }}>
+                                  {data.yelpUrl ? (
+                                    <a href={data.yelpUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#6B7B78", textDecoration: "none" }}>Yelp</a>
+                                  ) : "Yelp"}
+                                </span>
                               </div>
-                              <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                                {data.yelpUrl ? (
-                                  <a href={data.yelpUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#6B7B78", textDecoration: "underline" }}>Yelp Rating</a>
-                                ) : "Yelp Rating"}
+                              <div style={{ display: "flex", gap: 16 }}>
+                                <div>
+                                  <div style={{ fontSize: 22, fontWeight: 900, color: "#FF1A1A", fontFamily: "'Playfair Display', serif" }}>
+                                    {data.yelpRating.toFixed(1)} ⭐
+                                  </div>
+                                  <div style={{ fontSize: 11, color: "#6B7B78" }}>Rating</div>
+                                </div>
+                                {data.yelpReviewCount != null && (
+                                  <div>
+                                    <div style={{ fontSize: 22, fontWeight: 900, color: "#FF1A1A", fontFamily: "'Playfair Display', serif" }}>
+                                      {data.yelpReviewCount}
+                                    </div>
+                                    <div style={{ fontSize: 11, color: "#6B7B78" }}>Reviews</div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          )}
-                          {data.yelpReviewCount != null && (
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: 22,
-                                  fontWeight: 900,
-                                  color: "#FF1A1A",
-                                  fontFamily: "'Playfair Display', serif",
-                                }}
-                              >
-                                {data.yelpReviewCount}
-                              </div>
-                              <div style={{ fontSize: 11, color: "#6B7B78" }}>Yelp Reviews</div>
-                            </div>
+                            </>
                           )}
                         </div>
                       </div>
