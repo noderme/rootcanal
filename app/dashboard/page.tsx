@@ -34,6 +34,7 @@ interface AuditData {
   placeId: string;
   scannedAt: string;
   userRank?: number;
+  userReviewCount?: number;
 }
 
 interface ReviewData {
@@ -1223,6 +1224,13 @@ function DashboardContent() {
 
   const userRank = data.userRank ?? (data.competitors.length > 0 ? data.competitors.length + 1 : undefined);
 
+  const reviewRank = (() => {
+    if (data.userReviewCount == null || data.competitors.length === 0) return undefined;
+    const allReviews = [...data.competitors.map((c) => c.reviews), data.userReviewCount];
+    allReviews.sort((a, b) => b - a);
+    return allReviews.indexOf(data.userReviewCount) + 1;
+  })();
+
   return (
     <div
       style={{
@@ -1582,13 +1590,22 @@ function DashboardContent() {
         {activeTab === "competitors" && (
           <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
             <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
-              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Your Google Rank</div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{userRank}</div>
-              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>vs other clinics in {displayCity}</div>
+              <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Google Rank</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{userRank != null ? `#${userRank}` : "—"}</div>
+              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>search position</div>
             </div>
+            {reviewRank != null && (
+              <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
+                <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>Review Rank</div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: reviewRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>#{reviewRank}</div>
+                <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>by review count</div>
+              </div>
+            )}
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
-              {typeof userRank === "number" && userRank <= 3
-                ? `🏆 You're ranked #${userRank} — great position. But Google rankings shift constantly. Keep collecting reviews to protect your spot.`
+              {typeof userRank === "number" && reviewRank != null && userRank <= 3 && reviewRank > userRank
+                ? `You rank #${userRank} on Google but #${reviewRank} by reviews — competitors could overtake you as their reviews grow.`
+                : typeof userRank === "number" && userRank <= 3
+                ? `You're ranked #${userRank} — great position. But Google rankings shift constantly. Keep collecting reviews to protect your spot.`
                 : `📉 You're ranked #${userRank}. Top 3 clinics get ~70% of all patient clicks — patients below that are rarely seen.`}
             </div>
           </div>

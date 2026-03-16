@@ -43,6 +43,7 @@ interface AuditResult {
   placeId: string;
   scannedAt: string;
   userRank?: number;
+  userReviewCount?: number;
   cached?: boolean;
 }
 
@@ -541,6 +542,7 @@ export async function GET(request: NextRequest) {
     // ── 3. GOOGLE BUSINESS PROFILE CHECK ────────────
     let clinicPlaceId = "";
     let clinicName: string | undefined;
+    let clinicReviewCount: number | undefined;
     try {
       const clinicSearchName = url
         .replace(/https?:\/\//, "")
@@ -714,6 +716,7 @@ export async function GET(request: NextRequest) {
         });
       }
       if (place?.name) clinicName = place.name;
+      if (place?.user_ratings_total != null) clinicReviewCount = place.user_ratings_total;
     } catch (gbpError) {
       console.error("GBP check error:", gbpError);
     }
@@ -877,6 +880,7 @@ export async function GET(request: NextRequest) {
       placeId: clinicPlaceId,
       scannedAt: new Date().toISOString(),
       userRank,
+      userReviewCount: clinicReviewCount,
     };
 
     setCache(cacheKey, result);
