@@ -1137,16 +1137,33 @@ function DashboardContent() {
             <>
               <p style={{ color: "#6B7B78", fontSize: 14, marginBottom: 4, marginTop: 8 }}>We sent a 6-digit code to</p>
               <p style={{ color: "#F7F3ED", fontSize: 14, marginBottom: 28 }}>{authEmail}</p>
-              <input
-                type="text"
-                value={authOtp}
-                onChange={e => setAuthOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                onKeyDown={e => e.key === "Enter" && verifyOtp()}
-                placeholder="123456"
-                autoFocus
-                maxLength={6}
-                style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #2A3330", background: "#0D0F0E", color: "#F7F3ED", fontSize: 22, letterSpacing: 8, textAlign: "center", marginBottom: 12, boxSizing: "border-box" }}
-              />
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 12 }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <input
+                    key={i}
+                    id={`otp-${i}`}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    autoFocus={i === 0}
+                    value={authOtp[i] || ""}
+                    placeholder="🦷"
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      const arr = authOtp.split("");
+                      arr[i] = val;
+                      const next = arr.join("").slice(0, 6);
+                      setAuthOtp(next);
+                      if (val && i < 5) document.getElementById(`otp-${i + 1}`)?.focus();
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Backspace" && !authOtp[i] && i > 0) document.getElementById(`otp-${i - 1}`)?.focus();
+                      if (e.key === "Enter") verifyOtp();
+                    }}
+                    style={{ width: 44, height: 52, borderRadius: 10, border: `1px solid ${authOtp[i] ? "#1ABC9C" : "#2A3330"}`, background: "#0D0F0E", color: "#F7F3ED", fontSize: authOtp[i] ? 22 : 18, textAlign: "center", outline: "none", fontFamily: "'DM Sans', sans-serif" }}
+                  />
+                ))}
+              </div>
               {authError && <div style={{ color: "#E74C3C", fontSize: 13, marginBottom: 12 }}>{authError}</div>}
               <button
                 onClick={verifyOtp}
