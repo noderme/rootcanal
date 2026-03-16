@@ -839,6 +839,11 @@ function DashboardContent() {
 
   // Soft email capture banner (anonymous users)
   const [showSaveBanner, setShowSaveBanner] = useState(false);
+  const [showExitIntent, setShowExitIntent] = useState(false);
+  const [exitIntentDone, setExitIntentDone] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackSent, setFeedbackSent] = useState(false);
   const [bannerEmail, setBannerEmail] = useState("");
   const [bannerSent, setBannerSent] = useState(false);
 
@@ -1003,6 +1008,31 @@ function DashboardContent() {
     setAuthState("authenticated");
   };
 
+  const submitExitIntent = async (answer: string) => {
+    setShowExitIntent(false);
+    const { error } = await supabase.from("feedback").insert({
+      type: "exit_intent",
+      message: answer,
+      clinic_url: url || null,
+      created_at: new Date().toISOString(),
+    });
+    if (error) console.error("Exit intent feedback error:", error);
+  };
+
+  const submitFeedback = async () => {
+    if (!feedbackText.trim()) return;
+    const { error } = await supabase.from("feedback").insert({
+      type: "manual",
+      message: feedbackText.trim(),
+      clinic_url: url || null,
+      created_at: new Date().toISOString(),
+    });
+    if (error) { console.error("Feedback error:", error); return; }
+    setFeedbackText("");
+    setFeedbackSent(true);
+    setTimeout(() => { setFeedbackSent(false); setShowFeedbackModal(false); }, 2000);
+  };
+
   // On mount: check by clinic_url first, then localStorage email
   useEffect(() => {
     const detect = async () => {
@@ -1062,6 +1092,35 @@ function DashboardContent() {
       });
     return () => clearInterval(interval);
   }, [url, city]);
+
+  // Exit intent — desktop mouse leave + mobile back button
+  useEffect(() => {
+    if (exitIntentDone || loading) return;
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 10 && !exitIntentDone) {
+        setShowExitIntent(true);
+        setExitIntentDone(true);
+      }
+    };
+    // Mobile: push a history state and detect back
+    if (typeof window !== "undefined") {
+      window.history.pushState({ exitIntent: true }, "");
+      const handlePopState = () => {
+        if (!exitIntentDone) {
+          setShowExitIntent(true);
+          setExitIntentDone(true);
+        }
+      };
+      window.addEventListener("popstate", handlePopState);
+      document.addEventListener("mouseleave", handleMouseLeave);
+      return () => {
+        document.removeEventListener("mouseleave", handleMouseLeave);
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }
+    document.addEventListener("mouseleave", handleMouseLeave);
+    return () => document.removeEventListener("mouseleave", handleMouseLeave);
+  }, [exitIntentDone, loading]);
 
   const fixGuides: Record<string, string[]> = {
     "Doesn't work on phones": [
@@ -1199,9 +1258,6 @@ function DashboardContent() {
                 style={{ width: "100%", padding: "13px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer", opacity: authLoading || authOtp.length < 6 ? 0.5 : 1 }}
               >
                 {authLoading ? "Verifying..." : "Verify →"}
-              </button>
-              <button onClick={() => { setAuthState("enter-email"); setAuthOtp(""); setAuthError(""); }} style={{ marginTop: 12, background: "none", border: "none", color: "#6B7B78", fontSize: 13, cursor: "pointer" }}>
-                Use a different email
               </button>
             </>
           )}
@@ -1433,18 +1489,37 @@ function DashboardContent() {
           borderBottom: "1px solid #2A3330",
         }}
       >
-        <a
-          href="/"
-          style={{
-            fontFamily: "'Playfair Display', serif",
-            fontSize: 20,
-            fontWeight: 900,
-            color: "#F0EBE3",
-            textDecoration: "none",
-          }}
-        >
-          Root<span style={{ color: "#1ABC9C" }}>Canal</span>
-        </a>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <a
+            href="/"
+            style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 20,
+              fontWeight: 900,
+              color: "#F0EBE3",
+              textDecoration: "none",
+            }}
+          >
+            Root<span style={{ color: "#1ABC9C" }}>Canal</span>
+          </a>
+          <a
+            href="/"
+            style={{
+              fontSize: 12,
+              color: "#4A5A57",
+              textDecoration: "none",
+              fontFamily: "'DM Sans', sans-serif",
+              border: "1px solid #2A3330",
+              borderRadius: 6,
+              padding: "3px 8px",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget).style.color = "#6B7B78"; (e.currentTarget).style.borderColor = "#3A4A47"; }}
+            onMouseLeave={e => { (e.currentTarget).style.color = "#4A5A57"; (e.currentTarget).style.borderColor = "#2A3330"; }}
+          >
+            ← Home
+          </a>
+        </div>
         <div
           className="rc-nav-url"
           style={{
@@ -1591,8 +1666,25 @@ function DashboardContent() {
             </button>
           ))}
 
+          {/* GIVE FEEDBACK */}
+          <div style={{ padding: "0 12px 8px", marginTop: "auto" }}>
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              style={{
+                width: "100%", padding: "8px 12px", background: "transparent",
+                border: "1px solid #2A3330", borderRadius: 8, color: "#4A5A57",
+                fontSize: 12, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                textAlign: "left", transition: "all 0.15s",
+              }}
+              onMouseEnter={e => { (e.target as HTMLButtonElement).style.color = "#6B7B78"; (e.target as HTMLButtonElement).style.borderColor = "#3A4A47"; }}
+              onMouseLeave={e => { (e.target as HTMLButtonElement).style.color = "#4A5A57"; (e.target as HTMLButtonElement).style.borderColor = "#2A3330"; }}
+            >
+              💬 Give Feedback
+            </button>
+          </div>
+
           {/* SIDEBAR FEATURE BLOCK */}
-          <div style={{ marginTop: "auto", padding: "20px 12px 12px" }}>
+          <div style={{ padding: "0 12px 12px" }}>
             {isGrowth ? (
               <div style={{ background: "rgba(26,188,156,0.06)", border: "1px solid rgba(26,188,156,0.15)", borderRadius: 12, padding: "12px 14px" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#1ABC9C", marginBottom: 4, fontFamily: "'DM Sans', sans-serif" }}>🚀 Growth Active</div>
@@ -4213,6 +4305,67 @@ function DashboardContent() {
       )}
 
       {/* ── SAVE REPORT BANNER (anonymous users) ── */}
+      {/* EXIT INTENT POPUP */}
+      {showExitIntent && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+          <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: "32px 28px", maxWidth: 400, width: "90%" }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#F7F3ED", marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Before you go...</div>
+            <div style={{ fontSize: 14, color: "#6B7B78", marginBottom: 24 }}>What stopped you from upgrading today?</div>
+            {["Too expensive", "Not sure it works", "Just browsing", "Need to think about it"].map((opt) => (
+              <button
+                key={opt}
+                onClick={() => submitExitIntent(opt)}
+                style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "12px 16px", marginBottom: 8,
+                  background: "#0D0F0E", border: "1px solid #2A3330",
+                  borderRadius: 10, color: "#B0BDB9", fontSize: 14,
+                  cursor: "pointer", transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { (e.currentTarget).style.borderColor = "#1ABC9C"; (e.currentTarget).style.color = "#F7F3ED"; }}
+                onMouseLeave={e => { (e.currentTarget).style.borderColor = "#2A3330"; (e.currentTarget).style.color = "#B0BDB9"; }}
+              >
+                {opt}
+              </button>
+            ))}
+            <button onClick={() => setShowExitIntent(false)} style={{ marginTop: 8, background: "none", border: "none", color: "#4A5A57", fontSize: 13, cursor: "pointer", width: "100%", textAlign: "center" }}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* FEEDBACK MODAL */}
+      {showFeedbackModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
+          <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: "28px 24px", maxWidth: 380, width: "90%" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#F7F3ED", marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Give Feedback</div>
+            <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 16 }}>Tell us what's working or what could be better.</div>
+            {feedbackSent ? (
+              <div style={{ color: "#1ABC9C", fontSize: 15, fontWeight: 600, textAlign: "center", padding: "16px 0" }}>✓ Thanks for your feedback!</div>
+            ) : (
+              <>
+                <textarea
+                  value={feedbackText}
+                  onChange={e => setFeedbackText(e.target.value)}
+                  placeholder="Your thoughts..."
+                  rows={4}
+                  style={{ width: "100%", padding: "10px 12px", background: "#0D0F0E", border: "1px solid #2A3330", borderRadius: 8, color: "#F7F3ED", fontSize: 14, resize: "vertical", boxSizing: "border-box", fontFamily: "'DM Sans', sans-serif" }}
+                />
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  <button onClick={submitFeedback} disabled={!feedbackText.trim()} style={{ flex: 1, padding: "10px", background: "#1ABC9C", border: "none", borderRadius: 8, color: "#000", fontWeight: 700, fontSize: 14, cursor: "pointer", opacity: !feedbackText.trim() ? 0.5 : 1 }}>
+                    Submit
+                  </button>
+                  <button onClick={() => setShowFeedbackModal(false)} style={{ padding: "10px 16px", background: "transparent", border: "1px solid #2A3330", borderRadius: 8, color: "#6B7B78", fontSize: 14, cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {showSaveBanner && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#151918", borderTop: "1px solid #2A3330", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 1000, fontFamily: "'DM Sans', sans-serif" }}>
           {bannerSent ? (

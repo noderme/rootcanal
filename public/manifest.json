@@ -1,0 +1,13 @@
+{
+  "name": "RootCanal",
+  "short_name": "RootCanal",
+  "description": "Dental Growth Intelligence — see how your clinic ranks on Google.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0F0E",
+  "theme_color": "#1ABC9C",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
