@@ -551,6 +551,8 @@ export async function GET(request: NextRequest) {
     let clinicPlaceId = "";
     let clinicName: string | undefined;
     let clinicReviewCount: number | undefined;
+    let clinicLat: number | undefined;
+    let clinicLng: number | undefined;
     try {
       const clinicSearchName = url
         .replace(/https?:\/\//, "")
@@ -602,6 +604,7 @@ export async function GET(request: NextRequest) {
         rating?: number;
         user_ratings_total?: number;
         formatted_address?: string;
+        geometry?: { location?: { lat?: number; lng?: number } };
       } | null = null;
 
       // Strategy 0: reuse placeId already found during city detection (most reliable)
@@ -610,7 +613,7 @@ export async function GET(request: NextRequest) {
         if (matched) {
           // Fetch full details for this placeId
           const s0Res = await fetch(
-            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cityDetectionPlaceId}&fields=place_id,name,rating,user_ratings_total,formatted_address&key=${apiKey}`,
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cityDetectionPlaceId}&fields=place_id,name,rating,user_ratings_total,formatted_address,geometry&key=${apiKey}`,
           );
           const s0Data = await s0Res.json();
           const s0Place = s0Data.result;
@@ -725,6 +728,8 @@ export async function GET(request: NextRequest) {
       }
       if (place?.name) clinicName = place.name;
       if (place?.user_ratings_total != null) clinicReviewCount = place.user_ratings_total;
+      if (place?.geometry?.location?.lat != null) clinicLat = place.geometry.location.lat;
+      if (place?.geometry?.location?.lng != null) clinicLng = place.geometry.location.lng;
     } catch (gbpError) {
       console.error("GBP check error:", gbpError);
     }
@@ -831,16 +836,14 @@ export async function GET(request: NextRequest) {
           !NON_CLINIC_KEYWORDS.some((kw) => p.name.toLowerCase().includes(kw)),
       );
 
-      // Find clinic's actual rank by matching place_id in the results array
+      // Find clinic's actual rank by matching place_id in the results array (fallback)
       if (clinicPlaceId) {
         const rankIndex = filteredPlaces.findIndex(
           (p: { place_id?: string }) => p.place_id === clinicPlaceId,
         );
         if (rankIndex !== -1) {
           userRank = rankIndex + 1;
-          console.log(`📍 Clinic actual rank: #${userRank}`);
-        } else {
-          console.log("📍 Clinic not found in top Places results — rank unknown");
+          console.log(`📍 Clinic Places rank (fallback): #${userRank}`);
         }
       }
 
@@ -872,6 +875,42 @@ export async function GET(request: NextRequest) {
       }
     } catch (placesError) {
       console.error("Places error:", placesError);
+    }
+
+    // ── 3b. SERPAPI ACCURATE RANK DETECTION ───────────
+    const serpapiKey = process.env.SERPAPI_KEY;
+    if (serpapiKey && clinicName && (clinicLat != null || city)) {
+      try {
+        const searchQuery = encodeURIComponent(`dentist near me`);
+        const ll = clinicLat != null && clinicLng != null
+          ? `@${clinicLat},${clinicLng},14z`
+          : "";
+        const locationParam = ll
+          ? `&ll=${encodeURIComponent(ll)}`
+          : `&location=${encodeURIComponent(city + ", USA")}`;
+        const serpapiUrl = `https://serpapi.com/search.json?engine=google_maps&q=${searchQuery}&type=search${locationParam}&api_key=${serpapiKey}`;
+        const serpapiRes = await fetch(serpapiUrl, { signal: AbortSignal.timeout(10000) });
+        const serpapiData = await serpapiRes.json();
+        const localResults: { place_id?: string; title?: string; position?: number }[] = serpapiData?.local_results || [];
+        if (localResults.length > 0 && clinicPlaceId) {
+          const serpRankIndex = localResults.findIndex(r => r.place_id === clinicPlaceId);
+          if (serpRankIndex !== -1) {
+            userRank = serpRankIndex + 1;
+            console.log(`📍 SerpAPI accurate rank: #${userRank}`);
+          } else {
+            // fallback: match by clinic name
+            const nameMatch = localResults.findIndex(r =>
+              r.title?.toLowerCase().includes((clinicName ?? "").toLowerCase().split(" ")[0])
+            );
+            if (nameMatch !== -1) {
+              userRank = nameMatch + 1;
+              console.log(`📍 SerpAPI name-match rank: #${userRank}`);
+            }
+          }
+        }
+      } catch (serpapiError) {
+        console.error("SerpAPI error:", serpapiError);
+      }
     }
 
     // ── 4. YELP LOOKUP VIA APIFY ──────────────────────
