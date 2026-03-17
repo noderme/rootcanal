@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function HomeInner() {
@@ -31,7 +32,7 @@ function HomeInner() {
   }, [searchParams, router]);
 
   useEffect(() => {
-    if (cityQuery.length < 2) { setCitySuggestions([]); return; }
+    if (cityQuery.length < 2) return;
     const t = setTimeout(() => {
       fetch(`/api/cities?input=${encodeURIComponent(cityQuery)}`)
         .then(r => r.json())
@@ -174,9 +175,9 @@ function HomeInner() {
 
       {/* NAV */}
       <nav className="rc-nav">
-        <a href="/" className="rc-logo">
+        <Link href="/" className="rc-logo">
           Root<span>Canal</span>
-        </a>
+        </Link>
         <div className="rc-nav-links">
           <a href="#how" className="rc-nav-link">
             How it works
@@ -293,9 +294,11 @@ function HomeInner() {
                       placeholder="City e.g. Austin, TX"
                       value={cityQuery || clinicCity}
                       onChange={(e) => {
-                        setCityQuery(e.target.value);
+                        const next = e.target.value;
+                        setCityQuery(next);
                         setClinicCity("");
                         setShowCitySuggestions(true);
+                        if (next.length < 2) setCitySuggestions([]);
                       }}
                       onFocus={() => setShowCitySuggestions(true)}
                       onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
@@ -887,7 +890,7 @@ function HomeInner() {
                 fontFamily: "Playfair Display, serif",
               }}
             >
-              Find out exactly who's stealing your patients
+              Find out exactly who&apos;s stealing your patients
             </h3>
             <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
               We identify the top 3 clinics outranking you, show their exact
@@ -1038,7 +1041,7 @@ function HomeInner() {
             </h3>
             <p style={{ color: "var(--muted)", lineHeight: 1.8, fontSize: 15 }}>
               We name the exact competitors to overtake, in order, with
-              estimated timelines. You'll know your next move every single
+              estimated timelines. You&apos;ll know your next move every single
               month. No agency needed, no guesswork — just a clear path from
               where you are to #1.
             </p>
@@ -1305,7 +1308,7 @@ function HomeInner() {
               We scan your website for every factor Google uses to rank dentists
               — speed, SEO, mobile, accessibility. For each problem we find, we
               explain exactly how to fix it in plain English. Forward it to your
-              web developer and it's done.
+              web developer and it&apos;s done.
             </p>
           </div>
           <div

@@ -52,5 +52,6 @@ export async function GET(request: NextRequest) {
     options: { shouldCreateUser: true, emailRedirectTo: undefined },
   });
 
-  return NextResponse.json({ found: true, email: match.email, maskedEmail: maskEmail(match.email) });
+  // Do not return the raw email (prevents account enumeration / PII leakage)
+  return NextResponse.json({ found: true, maskedEmail: maskEmail(match.email) });
 }

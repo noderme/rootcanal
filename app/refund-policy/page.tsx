@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const metadata = {
   title: "Refund Policy | RootCanal",
   description:
@@ -17,7 +19,7 @@ export default function RefundPage() {
     >
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <div style={{ marginBottom: 48 }}>
-          <a
+          <Link
             href="/"
             style={{
               fontSize: 13,
@@ -27,7 +29,7 @@ export default function RefundPage() {
             }}
           >
             ← Back to RootCanal
-          </a>
+          </Link>
         </div>
 
         <h1
@@ -101,23 +103,23 @@ export default function RefundPage() {
           }}
         >
           © 2026 RootCanal. All rights reserved. ·{" "}
-          <a href="/" style={{ color: "#C0392B", textDecoration: "none" }}>
+          <Link href="/" style={{ color: "#C0392B", textDecoration: "none" }}>
             rootcanal.us
-          </a>
+          </Link>
           {" · "}
-          <a
+          <Link
             href="/terms-and-conditions"
             style={{ color: "#C0392B", textDecoration: "none" }}
           >
             Terms
-          </a>
+          </Link>
           {" · "}
-          <a
+          <Link
             href="/privacy-policy"
             style={{ color: "#C0392B", textDecoration: "none" }}
           >
             Privacy
-          </a>
+          </Link>
         </div>
       </div>
     </main>

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, Suspense, useRef } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -641,176 +642,6 @@ function UpgradeModal({
           </button>
         </div>
         */}
-      </div>
-    </div>
-  );
-}
-
-// ─── SCORE RING ────────────────────────────────────────────────────────────────
-function ScoreRing({ score }: { score: number }) {
-  const radius = 54;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
-  const color = score >= 70 ? "#2ECC71" : score >= 40 ? "#F0A500" : "#E74C3C";
-
-  const toothLabel =
-    score >= 80
-      ? "Perfect Health"
-      : score >= 60
-        ? "Minor Cavities"
-        : score >= 40
-          ? "Needs Filling"
-          : "Critical";
-
-  const ToothSVG = () => {
-    if (score >= 80) {
-      return (
-        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
-          <path
-            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
-            fill="white"
-            stroke="#E0D9D0"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M14 8 C14 6 17 5 22 5 C27 5 30 6 30 8"
-            stroke="#F0EBE3"
-            strokeWidth="1"
-            fill="none"
-          />
-        </svg>
-      );
-    } else if (score >= 60) {
-      return (
-        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
-          <path
-            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
-            fill="#F5F0E8"
-            stroke="#C8B89A"
-            strokeWidth="1.5"
-          />
-          <circle cx="15" cy="18" r="3" fill="#8B6914" opacity="0.6" />
-          <circle cx="29" cy="22" r="2.5" fill="#8B6914" opacity="0.5" />
-          <circle cx="20" cy="28" r="2" fill="#7A5C10" opacity="0.4" />
-        </svg>
-      );
-    } else if (score >= 40) {
-      return (
-        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
-          <path
-            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
-            fill="#E8D5B0"
-            stroke="#B8824A"
-            strokeWidth="2"
-          />
-          <path
-            d="M12 14 Q18 22 16 30"
-            stroke="#8B4513"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M26 12 Q30 20 28 28"
-            stroke="#8B4513"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-          <circle cx="22" cy="32" r="4" fill="#7A3410" opacity="0.5" />
-        </svg>
-      );
-    } else {
-      return (
-        <svg width="44" height="52" viewBox="0 0 44 52" fill="none">
-          <path
-            d="M8 6 C8 2 14 0 22 0 C30 0 36 2 36 6 C40 8 44 14 44 22 C44 32 40 44 36 48 C34 52 30 52 28 48 C26 44 24 40 22 40 C20 40 18 44 16 48 C14 52 10 52 8 48 C4 44 0 32 0 22 C0 14 4 8 8 6Z"
-            fill="#C8956C"
-            stroke="#8B4513"
-            strokeWidth="2.5"
-          />
-          <path
-            d="M10 10 L34 42 M34 10 L10 42"
-            stroke="#5C1A00"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            opacity="0.6"
-          />
-          <circle cx="22" cy="26" r="6" fill="#7A1A00" opacity="0.4" />
-        </svg>
-      );
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: 140,
-        height: 140,
-      }}
-    >
-      <svg
-        width="140"
-        height="140"
-        viewBox="0 0 140 140"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          transform: "rotate(-90deg)",
-        }}
-      >
-        <circle
-          cx="70"
-          cy="70"
-          r={radius}
-          fill="none"
-          stroke="#1A2320"
-          strokeWidth="10"
-        />
-        <circle
-          cx="70"
-          cy="70"
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="10"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 1.5s ease" }}
-        />
-      </svg>
-      <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-        <ToothSVG />
-        <div
-          style={{
-            fontFamily: "'DM Mono', monospace",
-            fontSize: 20,
-            fontWeight: 700,
-            color,
-            lineHeight: 1,
-            marginTop: 6,
-          }}
-        >
-          {score}
-        </div>
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          bottom: -28,
-          left: "50%",
-          transform: "translateX(-50%)",
-          fontSize: 11,
-          color: "#6B7B78",
-          whiteSpace: "nowrap",
-          fontWeight: 500,
-        }}
-      >
-        {toothLabel}
       </div>
     </div>
   );
@@ -1609,7 +1440,7 @@ function DashboardContent() {
           RootCanal is built for dental clinics. Enter your clinic&apos;s
           website URL to get your free Google ranking report.
         </div>
-        <a
+        <Link
           href="/"
           style={{
             background: "#1ABC9C",
@@ -1623,7 +1454,7 @@ function DashboardContent() {
           }}
         >
           ← Enter Your Clinic URL
-        </a>
+        </Link>
       </div>
     );
 
@@ -1877,7 +1708,7 @@ function DashboardContent() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <a
+          <Link
             href="/"
             style={{
               fontFamily: "'Playfair Display', serif",
@@ -1888,8 +1719,8 @@ function DashboardContent() {
             }}
           >
             Root<span style={{ color: "#1ABC9C" }}>Canal</span>
-          </a>
-          <a
+          </Link>
+          <Link
             href="/"
             style={{
               fontSize: 12,
@@ -1905,7 +1736,7 @@ function DashboardContent() {
             onMouseLeave={e => { (e.currentTarget).style.color = "#4A5A57"; (e.currentTarget).style.borderColor = "#2A3330"; }}
           >
             ← Home
-          </a>
+          </Link>
         </div>
         <div
           className="rc-nav-url"
@@ -2003,7 +1834,7 @@ function DashboardContent() {
                 cursor: "pointer",
               }}
             >
-              Unlock Patients You're Losing →
+              Unlock Patients You&apos;re Losing →
             </button>
           )}
         </div>
@@ -4945,7 +4776,7 @@ function DashboardContent() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
           <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: "28px 24px", maxWidth: 380, width: "90%" }}>
             <div style={{ fontSize: 18, fontWeight: 700, color: "#F7F3ED", marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Give Feedback</div>
-            <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 16 }}>Tell us what's working or what could be better.</div>
+            <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 16 }}>Tell us what&apos;s working or what could be better.</div>
             {feedbackSent ? (
               <div style={{ color: "#1ABC9C", fontSize: 15, fontWeight: 600, textAlign: "center", padding: "16px 0" }}>✓ Thanks for your feedback!</div>
             ) : (

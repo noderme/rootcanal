@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const metadata = {
   title: "Privacy Policy | RootCanal",
   description:
@@ -17,7 +19,7 @@ export default function PrivacyPage() {
     >
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <div style={{ marginBottom: 48 }}>
-          <a
+          <Link
             href="/"
             style={{
               fontSize: 13,
@@ -27,7 +29,7 @@ export default function PrivacyPage() {
             }}
           >
             ← Back to RootCanal
-          </a>
+          </Link>
         </div>
 
         <h1
@@ -125,16 +127,16 @@ export default function PrivacyPage() {
           }}
         >
           © 2026 RootCanal. All rights reserved. ·{" "}
-          <a href="/" style={{ color: "#C0392B", textDecoration: "none" }}>
+          <Link href="/" style={{ color: "#C0392B", textDecoration: "none" }}>
             rootcanal.us
-          </a>
+          </Link>
           {" · "}
-          <a
+          <Link
             href="/terms-and-conditions"
             style={{ color: "#C0392B", textDecoration: "none" }}
           >
             Terms and Conditions
-          </a>
+          </Link>
         </div>
       </div>
     </main>

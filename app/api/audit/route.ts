@@ -4,7 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 // ── SUPABASE ──────────────────────────────────────────────
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  // Server route: use service role so caching works under RLS.
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 // ── HELPER: Parse "Street, City, State ZIP, USA" → "City, ST" ──

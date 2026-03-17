@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,63 @@ const supabase = createClient(
 const PRO_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_PRO_PRICE_ID!;
 const GROWTH_PRICE_ID = process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID!;
 const PADDLE_API_KEY = process.env.PADDLE_API_KEY!;
+const PADDLE_WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET!;
+
+function parsePaddleSignatureHeader(value: string | null): {
+  ts: string | null;
+  h1: string | null;
+} {
+  if (!value) return { ts: null, h1: null };
+  const parts = value.split(";").map((p) => p.trim());
+  const kv = new Map<string, string>();
+  for (const part of parts) {
+    const [k, ...rest] = part.split("=");
+    if (!k || rest.length === 0) continue;
+    kv.set(k, rest.join("="));
+  }
+  return { ts: kv.get("ts") ?? null, h1: kv.get("h1") ?? null };
+}
+
+function timingSafeEqualHex(aHex: string, bHex: string): boolean {
+  try {
+    const a = Buffer.from(aHex, "hex");
+    const b = Buffer.from(bHex, "hex");
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+function verifyPaddleWebhook({
+  rawBody,
+  signatureHeader,
+}: {
+  rawBody: string;
+  signatureHeader: string | null;
+}): { ok: true } | { ok: false; reason: string } {
+  if (!PADDLE_WEBHOOK_SECRET) {
+    return { ok: false, reason: "Missing PADDLE_WEBHOOK_SECRET" };
+  }
+  const { ts, h1 } = parsePaddleSignatureHeader(signatureHeader);
+  if (!ts || !h1) return { ok: false, reason: "Missing ts/h1" };
+
+  // Basic replay protection (5 minutes)
+  const tsNum = Number(ts);
+  if (!Number.isFinite(tsNum)) return { ok: false, reason: "Invalid ts" };
+  const skewMs = Math.abs(Date.now() - tsNum * 1000);
+  if (skewMs > 5 * 60 * 1000) return { ok: false, reason: "Stale ts" };
+
+  const computed = crypto
+    .createHmac("sha256", PADDLE_WEBHOOK_SECRET)
+    .update(`${ts}:${rawBody}`, "utf8")
+    .digest("hex");
+
+  if (!timingSafeEqualHex(computed, h1)) {
+    return { ok: false, reason: "Bad signature" };
+  }
+  return { ok: true };
+}
 
 function normalizeUrl(url: string): string {
   return url
@@ -35,11 +93,19 @@ async function getCustomerEmail(customerId: string): Promise<string | null> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text();
+    const verify = verifyPaddleWebhook({
+      rawBody: body,
+      signatureHeader: req.headers.get("paddle-signature"),
+    });
+    if (!verify.ok) {
+      console.warn("⚠️ Paddle webhook rejected:", verify.reason);
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
     const event = JSON.parse(body);
     const eventType: string = event.event_type;
 
     console.log("🪝 Paddle webhook received:", eventType);
-    console.log("🪝 Payload:", JSON.stringify(event.data, null, 2));
 
     // ── NEW SUBSCRIPTION / PAYMENT ────────────────────────────────────────────
     if (
