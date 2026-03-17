@@ -2179,7 +2179,7 @@ function DashboardContent() {
                   Visibility-based estimate from local search patterns
                 </div>
                 <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", marginBottom: 8, lineHeight: 1.5 }}>
-                  At your current ranking, a significant portion of nearby patients searching for a dentist are likely choosing a higher-ranked clinic before reaching yours.
+                  Many patients searching nearby are likely choosing higher-ranked clinics before reaching yours.
                 </div>
                 <div style={{ fontSize: 13, color: "rgba(240,235,227,0.35)", marginBottom: 4 }}>
                   Potential revenue opportunity:{" "}
