@@ -3418,11 +3418,33 @@ function DashboardContent() {
 
               // GROWTH MODE — user is NOT in top 3, show path to overtake leaders
               const stepsToShow = aheadComps;
+              // Free users: show next step + 2 upcoming, collapse the rest
+              const freeUser = !isPro && !isGrowth;
+              const visibleSteps = freeUser ? stepsToShow.slice(0, 3) : stepsToShow;
+              const hiddenCount = freeUser ? Math.max(0, stepsToShow.length - 3) : 0;
               return (
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 12 }}
                 >
-                  {stepsToShow.map((comp, i) => {
+                  {/* Focus message for free users */}
+                  {freeUser && stepsToShow.length > 0 && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "10px 14px",
+                      background: "rgba(26,188,156,0.06)",
+                      border: "1px solid rgba(26,188,156,0.15)",
+                      borderRadius: 10,
+                    }}>
+                      <span style={{ fontSize: 14 }}>🎯</span>
+                      <div style={{ fontSize: 12, color: "rgba(247,243,237,0.6)", lineHeight: 1.5 }}>
+                        Focus on the next step to begin improving visibility. The rest will follow.
+                      </div>
+                    </div>
+                  )}
+
+                  {visibleSteps.map((comp, i) => {
                     const reviewGap = Math.max(0, (comp.reviews || 0) - (reviews?.total || 0));
                     const weeks =
                       reviewGap <= 10
@@ -3430,7 +3452,8 @@ function DashboardContent() {
                         : reviewGap <= 30
                           ? "1–2 months"
                           : "2–4 months";
-                    const isLocked = !isPro && i > 0;
+                    // For free users: step 0 is active, steps 1 & 2 are upcoming (dimmed)
+                    const isUpcoming = freeUser && i > 0;
                     return (
                       <div
                         key={i}
@@ -3441,10 +3464,14 @@ function DashboardContent() {
                           gap: 16,
                           padding: "16px 20px",
                           borderRadius: 12,
-                          background: isLocked
-                            ? "#0D0F0E"
+                          background: isUpcoming
+                            ? "rgba(240,165,0,0.02)"
                             : "rgba(240,165,0,0.04)",
-                          border: `1px solid ${isLocked ? "#1A1F1E" : "rgba(240,165,0,0.2)"}`,
+                          border: `1px solid ${isUpcoming ? "rgba(240,165,0,0.08)" : "rgba(240,165,0,0.2)"}`,
+                          opacity: isUpcoming ? 0.45 : 1,
+                          filter: isUpcoming ? "blur(0.4px)" : "none",
+                          transition: "opacity 0.2s",
+                          pointerEvents: isUpcoming ? "none" : "auto",
                         }}
                       >
                         <div
@@ -3452,10 +3479,10 @@ function DashboardContent() {
                             width: 36,
                             height: 36,
                             borderRadius: "50%",
-                            background: isLocked
+                            background: isUpcoming
                               ? "#1A1F1E"
                               : "rgba(240,165,0,0.12)",
-                            border: `2px solid ${isLocked ? "#2A3330" : "#F0A500"}`,
+                            border: `2px solid ${isUpcoming ? "#2A3330" : "#F0A500"}`,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -3463,7 +3490,7 @@ function DashboardContent() {
                             flexShrink: 0,
                           }}
                         >
-                          {isLocked ? "🔒" : `${i + 1}`}
+                          {`${i + 1}`}
                         </div>
                         <div style={{ flex: 1 }}>
                           <div
@@ -3478,7 +3505,7 @@ function DashboardContent() {
                               style={{
                                 fontSize: 13,
                                 fontWeight: 700,
-                                color: isLocked ? "#6B7B78" : "#F0EBE3",
+                                color: isUpcoming ? "#6B7B78" : "#F0EBE3",
                               }}
                             >
                               Step {i + 1}: Overtake{" "}
@@ -3498,30 +3525,39 @@ function DashboardContent() {
                                   fontFamily: "'DM Mono', monospace",
                                 }}
                               >
-                                NEXT TARGET
+                                NEXT STEP
+                              </span>
+                            )}
+                            {isUpcoming && (
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  padding: "2px 8px",
+                                  borderRadius: 4,
+                                  background: "rgba(107,123,120,0.12)",
+                                  color: "#6B7B78",
+                                  fontFamily: "'DM Mono', monospace",
+                                }}
+                              >
+                                UP NEXT
                               </span>
                             )}
                           </div>
-                          {!isLocked ? (
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: "#6B7B78",
-                                lineHeight: 1.6,
-                              }}
-                            >
-                              {reviewGap > 0
-                                ? `Closing this review gap moves you up in rank and recaptures lost bookings — estimated `
-                                : `Consistent reviews protect your rank from competitors gaining on you — estimated `}
-                              <span style={{ color: "#F0A500", fontWeight: 600 }}>
-                                {weeks}
-                              </span>
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                              🔒 Unlock to see exactly how many patients you&apos;re losing to this clinic
-                            </div>
-                          )}
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#6B7B78",
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            {reviewGap > 0
+                              ? `Closing this review gap moves you up in rank and recaptures lost bookings — estimated `
+                              : `Consistent reviews protect your rank from competitors gaining on you — estimated `}
+                            <span style={{ color: isUpcoming ? "#6B7B78" : "#F0A500", fontWeight: 600 }}>
+                              {weeks}
+                            </span>
+                          </div>
                         </div>
                         <div style={{ textAlign: "right", flexShrink: 0 }}>
                           <div
@@ -3529,7 +3565,7 @@ function DashboardContent() {
                               fontFamily: "'DM Mono', monospace",
                               fontSize: 16,
                               fontWeight: 700,
-                              color: isLocked ? "#6B7B78" : "#F0A500",
+                              color: isUpcoming ? "#6B7B78" : "#F0A500",
                             }}
                           >
                             #{comp.googleRank}
@@ -3542,6 +3578,38 @@ function DashboardContent() {
                       </div>
                     );
                   })}
+
+                  {/* Collapsed remaining steps for free users */}
+                  {hiddenCount > 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "12px 16px",
+                        borderRadius: 10,
+                        background: "#0D0F0E",
+                        border: "1px dashed #1A1F1E",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setShowUpgradeModal(true)}
+                    >
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {Array.from({ length: Math.min(hiddenCount, 4) }).map((_, k) => (
+                          <div key={k} style={{
+                            width: 8, height: 8, borderRadius: "50%",
+                            background: "#2A3330",
+                          }} />
+                        ))}
+                      </div>
+                      <div style={{ flex: 1, fontSize: 12, color: "#6B7B78" }}>
+                        +{hiddenCount} more step{hiddenCount !== 1 ? "s" : ""} to reach Top 3
+                      </div>
+                      <span style={{ fontSize: 11, color: "#1ABC9C", fontWeight: 700 }}>
+                        Unlock →
+                      </span>
+                    </div>
+                  )}
 
                   {stepsToShow.length > 0 && (
                     <div
