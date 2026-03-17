@@ -979,7 +979,7 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: "#F0EBE3", display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#E74C3C", boxShadow: "0 0 6px #E74C3C", flexShrink: 0 }} />
               {data.competitors.length > 0
-                ? `${data.competitors.length} nearby clinics may be capturing ~${Math.min(95, data.competitors.length * 6)}% of new patient searches`
+                ? `${data.competitors.length} nearby clinics are likely capturing the majority of new patient searches in your area`
                 : "Nearby clinics may be capturing the majority of new patient searches"}
             </div>
             <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}>
@@ -1669,12 +1669,12 @@ function DashboardContent() {
             {/* Lost patients */}
             <div style={{ background: "#151918", border: "1px solid rgba(231,76,60,0.3)", borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Est. Lost Patients</div>
-                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", lineHeight: 1.5 }}>
-                  Patients choosing higher-ranked competitors every month.
+                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Patients Lost to Competitors / Month</div>
+                <div style={{ fontSize: 11, color: "rgba(240,235,227,0.28)", marginTop: 4, fontStyle: "italic" as const }}>
+                  Visibility-based estimate from local search patterns
                 </div>
               </div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 38, fontWeight: 900, color: "#E74C3C", lineHeight: 1, flexShrink: 0, marginLeft: 20, whiteSpace: "nowrap" as const }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 44, fontWeight: 900, color: "#E74C3C", lineHeight: 1, flexShrink: 0, marginLeft: 20, whiteSpace: "nowrap" as const }}>
                 {lostLow}–{lostHigh}
                 <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(231,76,60,0.6)", marginLeft: 4 }}>/mo</span>
               </div>
@@ -2145,8 +2145,8 @@ function DashboardContent() {
             : userRank > 5
             ? [8, 15]
             : [3, 8];
-          const revLow  = (lostLow  * 800);
-          const revHigh = (lostHigh * 1200);
+          const revLow  = lostLow  * patientValue;
+          const revHigh = lostHigh * patientValue;
           const fmt = (n: number) => "$" + n.toLocaleString();
           return (
             <div className="card" style={{
@@ -2167,22 +2167,24 @@ function DashboardContent() {
               <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(231,76,60,0.08)", pointerEvents: "none" }} />
               <div style={{ flex: 1, minWidth: 220 }}>
                 <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: "uppercase" as const, color: "#E74C3C", fontWeight: 700, marginBottom: 10 }}>
-                  ⚠ Estimated Patient Loss
+                  ⚠ Patients Lost to Competitors
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8, flexWrap: "wrap" as const }}>
-                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 48, fontWeight: 900, color: "#E74C3C", lineHeight: 1 }}>
+                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 56, fontWeight: 900, color: "#E74C3C", lineHeight: 1 }}>
                     {lostLow}–{lostHigh}
                   </span>
                   <span style={{ fontSize: 16, fontWeight: 600, color: "rgba(240,235,227,0.6)" }}>patients / month</span>
                 </div>
-                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", marginBottom: 6, lineHeight: 1.5 }}>
-                  Based on your Google ranking, an estimated{" "}
-                  <span style={{ color: "#E74C3C", fontWeight: 600 }}>{lostLow}–{lostHigh} patients</span>{" "}
-                  searching nearby choose a higher-ranked competitor each month.
+                <div style={{ fontSize: 11, color: "rgba(240,235,227,0.3)", marginBottom: 12, fontStyle: "italic" as const }}>
+                  Visibility-based estimate from local search patterns
                 </div>
-                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.35)" }}>
-                  Revenue opportunity:{" "}
+                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", marginBottom: 8, lineHeight: 1.5 }}>
+                  At your current ranking, a significant portion of nearby patients searching for a dentist are likely choosing a higher-ranked clinic before reaching yours.
+                </div>
+                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.35)", marginBottom: 4 }}>
+                  Potential revenue opportunity:{" "}
                   <span style={{ color: "#F0A500", fontWeight: 700 }}>{fmt(revLow)}–{fmt(revHigh)} / month</span>
+                  <span style={{ fontSize: 11, color: "rgba(240,235,227,0.2)", marginLeft: 6 }}>based on avg. patient value of ${patientValue}</span>
                 </div>
               </div>
               <div style={{ flexShrink: 0 }}>
@@ -2335,9 +2337,9 @@ function DashboardContent() {
         {activeTab === "health" && (
           <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
             {([
-              { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore >= 80 ? "A" : data.performanceScore >= 60 ? "B" : data.performanceScore >= 40 ? "C" : "F", label: "Website Speed", sublabel: "slow sites lose up to 20% of patient conversions", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
+              { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore >= 80 ? "A" : data.performanceScore >= 60 ? "B" : data.performanceScore >= 40 ? "C" : "F", label: "Website Speed", sublabel: "slow sites can meaningfully reduce patient conversions", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
               { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore >= 80 ? "A" : data.seoScore >= 60 ? "B" : data.seoScore >= 40 ? "C" : "F", label: "Google Findability", sublabel: "poor findability costs you new patient bookings daily", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
-              { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore >= 80 ? "A" : data.accessibilityScore >= 60 ? "B" : data.accessibilityScore >= 40 ? "C" : "F", label: "Website Usability", sublabel: "hard-to-use sites reduce form completions by 30%+", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
+              { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore >= 80 ? "A" : data.accessibilityScore >= 60 ? "B" : data.accessibilityScore >= 40 ? "C" : "F", label: "Website Usability", sublabel: "hard-to-use sites reduce form completions and enquiries", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
             ] as { icon: string; value: string | number; label: string; sublabel: string; color: string }[]).map((m, i, arr) => (
               <div key={i} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderRight: i < arr.length - 1 ? "1px solid #2A3330" : "none" }}>
                 <span style={{ fontSize: 20 }}>{m.icon}</span>
@@ -2471,7 +2473,7 @@ function DashboardContent() {
                 lineHeight: 1.6,
               }}
             >
-              Clinics in the top 3 by reviews capture up to 3x more bookings than those outside it.
+              Clinics in the top 3 by reviews consistently capture significantly more bookings than those outside it.
               <br />
               Send a direct review link to a patient in 2 seconds — it&apos;s the highest-ROI action you can take today.
             </div>
@@ -2732,15 +2734,15 @@ function DashboardContent() {
           const reviewGap = Math.max(0, topReviews - reviewCount);
           if (reviewGap > 0)
             priorities.push(
-              `Get ${Math.min(reviewGap, 20)} more Google reviews — each new review increases your chance of ranking in the top 3 by ~8%`,
+              `Get ${Math.min(reviewGap, 20)} more Google reviews — consistent review growth is the fastest way to move up in local rankings`,
             );
           if (data.performanceScore > 0 && data.performanceScore < 60)
             priorities.push(
-              `Speed up your website (${data.performanceScore}/100) — slow sites reduce patient conversions by up to 20%`,
+              `Speed up your website (${data.performanceScore}/100) — slow sites can meaningfully reduce patient conversions`,
             );
           if (reviews && reviews.responseRate < 70)
             priorities.push(
-              `Respond to patient reviews — clinics that respond receive ~10–15% more booking inquiries`,
+              `Respond to patient reviews — clinics that respond typically receive noticeably more booking enquiries`,
             );
           if (data.seoScore > 0 && data.seoScore < 70)
             priorities.push(
@@ -3403,7 +3405,7 @@ function DashboardContent() {
                           Keep your lead — collect reviews effortlessly
                         </div>
                         <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                          Every review widens your lead — clinics with more reviews attract 15–20% more appointment requests and hold rank longer.
+                          Every review widens your lead — clinics with more reviews consistently attract more appointment requests and hold rank longer.
                         </div>
                       </div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#1ABC9C", whiteSpace: "nowrap" }}>
@@ -4592,11 +4594,11 @@ function DashboardContent() {
                 ⚡ Easy Wins — Do These This Week
               </div>
               {[
-                "Add 'dentist + your city' to your homepage title — boosts local search ranking within days",
-                "Complete your Google Business Profile — complete profiles get 7x more clicks than incomplete ones",
-                "Ask your last 10 patients for a Google review — each review increases booking conversions by ~5%",
-                "Add your clinic hours to Google — missing hours cause patients to call competitors instead",
-                "Upload 10+ photos to Google Business — listings with photos get 35% more clicks",
+                "Add 'dentist + your city' to your homepage title — helps Google connect your site to local searches",
+                "Complete your Google Business Profile — complete profiles attract significantly more clicks than incomplete ones",
+                "Ask your last 10 patients for a Google review — consistent reviews are the fastest way to improve local visibility",
+                "Add your clinic hours to Google — missing hours cause patients to choose a clinic they can verify is open",
+                "Upload 10+ photos to Google Business — listings with photos consistently attract more engagement",
               ].map((tip, i) => (
                 <div
                   key={i}
