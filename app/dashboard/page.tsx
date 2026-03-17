@@ -350,7 +350,7 @@ function UpgradeModal({
               marginBottom: 10,
             }}
           >
-            {mode === "growth-only" ? "Upgrade Your Plan" : "Choose Your Plan"}
+            {mode === "growth-only" ? "Unlock Growth Plan" : "Choose Your Plan"}
           </div>
           <div
             style={{
@@ -2028,7 +2028,7 @@ function DashboardContent() {
                 padding: "14px 12px",
               }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: isPro ? "#D4A843" : "#1ABC9C", marginBottom: 3, fontFamily: "'DM Sans', sans-serif" }}>
-                  {isPro ? "Unlock with Growth" : "Don't lose patients"}
+                  {isPro ? "Move to #1 Faster" : "Recover Lost Patients"}
                 </div>
                 <div style={{ fontSize: 10, color: "#4A5A57", marginBottom: 10, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 }}>
                   {isPro ? "Accelerate to #1 faster" : "to nearby competitors."}
@@ -3620,7 +3620,7 @@ function DashboardContent() {
                         +{hiddenCount} more step{hiddenCount !== 1 ? "s" : ""} to reach Top 3
                       </div>
                       <span style={{ fontSize: 11, color: "#1ABC9C", fontWeight: 700 }}>
-                        Unlock →
+                        See How to Move Up →
                       </span>
                     </div>
                   )}
