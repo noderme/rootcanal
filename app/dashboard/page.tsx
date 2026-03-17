@@ -1060,6 +1060,11 @@ function DashboardContent() {
   // Upgrade modal
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  // Navigation UX
+  const [compactHero, setCompactHero] = useState(false);
+  const [tabFlash, setTabFlash] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const displayCity = city || data?.city || "";
 
   // "I'm already Pro" re-auth modal (for free users who lost localStorage)
@@ -1296,6 +1301,30 @@ function DashboardContent() {
       });
     return () => clearInterval(interval);
   }, [url, nameParam, city]);
+
+  // Compact hero + scroll listener
+  useEffect(() => {
+    const onScroll = () => setCompactHero(window.scrollY > 180);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Navigate tab with smooth scroll + section flash
+  type TabId = "competitors" | "roadmap" | "reviews" | "score" | "health" | "map";
+  function navigateToTab(id: TabId) {
+    setActiveTab(id);
+    setTabFlash(false);
+    requestAnimationFrame(() => {
+      const el = contentRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - 72;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      setTimeout(() => {
+        setTabFlash(true);
+        setTimeout(() => setTabFlash(false), 800);
+      }, 350);
+    });
+  }
 
   // Exit intent — desktop mouse leave + mobile back button
   useEffect(() => {
@@ -1733,7 +1762,17 @@ function DashboardContent() {
         ::-webkit-scrollbar-thumb { background: #2A3330; border-radius: 3px; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes sectionGlow { 0% { box-shadow: 0 0 0 0 rgba(26,188,156,0); } 30% { box-shadow: 0 0 0 2px rgba(26,188,156,0.28), inset 0 0 24px rgba(26,188,156,0.04); } 100% { box-shadow: 0 0 0 0 rgba(26,188,156,0); } }
+        @keyframes tabUnderline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+        @keyframes progressFill { from { width: 0%; } to { width: var(--pw, 12%); } }
         .card { animation: fadeUp 0.5s ease both; }
+        .rc-section-flash { animation: sectionGlow 0.8s ease-out forwards !important; }
+        .rc-hero-sticky { position: sticky; top: 65px; z-index: 20; transition: padding 0.25s ease, box-shadow 0.25s ease; }
+        .rc-hero-compact .rc-hero-card { padding: 14px 20px !important; }
+        .rc-hero-compact .rc-hero-number { font-size: 42px !important; line-height: 1 !important; }
+        .rc-hero-compact .rc-hero-microcopy { display: none !important; }
+        .rc-hero-compact .rc-hero-desc { display: none !important; }
+        .rc-hero-compact .rc-hero-revenue { display: none !important; }
         .nav-link { color: #6B7B78; text-decoration: none; font-size: 14px; font-weight: 500; }
         .nav-link:hover { color: #F0EBE3; }
         .upgrade-btn:hover { opacity: 0.85 !important; }
@@ -1748,6 +1787,9 @@ function DashboardContent() {
           @page { margin: 20px; background: #0D0F0E; }
         }
         @media (max-width: 768px) {
+          .rc-hero-sticky { top: 56px !important; }
+          .rc-hero-compact .rc-hero-card { padding: 12px 16px !important; }
+          .rc-hero-compact .rc-hero-number { font-size: 34px !important; }
           .rc-nav-url { display: none !important; }
           .rc-nav-export { display: none !important; }
           .rc-score-hero { grid-template-columns: 1fr !important; }
@@ -1974,7 +2016,7 @@ function DashboardContent() {
           ] as const).filter(item => (isPro || isGrowth) || item.freeVisible).map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => navigateToTab(item.id)}
               className="rc-sidebar-btn"
               style={{
                 display: "block",
@@ -2137,6 +2179,7 @@ function DashboardContent() {
         </div>
 
         {/* ── PATIENT LOSS HERO CARD ───────────────────────── */}
+        <div className={`rc-hero-sticky${compactHero ? " rc-hero-compact" : ""}`}>
         {(userRank == null || userRank > 3) && (() => {
           const [lostLow, lostHigh] = userRank == null || userRank > 20
             ? [25, 40]
@@ -2149,12 +2192,12 @@ function DashboardContent() {
           const revHigh = lostHigh * patientValue;
           const fmt = (n: number) => "$" + n.toLocaleString();
           return (
-            <div className="card" style={{
+            <div className="card rc-hero-card" style={{
               background: "linear-gradient(135deg, #1a0a0a 0%, #200d00 50%, #0d1a14 100%)",
               border: "1px solid rgba(231,76,60,0.35)",
               borderRadius: 16,
               padding: "28px 32px",
-              marginBottom: 24,
+              marginBottom: 0,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -2162,6 +2205,8 @@ function DashboardContent() {
               flexWrap: "wrap" as const,
               position: "relative" as const,
               overflow: "hidden",
+              boxShadow: compactHero ? "0 4px 24px rgba(0,0,0,0.5)" : "none",
+              transition: "padding 0.25s ease, box-shadow 0.25s ease",
             }}>
               {/* Glow accent */}
               <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(231,76,60,0.08)", pointerEvents: "none" }} />
@@ -2170,18 +2215,18 @@ function DashboardContent() {
                   ⚠ Patients Lost to Competitors
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8, flexWrap: "wrap" as const }}>
-                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 56, fontWeight: 900, color: "#E74C3C", lineHeight: 1 }}>
+                  <span className="rc-hero-number" style={{ fontFamily: "'Playfair Display', serif", fontSize: 56, fontWeight: 900, color: "#E74C3C", lineHeight: 1, transition: "font-size 0.25s ease" }}>
                     {lostLow}–{lostHigh}
                   </span>
                   <span style={{ fontSize: 16, fontWeight: 600, color: "rgba(240,235,227,0.6)" }}>patients / month</span>
                 </div>
-                <div style={{ fontSize: 11, color: "rgba(240,235,227,0.3)", marginBottom: 12, fontStyle: "italic" as const }}>
+                <div className="rc-hero-microcopy" style={{ fontSize: 11, color: "rgba(240,235,227,0.3)", marginBottom: 12, fontStyle: "italic" as const }}>
                   Visibility-based estimate from local search patterns
                 </div>
-                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", marginBottom: 8, lineHeight: 1.5 }}>
+                <div className="rc-hero-desc" style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", marginBottom: 8, lineHeight: 1.5 }}>
                   Many patients searching nearby are likely choosing higher-ranked clinics before reaching yours.
                 </div>
-                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.35)", marginBottom: 4 }}>
+                <div className="rc-hero-revenue" style={{ fontSize: 13, color: "rgba(240,235,227,0.35)", marginBottom: 4 }}>
                   Potential revenue opportunity:{" "}
                   <span style={{ color: "#F0A500", fontWeight: 700 }}>{fmt(revLow)}–{fmt(revHigh)} / month</span>
                   <span style={{ fontSize: 11, color: "rgba(240,235,227,0.2)", marginLeft: 6 }}>based on avg. patient value of ${patientValue}</span>
@@ -2210,6 +2255,7 @@ function DashboardContent() {
             </div>
           );
         })()}
+        </div>{/* /rc-hero-sticky */}
 
         {/* ── TRANSITION LINE → review action ─────────────── */}
         {data.placeId && activeTab !== "reviews" && (
@@ -2869,14 +2915,15 @@ function DashboardContent() {
           ).filter(tab => (isPro || isGrowth) || tab.freeVisible).map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => navigateToTab(tab.id)}
               className="rc-bottom-tab-btn"
               style={{
                 flex: 1,
                 padding: "6px 4px",
                 border: "none",
+                borderTop: activeTab === tab.id ? "2px solid #1ABC9C" : "2px solid transparent",
                 cursor: "pointer",
-                background: "transparent",
+                background: activeTab === tab.id ? "rgba(26,188,156,0.06)" : "transparent",
                 color: activeTab === tab.id ? "#1ABC9C" : "#4A5A57",
                 fontSize: 18,
                 fontFamily: "'DM Sans', sans-serif",
@@ -2884,6 +2931,7 @@ function DashboardContent() {
                 flexDirection: "column",
                 alignItems: "center",
                 gap: 2,
+                transition: "background 0.15s, color 0.15s, border-color 0.15s",
               }}
             >
               <span>{tab.label}</span>
@@ -2891,6 +2939,9 @@ function DashboardContent() {
             </button>
           ))}
         </div>
+
+        {/* ── CONTENT ANCHOR (scroll target) ───────────────── */}
+        <div ref={contentRef} style={{ marginTop: 24 }} />
 
         {/* COMPETITORS TAB */}
         {activeTab === "competitors" && (
@@ -3224,7 +3275,7 @@ function DashboardContent() {
         {/* ROADMAP TAB */}
         {activeTab === "roadmap" && (
           <div
-            className="card"
+            className={tabFlash ? "card rc-section-flash" : "card"}
             style={{
               background: "#151918",
               border: "1px solid #2A3330",
@@ -3255,6 +3306,13 @@ function DashboardContent() {
                 </div>
                 <div style={{ fontSize: 12, color: "#6B7B78" }}>
                   Scores are out of 100 — combining your Google reviews, SEO, and website quality.
+                </div>
+                {/* Micro-progress bar */}
+                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flex: 1, height: 4, background: "#1A1F1E", borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: "12%", background: "linear-gradient(90deg, #1ABC9C, #16a085)", borderRadius: 4, animation: "progressFill 1s ease-out forwards", ["--pw" as string]: "12%" }} />
+                  </div>
+                  <span style={{ fontSize: 11, color: "#1ABC9C", fontWeight: 600, whiteSpace: "nowrap" as const }}>Step 1 of your visibility journey</span>
                 </div>
               </div>
               <span
@@ -3722,7 +3780,7 @@ function DashboardContent() {
         {/* REVIEWS TAB */}
         {activeTab === "reviews" && (
           <div
-            className="card"
+            className={tabFlash ? "card rc-section-flash" : "card"}
             style={{
               background: "#151918",
               border: "1px solid #2A3330",
@@ -4251,7 +4309,7 @@ function DashboardContent() {
         {/* SCORE / INTELLIGENCE TAB */}
         {activeTab === "score" && (
           <div
-            className="card"
+            className={tabFlash ? "card rc-section-flash" : "card"}
             style={{
               background: "#151918",
               border: "1px solid #2A3330",
@@ -4428,7 +4486,7 @@ function DashboardContent() {
         {/* HEALTH TAB */}
         {activeTab === "health" && (
           <div
-            className="card"
+            className={tabFlash ? "card rc-section-flash" : "card"}
             style={{
               background: "#151918",
               border: "1px solid #2A3330",
