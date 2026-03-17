@@ -54,6 +54,7 @@ interface AuditResult {
   healthgradesReviews?: number;
   healthgradesClaimed?: boolean;
   healthgradesUrl?: string;
+  notInTop60?: boolean;
   cached?: boolean;
 }
 
@@ -825,85 +826,8 @@ export async function GET(request: NextRequest) {
       console.error("Listings check error:", listingError);
     }
 
-    // ── 5. COMPETITORS via Google Places ──────────────
-    let competitors: {
-      name: string;
-      rating: number;
-      reviews: number;
-      address: string;
-      googleRank: number;
-    }[] = [];
+    // ── 3b. SERPAPI ACCURATE RANK DETECTION (runs first so Places can paginate smartly) ───
     let userRank: number | undefined;
-
-    try {
-      // Prefer lat/lng nearbysearch (consistent radius) over city textsearch (variable results)
-      const placesUrl = clinicLat != null && clinicLng != null
-        ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${clinicLat},${clinicLng}&radius=5000&type=dentist&key=${apiKey}`
-        : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+clinic+in+${encodeURIComponent(city)}&key=${apiKey}`;
-      const placesRes = await fetch(placesUrl);
-      const placesData = await placesRes.json();
-
-      console.log("Places status:", placesData.status);
-
-      // Filter out non-clinic results (universities, hospitals, schools)
-      const NON_CLINIC_KEYWORDS = [
-        "university",
-        "college",
-        "school",
-        "hospital",
-        "nyu",
-        "columbia",
-        "institute",
-        "academy",
-        "clinic at",
-      ];
-      const filteredPlaces = (placesData.results || []).filter(
-        (p: { name: string }) =>
-          !NON_CLINIC_KEYWORDS.some((kw) => p.name.toLowerCase().includes(kw)),
-      );
-
-      // Find clinic's actual rank by matching place_id in the results array (fallback)
-      if (clinicPlaceId) {
-        const rankIndex = filteredPlaces.findIndex(
-          (p: { place_id?: string }) => p.place_id === clinicPlaceId,
-        );
-        if (rankIndex !== -1) {
-          userRank = rankIndex + 1;
-          console.log(`📍 Clinic Places rank (fallback): #${userRank}`);
-        }
-      }
-
-      if (filteredPlaces.length > 0) {
-        // Assign real Google rank (position in Places results = Google prominence rank)
-        // then exclude the user's own clinic from the competitor list
-        competitors = filteredPlaces
-          .map(
-            (
-              place: {
-                name: string;
-                rating?: number;
-                user_ratings_total?: number;
-                formatted_address?: string;
-                place_id?: string;
-              },
-              index: number,
-            ) => ({
-              name: place.name,
-              rating: place.rating ?? 0,
-              reviews: place.user_ratings_total ?? 0,
-              address: place.formatted_address ?? "",
-              googleRank: index + 1,
-              _placeId: place.place_id,
-            }),
-          )
-          .filter((c: { _placeId?: string }) => c._placeId !== clinicPlaceId)
-          .map(({ _placeId: _, ...rest }: { _placeId?: string; name: string; rating: number; reviews: number; address: string; googleRank: number }) => rest);
-      }
-    } catch (placesError) {
-      console.error("Places error:", placesError);
-    }
-
-    // ── 3b. SERPAPI ACCURATE RANK DETECTION ───────────
     const serpapiKey = process.env.SERPAPI_KEY;
     if (serpapiKey && clinicName && (clinicLat != null || city)) {
       try {
@@ -924,7 +848,6 @@ export async function GET(request: NextRequest) {
             userRank = serpRankIndex + 1;
             console.log(`📍 SerpAPI accurate rank: #${userRank}`);
           } else {
-            // fallback: match by clinic name
             const nameMatch = localResults.findIndex(r =>
               r.title?.toLowerCase().includes((clinicName ?? "").toLowerCase().split(" ")[0])
             );
@@ -937,6 +860,99 @@ export async function GET(request: NextRequest) {
       } catch (serpapiError) {
         console.error("SerpAPI error:", serpapiError);
       }
+    }
+
+    // ── 5. COMPETITORS via Google Places (paginated, windowed around userRank) ──────────
+    let competitors: {
+      name: string;
+      rating: number;
+      reviews: number;
+      address: string;
+      googleRank: number;
+    }[] = [];
+    let notInTop60 = false;
+
+    try {
+      const NON_CLINIC_KEYWORDS = ["university","college","school","hospital","nyu","columbia","institute","academy","clinic at"];
+
+      type PlaceResult = { name: string; rating?: number; user_ratings_total?: number; formatted_address?: string; place_id?: string };
+
+      const baseUrl = clinicLat != null && clinicLng != null
+        ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${clinicLat},${clinicLng}&radius=5000&type=dentist&key=${apiKey}`
+        : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+clinic+in+${encodeURIComponent(city)}&key=${apiKey}`;
+
+      // Determine how many pages we need:
+      // We want min(15, userRank-1) ahead + the user row + min(5, ...) behind
+      // Worst case: userRank=60 → need all 3 pages (60 results)
+      // If userRank unknown, fetch 1 page and try to find them
+      const pagesNeeded = !userRank ? 1 : userRank <= 20 ? 1 : userRank <= 40 ? 2 : 3;
+
+      const allPlaces: PlaceResult[] = [];
+      let nextPageToken: string | undefined;
+
+      for (let page = 0; page < pagesNeeded; page++) {
+        const pageUrl = page === 0
+          ? baseUrl
+          : `https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=${nextPageToken}&key=${apiKey}`;
+
+        if (page > 0) {
+          // Google requires a short delay before the next_page_token is valid
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        const res = await fetch(pageUrl);
+        const data = await res.json();
+        console.log(`Places page ${page + 1} status:`, data.status);
+
+        const pageResults: PlaceResult[] = (data.results || []).filter(
+          (p: PlaceResult) => !NON_CLINIC_KEYWORDS.some(kw => p.name.toLowerCase().includes(kw))
+        );
+        allPlaces.push(...pageResults);
+        nextPageToken = data.next_page_token;
+        if (!nextPageToken) break;
+      }
+
+      // Fallback rank detection from Places if SerpAPI didn't find them
+      if (!userRank && clinicPlaceId) {
+        const rankIndex = allPlaces.findIndex(p => p.place_id === clinicPlaceId);
+        if (rankIndex !== -1) {
+          userRank = rankIndex + 1;
+          console.log(`📍 Places fallback rank: #${userRank}`);
+        }
+      }
+
+      // If still not found after fetching all available pages, user is beyond top 60
+      if (!userRank) {
+        notInTop60 = true;
+        console.log("📍 Clinic not found in top 60 results");
+      }
+
+      if (allPlaces.length > 0) {
+        // Assign real Google ranks across all pages
+        const ranked = allPlaces.map((place, index) => ({
+          name: place.name,
+          rating: place.rating ?? 0,
+          reviews: place.user_ratings_total ?? 0,
+          address: place.formatted_address ?? "",
+          googleRank: index + 1,
+          _placeId: place.place_id,
+        }));
+
+        // Exclude user's own clinic
+        const withoutUser = ranked.filter(c => c._placeId !== clinicPlaceId);
+
+        if (userRank) {
+          // Window: up to 15 ahead + up to 5 behind
+          const ahead = withoutUser.filter(c => c.googleRank < userRank!).slice(-15); // last 15 = closest to user
+          const behind = withoutUser.filter(c => c.googleRank > userRank!).slice(0, 5);
+          competitors = [...ahead, ...behind].map(({ _placeId: _, ...rest }) => rest);
+        } else {
+          // Not found — show top 15 as all "ahead"
+          competitors = withoutUser.slice(0, 15).map(({ _placeId: _, ...rest }) => rest);
+        }
+      }
+    } catch (placesError) {
+      console.error("Places error:", placesError);
     }
 
     // ── 4. YELP LOOKUP VIA SERPAPI ────────────────────
@@ -1054,6 +1070,7 @@ export async function GET(request: NextRequest) {
       healthgradesReviews,
       healthgradesClaimed,
       healthgradesUrl,
+      notInTop60,
     };
 
     setCache(cacheKey, result);

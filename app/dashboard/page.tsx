@@ -45,6 +45,7 @@ interface AuditData {
   healthgradesReviews?: number;
   healthgradesClaimed?: boolean;
   healthgradesUrl?: string;
+  notInTop60?: boolean;
 }
 
 interface ReviewData {
@@ -1887,6 +1888,22 @@ function DashboardContent() {
         {/* ── COMPETITORS TAB CONTENT ─────────────────────── */}
         {activeTab === "competitors" && (<>
 
+        {/* NOT IN TOP 60 BANNER */}
+        {data.notInTop60 && (
+          <div className="card" style={{ background: "rgba(231,76,60,0.1)", border: "1px solid rgba(231,76,60,0.35)", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+            <span style={{ fontSize: 28 }}>🚨</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#E74C3C", marginBottom: 3 }}>Your practice doesn&apos;t appear in the top 60 Google results</div>
+              <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}>Patients searching for a dentist nearby won&apos;t find you. Collecting more Google reviews is the fastest way to move up.</div>
+            </div>
+            {!isGrowth && (
+              <button onClick={() => setShowUpgradeModal(true)} style={{ marginLeft: "auto", flexShrink: 0, background: "#E74C3C", color: "#fff", border: "none", padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                Fix This →
+              </button>
+            )}
+          </div>
+        )}
+
         {/* RANK VISIBILITY BANNER */}
         {data.competitors.length > 0 && (() => {
           const inTopThree = (typeof userRank === "number" ? userRank : 8) <= 3;
@@ -2767,6 +2784,22 @@ function DashboardContent() {
             </div>
 
             {(() => {
+              // Not visible in top 60 — can't build a rank-based roadmap
+              if (data.notInTop60) {
+                return (
+                  <div style={{ textAlign: "center", padding: "32px 20px" }}>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>🚨</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#E74C3C", marginBottom: 8 }}>Your practice isn&apos;t visible in the top 60 Google results</div>
+                    <div style={{ fontSize: 13, color: "#6B7B78", lineHeight: 1.6, maxWidth: 420, margin: "0 auto 20px" }}>
+                      A growth roadmap requires a baseline rank. Start by collecting more Google reviews — that&apos;s the single fastest way to appear in local search results.
+                    </div>
+                    <button onClick={() => setActiveTab("reviews")} style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "12px 24px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      Start Getting Reviews →
+                    </button>
+                  </div>
+                );
+              }
+
               const isTopThree = typeof userRank === "number" && userRank <= 3;
 
               // Competitors with lower googleRank number = ranked above user on Google
