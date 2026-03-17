@@ -1064,6 +1064,7 @@ function DashboardContent() {
   const [compactHero, setCompactHero] = useState(false);
   const [tabFlash, setTabFlash] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   const displayCity = city || data?.city || "";
 
@@ -1317,7 +1318,8 @@ function DashboardContent() {
     requestAnimationFrame(() => {
       const el = contentRef.current;
       if (!el) return;
-      const top = el.getBoundingClientRect().top + window.scrollY - 72;
+      const heroH = heroRef.current?.offsetHeight ?? 0;
+    const top = el.getBoundingClientRect().top + window.scrollY - 72 - heroH;
       window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
       setTimeout(() => {
         setTabFlash(true);
@@ -2179,7 +2181,7 @@ function DashboardContent() {
         </div>
 
         {/* ── PATIENT LOSS HERO CARD ───────────────────────── */}
-        <div className={`rc-hero-sticky${compactHero ? " rc-hero-compact" : ""}`}>
+        <div ref={heroRef} className={`rc-hero-sticky${compactHero ? " rc-hero-compact" : ""}`}>
         {(userRank == null || userRank > 3) && (() => {
           const [lostLow, lostHigh] = userRank == null || userRank > 20
             ? [25, 40]
