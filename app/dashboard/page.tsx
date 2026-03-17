@@ -1300,38 +1300,32 @@ function DashboardContent() {
           <div style={{ fontSize: 13, color: "#4A5E58" }}>{url}</div>
         </div>
 
-        {/* Terminal card */}
-        <div style={{ width: "100%", maxWidth: 520, background: "#0A0C0B", border: "1px solid #1E2A27", borderRadius: 12, overflow: "hidden" }}>
-          {/* Terminal title bar */}
-          <div style={{ background: "#111513", borderBottom: "1px solid #1E2A27", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#3A3A3A" }} />
-            <span style={{ marginLeft: 8, fontSize: 11, color: "#3A5349", letterSpacing: 1 }}>rootcanal — live scan</span>
-            <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#1ABC9C" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1ABC9C", display: "inline-block", animation: "blink 1.2s step-end infinite" }} />
-              LIVE
-            </span>
-          </div>
-
-          {/* Step log */}
-          <div style={{ padding: "20px 20px 16px" }}>
+        {/* Loading card */}
+        <div style={{ width: "100%", maxWidth: 480, background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: "28px 28px 24px" }}>
+          {/* Steps */}
+          <div style={{ marginBottom: 24, display: "flex", flexDirection: "column", alignItems: "center" }}>
             {loadingSteps.map((step, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, animation: i <= loadingStep ? `fadeSlideUp 0.3s ease both` : "none", opacity: i <= loadingStep ? 1 : 0.15 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, width: 16, textAlign: "right", color: i < loadingStep ? "#2ECC71" : i === loadingStep ? "#1ABC9C" : "#2A3330", flexShrink: 0 }}>
-                  {i < loadingStep ? "✓" : i === loadingStep ? "›" : "·"}
-                </span>
-                <span style={{ fontSize: 13, color: i < loadingStep ? "#4A7A6A" : i === loadingStep ? "#F0EBE3" : "#2A3330", fontFamily: "monospace", letterSpacing: "0.02em" }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, width: "100%", maxWidth: 360, opacity: i <= loadingStep ? 1 : 0.2, animation: i <= loadingStep ? `fadeSlideUp 0.3s ease both` : "none" }}>
+                <div style={{ width: 20, height: 20, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: i < loadingStep ? "#1ABC9C" : "transparent", border: i < loadingStep ? "none" : `2px solid ${i === loadingStep ? "#1ABC9C" : "#2A3330"}` }}>
+                  {i < loadingStep
+                    ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#000" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    : i === loadingStep
+                    ? <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#1ABC9C", animation: "blink 1.2s step-end infinite" }} />
+                    : null}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: i === loadingStep ? 500 : 400, color: i < loadingStep ? "#4A7A6A" : i === loadingStep ? "#F0EBE3" : "#2A3330" }}>
                   {step.label}
-                  {i === loadingStep && <span style={{ animation: "blink 1s step-end infinite", color: "#1ABC9C" }}>▋</span>}
                 </span>
               </div>
             ))}
           </div>
 
           {/* Progress bar */}
-          <div style={{ height: 3, background: "#1E2A27" }}>
-            <div style={{ height: "100%", background: "linear-gradient(90deg, #1ABC9C, #2ECC71)", width: `${((loadingStep + 1) / loadingSteps.length) * 100}%`, transition: "width 0.8s ease" }} />
+          <div style={{ height: 4, background: "#1E2A27", borderRadius: 99 }}>
+            <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg, #1ABC9C, #2ECC71)", width: `${((loadingStep + 1) / loadingSteps.length) * 100}%`, transition: "width 0.8s ease" }} />
+          </div>
+          <div style={{ marginTop: 12, fontSize: 12, color: "#3A5349", textAlign: "center" }}>
+            {Math.round(((loadingStep + 1) / loadingSteps.length) * 100)}% complete
           </div>
         </div>
 
