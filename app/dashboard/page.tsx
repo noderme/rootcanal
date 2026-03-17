@@ -311,6 +311,7 @@ function UpgradeModal({
       onClick={onClose}
     >
       <div
+        className="rc-upgrade-modal"
         style={{
           background: "#151918",
           borderRadius: 24,
@@ -318,6 +319,7 @@ function UpgradeModal({
           maxWidth: mode === "growth-only" ? 460 : 820,
           position: "relative",
           padding: 40,
+          boxSizing: "border-box" as const,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -964,7 +966,7 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
 
   return (
     <div style={{ position: "relative" }}>
-      <div ref={mapRef} style={{ width: "100%", height: 420, borderRadius: 12, overflow: "hidden" }} />
+      <div ref={mapRef} className="rc-map-wrap" style={{ width: "100%", height: 420, borderRadius: 12, overflow: "hidden" }} />
       {!isPro && (
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
@@ -1647,7 +1649,7 @@ function DashboardContent() {
           .rc-hero-review-row input { width: 100% !important; }
           .rc-hero-review-row button { width: 100% !important; }
           .rc-competitor-grid { grid-template-columns: 1fr !important; }
-          .rc-main { padding: 16px !important; }
+          .rc-main { padding: 16px 12px 80px !important; }
           nav { padding: 12px 16px !important; }
           .rc-upgrade-grid { grid-template-columns: 1fr !important; }
           .rc-upgrade-btns { flex-direction: column !important; align-items: stretch !important; }
@@ -1656,10 +1658,30 @@ function DashboardContent() {
           .rc-roadmap-item { flex-wrap: wrap !important; }
           .rc-sidebar { display: none !important; }
           .rc-bottom-tabs { display: flex !important; }
+          /* How it works pipeline */
+          .rc-how-it-works { flex-wrap: wrap !important; justify-content: center !important; gap: 8px !important; }
+          .rc-how-it-works-step { flex: none !important; width: calc(33% - 8px) !important; min-width: 90px !important; }
+          .rc-how-it-works-arrow { display: none !important; }
+          /* Competitors table → card rows */
+          .rc-comp-table-header { display: none !important; }
+          .rc-comp-row-grid { grid-template-columns: 1fr 1fr !important; row-gap: 4px !important; }
+          /* Growth upsell banner */
+          .rc-growth-banner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
+          /* Save banner */
+          .rc-save-banner { flex-wrap: wrap !important; padding: 12px 16px 72px !important; gap: 8px !important; }
+          .rc-save-banner input { flex: 1 1 100% !important; width: 100% !important; box-sizing: border-box !important; }
+          .rc-save-banner .rc-save-btn { flex: 1 !important; }
+          /* Upgrade modal */
+          .rc-upgrade-modal { padding: 24px 16px !important; }
+          /* Map */
+          .rc-map-wrap { height: 260px !important; }
         }
         @media (max-width: 480px) {
           .rc-metric-grid { grid-template-columns: 1fr !important; }
           h1 { font-size: 22px !important; }
+          .rc-how-it-works-step { width: calc(50% - 8px) !important; }
+          .rc-comp-row-grid { grid-template-columns: 1fr !important; }
+          nav .rc-upgrade-btn { font-size: 12px !important; padding: 8px 12px !important; }
         }
         .rc-sidebar-btn:hover { background: rgba(26,188,156,0.08) !important; color: #F0EBE3 !important; }
         .rc-bottom-tabs { display: none; }
@@ -2344,7 +2366,7 @@ function DashboardContent() {
           <div style={{ fontSize: 11, letterSpacing: 2, color: "#1ABC9C", textTransform: "uppercase", marginBottom: 28 }}>
             How it works
           </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+          <div className="rc-how-it-works" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
             {[
               { emoji: "🦷", label: "Patient visits", sub: "your clinic" },
               { emoji: "📧", label: "You enter", sub: "patient email" },
@@ -2354,7 +2376,7 @@ function DashboardContent() {
               { emoji: "📈", label: "Ranking improves", sub: "you rise on Google" },
               { emoji: "🏥", label: "More patients", sub: "book your clinic" },
             ].map((step, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", flex: 1 }}>
+              <div key={i} className="rc-how-it-works-step" style={{ display: "flex", alignItems: "center", flex: 1 }}>
                 <div style={{
                   textAlign: "center",
                   flex: 1,
@@ -2368,7 +2390,7 @@ function DashboardContent() {
                   <div style={{ fontSize: 11, color: "rgba(247,243,237,0.45)" }}>{step.sub}</div>
                 </div>
                 {i < 6 && (
-                  <div style={{ fontSize: 20, color: "#1ABC9C", padding: "0 8px", flexShrink: 0, marginBottom: 10 }}>→</div>
+                  <div className="rc-how-it-works-arrow" style={{ fontSize: 20, color: "#1ABC9C", padding: "0 8px", flexShrink: 0, marginBottom: 10 }}>→</div>
                 )}
               </div>
             ))}
@@ -2378,7 +2400,7 @@ function DashboardContent() {
         {/* GROWTH UPSELL BANNER — pro users only */}
         {isPro && !isGrowth && (
           <div
-            className="card"
+            className="card rc-growth-banner"
             style={{
               background: "linear-gradient(135deg, #2a1f0a, #1f1500)",
               border: "1px solid rgba(212,168,67,0.3)",
@@ -2848,7 +2870,7 @@ function DashboardContent() {
               return (
                 <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 14, marginBottom: 24, overflow: "hidden" }}>
                   {/* Header */}
-                  <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "10px 16px", borderBottom: "1px solid #1A2220", fontSize: 11, color: "#4A5A58", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
+                  <div className="rc-comp-table-header" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "10px 16px", borderBottom: "1px solid #1A2220", fontSize: 11, color: "#4A5A58", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
                     <div>Rank</div>
                     <div>Clinic</div>
                     <div style={{ textAlign: "right" }}>Rating</div>
@@ -2859,7 +2881,7 @@ function DashboardContent() {
                   {pageRows.map((row, i) => {
                     if (row.isUser) {
                       return (
-                        <div key={`user-${i}`} style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", background: "rgba(26,188,156,0.07)", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
+                        <div key={`user-${i}`} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", background: "rgba(26,188,156,0.07)", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
                           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 900, color: "#1ABC9C" }}>#{row.rank}</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: "#1ABC9C" }}>
                             {data.clinicName || "Your Practice"} <span style={{ fontSize: 10, background: "rgba(26,188,156,0.2)", color: "#1ABC9C", borderRadius: 4, padding: "1px 6px", marginLeft: 4 }}>YOU</span>
@@ -2873,7 +2895,7 @@ function DashboardContent() {
                     const comp = row.comp;
                     const isAhead = comp.googleRank < (userRank ?? 999);
                     return (
-                      <div key={comp.googleRank} style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
+                      <div key={comp.googleRank} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
                         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: "#6B7B78" }}>#{comp.googleRank}</div>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#C8BFB6" }}>{comp.name}</div>
@@ -4617,7 +4639,7 @@ function DashboardContent() {
       )}
 
       {showSaveBanner && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#151918", borderTop: "1px solid #2A3330", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 1000, fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="rc-save-banner" style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#151918", borderTop: "1px solid #2A3330", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 1000, fontFamily: "'DM Sans', sans-serif" }}>
           {bannerSent ? (
             <>
               <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>✓ Your dashboard is secured.</span>
@@ -4634,7 +4656,7 @@ function DashboardContent() {
                 placeholder="your@email.com"
                 style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #2A3330", background: "#0D0F0E", color: "#F7F3ED", fontSize: 14, width: 220 }}
               />
-              <button onClick={submitBannerEmail} disabled={!bannerEmail.includes("@")} style={{ padding: "8px 16px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer", opacity: !bannerEmail.includes("@") ? 0.5 : 1 }}>
+              <button onClick={submitBannerEmail} disabled={!bannerEmail.includes("@")} className="rc-save-btn" style={{ padding: "8px 16px", borderRadius: 8, background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 13, border: "none", cursor: "pointer", opacity: !bannerEmail.includes("@") ? 0.5 : 1 }}>
                 Save →
               </button>
               <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
