@@ -29,16 +29,18 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         {/* Paddle.js — payment checkout */}
         <script src="https://cdn.paddle.com/paddle/v2/paddle.js" async></script>
-        {/* Contentsquare */}
+        {/* Microsoft Clarity */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              window._uxa = window._uxa || [];
-              window._uxa.push(['setPath', window.location.pathname + window.location.search.replace('?', '#')]);
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "vxak4ot6t3");
             `,
           }}
         />
-        <script src="https://t.contentsquare.net/uxa/d9829673fa46e.js" async></script>
         {/* Service worker registration */}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
