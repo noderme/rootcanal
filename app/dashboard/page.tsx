@@ -2199,7 +2199,7 @@ function DashboardContent() {
               border: "1px solid rgba(231,76,60,0.35)",
               borderRadius: 16,
               padding: "28px 32px",
-              marginBottom: 0,
+              marginBottom: 16,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -2258,13 +2258,6 @@ function DashboardContent() {
           );
         })()}
         </div>{/* /rc-hero-sticky */}
-
-        {/* ── TRANSITION LINE → review action ─────────────── */}
-        {data.placeId && activeTab !== "reviews" && (
-          <div style={{ fontSize: 13, color: "rgba(240,235,227,0.4)", marginBottom: 4, marginTop: -12, paddingLeft: 2, lineHeight: 1.6 }}>
-            The fastest way to begin closing this gap is increasing recent patient reviews.
-          </div>
-        )}
 
         {/* ── FASTEST WAY HERO ─────────────────────────────── */}
         {data.placeId && activeTab !== "reviews" && (
