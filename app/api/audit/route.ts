@@ -39,8 +39,12 @@ interface AuditResult {
     reviews: number;
     address: string;
     googleRank: number;
+    lat?: number;
+    lng?: number;
   }[];
   placeId: string;
+  userLat?: number;
+  userLng?: number;
   scannedAt: string;
   userRank?: number;
   userReviewCount?: number;
@@ -875,7 +879,7 @@ export async function GET(request: NextRequest) {
     try {
       const NON_CLINIC_KEYWORDS = ["university","college","school","hospital","nyu","columbia","institute","academy","clinic at"];
 
-      type PlaceResult = { name: string; rating?: number; user_ratings_total?: number; formatted_address?: string; place_id?: string };
+      type PlaceResult = { name: string; rating?: number; user_ratings_total?: number; formatted_address?: string; place_id?: string; geometry?: { location?: { lat?: number; lng?: number } } };
 
       const baseUrl = clinicLat != null && clinicLng != null
         ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${clinicLat},${clinicLng}&radius=5000&type=dentist&key=${apiKey}`
@@ -935,6 +939,8 @@ export async function GET(request: NextRequest) {
           reviews: place.user_ratings_total ?? 0,
           address: place.formatted_address ?? "",
           googleRank: index + 1,
+          lat: place.geometry?.location?.lat,
+          lng: place.geometry?.location?.lng,
           _placeId: place.place_id,
         }));
 
@@ -1058,6 +1064,8 @@ export async function GET(request: NextRequest) {
       competitors,
       placeId: clinicPlaceId,
       scannedAt: new Date().toISOString(),
+      userLat: clinicLat,
+      userLng: clinicLng,
       userRank,
       userReviewCount: clinicReviewCount,
       yelpRating,

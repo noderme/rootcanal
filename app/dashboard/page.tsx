@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -30,9 +30,13 @@ interface AuditData {
     reviews: number;
     address: string;
     googleRank: number;
+    lat?: number;
+    lng?: number;
   }[];
   placeId: string;
   scannedAt: string;
+  userLat?: number;
+  userLng?: number;
   userRank?: number;
   userReviewCount?: number;
   yelpRating?: number;
@@ -813,6 +817,122 @@ function normalizeUrl(url: string): string {
     .replace(/\/$/, "");
 }
 
+// ─── MAP VIEW ─────────────────────────────────────────────────────────────────
+function MapView({ data }: { data: AuditData }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+    if (!apiKey || !data.userLat || !data.userLng || !mapRef.current) return;
+
+    const initMap = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const G = (window as any).google.maps;
+      const center = { lat: data.userLat!, lng: data.userLng! };
+      const map = new G.Map(mapRef.current, {
+        center,
+        zoom: 14,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          { elementType: "geometry", stylers: [{ color: "#1a2421" }] },
+          { elementType: "labels.text.fill", stylers: [{ color: "#8EC5B0" }] },
+          { elementType: "labels.text.stroke", stylers: [{ color: "#0D1714" }] },
+          { featureType: "road", elementType: "geometry", stylers: [{ color: "#2A3A35" }] },
+          { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#6B9E8A" }] },
+          { featureType: "water", elementType: "geometry", stylers: [{ color: "#0D2118" }] },
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", stylers: [{ visibility: "off" }] },
+        ],
+      });
+
+      const infoWindow = new G.InfoWindow();
+
+      // User clinic marker
+      const userMarker = new G.Marker({
+        position: center,
+        map,
+        title: data.clinicName || "Your Clinic",
+        icon: {
+          path: G.SymbolPath.CIRCLE,
+          scale: 14,
+          fillColor: "#1ABC9C",
+          fillOpacity: 1,
+          strokeColor: "#fff",
+          strokeWeight: 3,
+        },
+        zIndex: 200,
+      });
+      userMarker.addListener("click", () => {
+        infoWindow.setContent(
+          `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
+            <b>${data.clinicName || "Your Clinic"}</b><br/>
+            📍 Rank #${data.userRank ?? "?"}<br/>
+            ⭐ ${data.userReviewCount ?? 0} reviews
+          </div>`
+        );
+        infoWindow.open(map, userMarker);
+      });
+
+      // Competitor markers
+      data.competitors.forEach((c) => {
+        if (c.lat == null || c.lng == null) return;
+        const color = c.googleRank <= 3 ? "#2ECC71" : c.googleRank <= 10 ? "#F0A500" : "#E74C3C";
+        const marker = new G.Marker({
+          position: { lat: c.lat, lng: c.lng },
+          map,
+          title: c.name,
+          icon: {
+            path: G.SymbolPath.CIRCLE,
+            scale: 10,
+            fillColor: color,
+            fillOpacity: 0.9,
+            strokeColor: "#fff",
+            strokeWeight: 2,
+          },
+          zIndex: 100,
+        });
+        marker.addListener("click", () => {
+          infoWindow.setContent(
+            `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
+              <b>#${c.googleRank} ${c.name}</b><br/>
+              ⭐ ${c.rating} · ${c.reviews} reviews<br/>
+              <span style="color:#666;font-size:11px">${c.address}</span>
+            </div>`
+          );
+          infoWindow.open(map, marker);
+        });
+      });
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).google?.maps) {
+      initMap();
+    } else {
+      const existing = document.getElementById("gmaps-script");
+      if (existing) {
+        existing.addEventListener("load", initMap);
+      } else {
+        const script = document.createElement("script");
+        script.id = "gmaps-script";
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
+        script.onload = initMap;
+        document.head.appendChild(script);
+      }
+    }
+  }, [data]);
+
+  if (!data.userLat || !data.userLng) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: "#6B7B78", fontSize: 14 }}>
+        Location data unavailable for this clinic.
+      </div>
+    );
+  }
+
+  return <div ref={mapRef} style={{ width: "100%", height: 420, borderRadius: 12, overflow: "hidden" }} />;
+}
+
 // ─── DASHBOARD CONTENT ────────────────────────────────────────────────────────
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -838,7 +958,7 @@ function DashboardContent() {
   const [reviews, setReviews] = useState<ReviewData | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "competitors" | "roadmap" | "reviews" | "score" | "health"
+    "competitors" | "roadmap" | "reviews" | "score" | "health" | "map"
   >("competitors");
   const [competitorPage, setCompetitorPage] = useState(0);
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
@@ -2371,6 +2491,7 @@ function DashboardContent() {
           {(
             [
               { id: "competitors", label: "🏆", sublabel: "Rivals" },
+              { id: "map",         label: "🗺️", sublabel: "Map" },
               { id: "roadmap",     label: "📈", sublabel: "Growth" },
               { id: "reviews",     label: "⭐", sublabel: "Reviews" },
               { id: "score",       label: "🧠", sublabel: "Intel" },
@@ -3830,6 +3951,66 @@ function DashboardContent() {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* MAP TAB */}
+        {activeTab === "map" && (
+          <div
+            className="card"
+            style={{
+              background: "#151918",
+              border: "1px solid #2A3330",
+              borderRadius: 16,
+              padding: 24,
+              marginBottom: 24,
+              animationDelay: "0.35s",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700 }}>
+                🗺️ Local Rankings Map
+              </div>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#1ABC9C", display: "inline-block" }} /> You
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#2ECC71", display: "inline-block" }} /> Top 3
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#F0A500", display: "inline-block" }} /> #4–10
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#E74C3C", display: "inline-block" }} /> #11+
+                </span>
+              </div>
+            </div>
+            {!isPro && !isGrowth ? (
+              <div style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ filter: "blur(4px)", pointerEvents: "none", height: 420, background: "#0D1714", borderRadius: 12 }} />
+                <div style={{
+                  position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 16,
+                }}>
+                  <div style={{ fontSize: 32 }}>🗺️</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textAlign: "center" }}>
+                    See where you stand on the map
+                  </div>
+                  <div style={{ fontSize: 13, color: "#6B7B78", textAlign: "center", maxWidth: 280 }}>
+                    Visual competitor map with real Google ranks. Upgrade to Pro to unlock.
+                  </div>
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "12px 28px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    Unlock Map — Upgrade to Pro
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <MapView data={data} />
+            )}
           </div>
         )}
 
