@@ -818,7 +818,7 @@ function normalizeUrl(url: string): string {
 }
 
 // ─── MAP VIEW ─────────────────────────────────────────────────────────────────
-function MapView({ data }: { data: AuditData }) {
+function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: boolean; onUpgrade?: () => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -831,7 +831,7 @@ function MapView({ data }: { data: AuditData }) {
       const center = { lat: data.userLat!, lng: data.userLng! };
       const map = new G.Map(mapRef.current, {
         center,
-        zoom: 14,
+        zoom: 13,
         disableDefaultUI: true,
         zoomControl: true,
         styles: [
@@ -847,15 +847,35 @@ function MapView({ data }: { data: AuditData }) {
       });
 
       const infoWindow = new G.InfoWindow();
+      map.addListener("click", () => infoWindow.close());
 
-      // User clinic marker
+      // 5km radius circle
+      new G.Circle({
+        map,
+        center,
+        radius: 5000,
+        strokeColor: "#1ABC9C",
+        strokeOpacity: 0.4,
+        strokeWeight: 1.5,
+        fillColor: "#1ABC9C",
+        fillOpacity: 0.05,
+      });
+
+      // User clinic marker — larger with YOU label
       const userMarker = new G.Marker({
         position: center,
         map,
         title: data.clinicName || "Your Clinic",
+        label: {
+          text: "YOU",
+          color: "#000",
+          fontWeight: "900",
+          fontSize: "9px",
+          fontFamily: "sans-serif",
+        },
         icon: {
           path: G.SymbolPath.CIRCLE,
-          scale: 14,
+          scale: 18,
           fillColor: "#1ABC9C",
           fillOpacity: 1,
           strokeColor: "#fff",
@@ -881,27 +901,39 @@ function MapView({ data }: { data: AuditData }) {
         const marker = new G.Marker({
           position: { lat: c.lat, lng: c.lng },
           map,
-          title: c.name,
+          title: isPro ? c.name : "Competitor",
           icon: {
             path: G.SymbolPath.CIRCLE,
             scale: 10,
-            fillColor: color,
-            fillOpacity: 0.9,
+            fillColor: isPro ? color : "#4A5A57",
+            fillOpacity: isPro ? 0.9 : 0.4,
             strokeColor: "#fff",
-            strokeWeight: 2,
+            strokeWeight: isPro ? 2 : 1,
           },
           zIndex: 100,
         });
-        marker.addListener("click", () => {
-          infoWindow.setContent(
-            `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
-              <b>#${c.googleRank} ${c.name}</b><br/>
-              ⭐ ${c.rating} · ${c.reviews} reviews<br/>
-              <span style="color:#666;font-size:11px">${c.address}</span>
-            </div>`
-          );
-          infoWindow.open(map, marker);
-        });
+        if (isPro) {
+          marker.addListener("click", () => {
+            infoWindow.setContent(
+              `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
+                <b>#${c.googleRank} ${c.name}</b><br/>
+                ⭐ ${c.rating} · ${c.reviews} reviews<br/>
+                <span style="color:#666;font-size:11px">${c.address}</span>
+              </div>`
+            );
+            infoWindow.open(map, marker);
+          });
+        } else {
+          marker.addListener("click", () => {
+            infoWindow.setContent(
+              `<div style="color:#111;font-family:sans-serif;padding:6px 4px;max-width:200px;text-align:center">
+                🔒 <b>Upgrade to Pro</b><br/>
+                <span style="font-size:12px;color:#555">See who's competing around you</span>
+              </div>`
+            );
+            infoWindow.open(map, marker);
+          });
+        }
       });
     };
 
@@ -930,7 +962,35 @@ function MapView({ data }: { data: AuditData }) {
     );
   }
 
-  return <div ref={mapRef} style={{ width: "100%", height: 420, borderRadius: 12, overflow: "hidden" }} />;
+  return (
+    <div style={{ position: "relative" }}>
+      <div ref={mapRef} style={{ width: "100%", height: 420, borderRadius: 12, overflow: "hidden" }} />
+      {!isPro && (
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          background: "linear-gradient(to top, rgba(13,19,16,0.95) 60%, transparent)",
+          borderRadius: "0 0 12px 12px",
+          padding: "32px 24px 20px",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+              🔒 {data.competitors.length} competitors hidden around you
+            </div>
+            <div style={{ fontSize: 12, color: "#6B7B78" }}>
+              Upgrade to Pro to see who's outranking you on the map
+            </div>
+          </div>
+          <button
+            onClick={() => onUpgrade?.()}
+            style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+          >
+            Upgrade to Pro →
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── DASHBOARD CONTENT ────────────────────────────────────────────────────────
@@ -1775,6 +1835,7 @@ function DashboardContent() {
           </div>
           {([
             { id: "competitors", label: "🏆 Competitors" },
+            { id: "map",         label: "🗺️ Map" },
             { id: "roadmap",     label: "📈 Growth Plan" },
             { id: "reviews",     label: "⭐ Reviews (G+Y)" },
             { id: "score",       label: "🧠 Intelligence" },
@@ -3986,31 +4047,7 @@ function DashboardContent() {
                 </span>
               </div>
             </div>
-            {!isPro && !isGrowth ? (
-              <div style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
-                <div style={{ filter: "blur(4px)", pointerEvents: "none", height: 420, background: "#0D1714", borderRadius: 12 }} />
-                <div style={{
-                  position: "absolute", inset: 0, display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", gap: 16,
-                }}>
-                  <div style={{ fontSize: 32 }}>🗺️</div>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textAlign: "center" }}>
-                    See where you stand on the map
-                  </div>
-                  <div style={{ fontSize: 13, color: "#6B7B78", textAlign: "center", maxWidth: 280 }}>
-                    Visual competitor map with real Google ranks. Upgrade to Pro to unlock.
-                  </div>
-                  <button
-                    onClick={() => setShowUpgradeModal(true)}
-                    style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "12px 28px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-                  >
-                    Unlock Map — Upgrade to Pro
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <MapView data={data} />
-            )}
+            <MapView data={data} isPro={isPro || isGrowth} onUpgrade={() => setShowUpgradeModal(true)} />
           </div>
         )}
 
