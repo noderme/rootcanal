@@ -2211,6 +2211,13 @@ function DashboardContent() {
           );
         })()}
 
+        {/* ── TRANSITION LINE → review action ─────────────── */}
+        {data.placeId && activeTab !== "reviews" && (
+          <div style={{ fontSize: 13, color: "rgba(240,235,227,0.4)", marginBottom: 4, marginTop: -12, paddingLeft: 2, lineHeight: 1.6 }}>
+            The fastest way to begin closing this gap is increasing recent patient reviews.
+          </div>
+        )}
+
         {/* ── FASTEST WAY HERO ─────────────────────────────── */}
         {data.placeId && activeTab !== "reviews" && (
           <div style={{
