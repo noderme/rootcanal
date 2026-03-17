@@ -3,13 +3,17 @@
  *
  * Lightweight version of /api/audit for the scraper.
  * Skips Healthgrades, Zocdoc, accessibility checks, and Supabase logging.
- * Returns: overallScore, seoScore, performanceScore, userRank, competitors (with googleRank).
- * Runs in ~2-3s vs 10s+ for the full audit.
+ * Returns: overallScore, seoScore, performanceScore, userRank, reviewGap, competitors.
  *
  * Params:
  *   url      — clinic website
  *   city     — optional, detected from Places if omitted
- *   placeId  — optional, clinic's Google place_id for rank detection
+ *   placeId  — optional, clinic's Google place_id for rank + nearbysearch
+ *
+ * reviewGap logic:
+ *   rank 1–20  → gap vs #1 (top competitor)
+ *   rank > 20  → gap vs rank ~20 (closest visible competitor just ahead)
+ *   no rank    → gap vs #1 (city-wide top)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -24,6 +28,7 @@ interface LiteResult {
   performanceScore: number;
   seoScore: number;
   userRank?: number;
+  reviewGap: number | null;
   competitors: {
     name: string;
     rating: number;
@@ -62,10 +67,7 @@ async function fetchPageSpeed(url: string, apiKey: string) {
       const res = await fetch(psUrl);
       const data = await res.json();
       if (res.status === 429) {
-        if (attempt < 2) {
-          await sleep(3000);
-          continue;
-        }
+        if (attempt < 2) { await sleep(3000); continue; }
         return { performanceScore: 50, seoScore: 50 };
       }
       const cats = data?.lighthouseResult?.categories ?? {};
@@ -86,9 +88,7 @@ export async function GET(request: NextRequest) {
   let city = searchParams.get("city") || "";
   const placeId = searchParams.get("placeId") || "";
 
-  if (!url) {
-    return NextResponse.json({ error: "URL required" }, { status: 400 });
-  }
+  if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
 
   const apiKey = process.env.GOOGLE_API_KEY || "";
   const cacheKey = url.toLowerCase();
@@ -102,41 +102,49 @@ export async function GET(request: NextRequest) {
     // 1. Detect city from Google Places if not provided
     if (!city) {
       try {
-        const domain = url
-          .replace(/https?:\/\//, "")
-          .replace(/^www\./, "")
-          .split("/")[0];
+        const domain = url.replace(/https?:\/\//, "").replace(/^www\./, "").split("/")[0];
         const res = await fetch(
           `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(domain + " dentist")}&type=dentist&key=${apiKey}`,
         );
         const data = await res.json();
         const top = data.results?.[0];
-        if (
-          top?.formatted_address &&
-          !top.formatted_address.toLowerCase().includes("india")
-        ) {
+        if (top?.formatted_address && !top.formatted_address.toLowerCase().includes("india")) {
           city = parseCityFromAddress(top.formatted_address) || city;
         }
-      } catch {
-        /* use passed city */
-      }
+      } catch { /* use passed city */ }
     }
-
     if (!city) city = "New York, NY";
 
-    // 2. PageSpeed (performance + SEO only)
+    // 2. PageSpeed
     const { performanceScore, seoScore } = await fetchPageSpeed(url, apiKey);
     const overallScore = Math.round((performanceScore + seoScore) / 2);
 
-    // 3. Competitors from Google Places — real googleRank, find userRank if placeId provided
+    // 3. Get clinic lat/lng from placeId for accurate nearbysearch
+    let clinicLat: number | undefined;
+    let clinicLng: number | undefined;
+    if (placeId) {
+      try {
+        const detailsRes = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${apiKey}`,
+        );
+        const detailsData = await detailsRes.json();
+        clinicLat = detailsData.result?.geometry?.location?.lat;
+        clinicLng = detailsData.result?.geometry?.location?.lng;
+      } catch { /* fall through to textsearch */ }
+    }
+
+    // 4. Competitors — nearbysearch if we have lat/lng, textsearch otherwise
     type PlaceRow = { name: string; rating?: number; user_ratings_total?: number; place_id?: string };
     let competitors: LiteResult["competitors"] = [];
     let userRank: number | undefined;
+    let reviewGap: number | null = null;
 
     try {
-      const placesRes = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+clinic+in+${encodeURIComponent(city)}&key=${apiKey}`,
-      );
+      const placesUrl = clinicLat != null && clinicLng != null
+        ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${clinicLat},${clinicLng}&radius=5000&type=dentist&key=${apiKey}`
+        : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=dental+clinic+in+${encodeURIComponent(city)}&key=${apiKey}`;
+
+      const placesRes = await fetch(placesUrl);
       const placesData = await placesRes.json();
 
       const NON_CLINIC = ["university","college","school","hospital","institute","academy"];
@@ -144,14 +152,14 @@ export async function GET(request: NextRequest) {
         (p: PlaceRow) => !NON_CLINIC.some((kw) => p.name.toLowerCase().includes(kw)),
       );
 
-      // Detect userRank from placeId
+      // Detect userRank
       if (placeId) {
         const idx = filtered.findIndex((p) => p.place_id === placeId);
         if (idx !== -1) userRank = idx + 1;
       }
 
       // Assign real googleRank, exclude user's own clinic
-      competitors = filtered
+      const ranked = filtered
         .map((p, i) => ({
           name: p.name,
           rating: p.rating ?? 0,
@@ -161,18 +169,27 @@ export async function GET(request: NextRequest) {
         }))
         .filter((c) => c._placeId !== placeId)
         .map(({ _placeId: _, ...rest }) => rest);
-    } catch {
-      /* return empty competitors */
-    }
+
+      competitors = ranked;
+
+      // reviewGap logic
+      if (ranked.length > 0) {
+        const top = ranked[0]; // rank #1 nearby
+        const closestAhead = ranked[ranked.length - 1]; // last in list = boundary competitor
+
+        if (!userRank || userRank <= 20) {
+          // In top 20 or unknown — compare with #1
+          reviewGap = top.reviews;
+        } else {
+          // Beyond top 20 — compare with closest visible competitor ahead
+          reviewGap = closestAhead.reviews;
+        }
+      }
+    } catch { /* return empty */ }
 
     const result: LiteResult = {
-      url,
-      city,
-      overallScore,
-      performanceScore,
-      seoScore,
-      userRank,
-      competitors,
+      url, city, overallScore, performanceScore, seoScore,
+      userRank, reviewGap, competitors,
     };
 
     cache.set(cacheKey, { data: result, timestamp: Date.now() });
