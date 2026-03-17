@@ -2212,7 +2212,7 @@ function DashboardContent() {
         })()}
 
         {/* ── FASTEST WAY HERO ─────────────────────────────── */}
-        {data.placeId && (
+        {data.placeId && activeTab !== "reviews" && (
           <div style={{
             background: "linear-gradient(135deg, #081a12 0%, #0a2018 60%, #0d1a14 100%)",
             border: "1px solid rgba(26,188,156,0.3)",
