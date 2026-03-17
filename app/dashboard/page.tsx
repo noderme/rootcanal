@@ -2027,6 +2027,79 @@ function DashboardContent() {
           </div>
         </div>
 
+        {/* ── PATIENT LOSS HERO CARD ───────────────────────── */}
+        {(userRank == null || userRank > 3) && (() => {
+          const [lostLow, lostHigh] = userRank == null || userRank > 20
+            ? [25, 40]
+            : userRank > 10
+            ? [15, 25]
+            : userRank > 5
+            ? [8, 15]
+            : [3, 8];
+          const revLow  = (lostLow  * 800);
+          const revHigh = (lostHigh * 1200);
+          const fmt = (n: number) => "$" + n.toLocaleString();
+          return (
+            <div className="card" style={{
+              background: "linear-gradient(135deg, #1a0a0a 0%, #200d00 50%, #0d1a14 100%)",
+              border: "1px solid rgba(231,76,60,0.35)",
+              borderRadius: 16,
+              padding: "28px 32px",
+              marginBottom: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 24,
+              flexWrap: "wrap" as const,
+              position: "relative" as const,
+              overflow: "hidden",
+            }}>
+              {/* Glow accent */}
+              <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: "rgba(231,76,60,0.08)", pointerEvents: "none" }} />
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: "uppercase" as const, color: "#E74C3C", fontWeight: 700, marginBottom: 10 }}>
+                  ⚠ Estimated Patient Loss
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8, flexWrap: "wrap" as const }}>
+                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 48, fontWeight: 900, color: "#E74C3C", lineHeight: 1 }}>
+                    {lostLow}–{lostHigh}
+                  </span>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: "rgba(240,235,227,0.6)" }}>patients / month</span>
+                </div>
+                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", marginBottom: 6, lineHeight: 1.5 }}>
+                  Based on your Google ranking, an estimated{" "}
+                  <span style={{ color: "#E74C3C", fontWeight: 600 }}>{lostLow}–{lostHigh} patients</span>{" "}
+                  searching nearby choose a higher-ranked competitor each month.
+                </div>
+                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.35)" }}>
+                  Revenue opportunity:{" "}
+                  <span style={{ color: "#F0A500", fontWeight: 700 }}>{fmt(revLow)}–{fmt(revHigh)} / month</span>
+                </div>
+              </div>
+              <div style={{ flexShrink: 0 }}>
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  style={{
+                    background: "linear-gradient(135deg, #1ABC9C, #16a085)",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "14px 24px",
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: "#000",
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                    whiteSpace: "nowrap" as const,
+                    boxShadow: "0 4px 20px rgba(26,188,156,0.3)",
+                  }}
+                >
+                  Unlock Growth Plan →
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── COMPETITORS: rank strip ──────────────────────── */}
         {activeTab === "competitors" && (
           <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
