@@ -2808,12 +2808,19 @@ function DashboardContent() {
 
             {(() => {
               const isTopThree = typeof userRank === "number" && userRank <= 3;
+
+              // Competitors ranked above user on Google = userRank - 1 practices to overtake
+              // Sort by score ascending so the closest gap (easiest) comes first
+              const sortedAll = [...data.competitors].sort((a, b) => a.score - b.score);
+              const aheadCount = typeof userRank === "number" && userRank > 1 ? userRank - 1 : 0;
+              const aheadComps = aheadCount > 0
+                ? sortedAll.slice(0, Math.min(aheadCount, sortedAll.length))
+                : sortedAll.filter((c) => c.score > data.overallScore);
+
+              // Competitors ranked below user — closest score threat first
               const behindComps = [...data.competitors]
                 .filter((c) => c.score < data.overallScore)
-                .sort((a, b) => b.score - a.score); // closest threat first
-              const aheadComps = [...data.competitors]
-                .filter((c) => c.score >= data.overallScore)
-                .sort((a, b) => a.score - b.score); // easiest to overtake first
+                .sort((a, b) => b.score - a.score);
 
               if (isTopThree) {
                 // DEFEND MODE — user is already in top 3
