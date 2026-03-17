@@ -30,6 +30,8 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
         {/* Paddle.js — payment checkout */}
         <script src="https://cdn.paddle.com/paddle/v2/paddle.js" async></script>
+        {/* Contentsquare */}
+        <script src="https://t.contentsquare.net/uxa/d9829673fa46e.js" async></script>
         {/* Service worker registration */}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
@@ -40,8 +42,6 @@ export default function RootLayout({
         ` }} />
       </head>
       <body style={{ margin: 0, padding: 0 }}>{children}</body>
-      {/* Contentsquare */}
-      <Script src="https://t.contentsquare.net/uxa/d9829673fa46e.js" strategy="afterInteractive" />
     </html>
   );
 }
