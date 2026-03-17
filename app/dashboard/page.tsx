@@ -2474,7 +2474,7 @@ function DashboardContent() {
                 marginBottom: 8,
               }}
             >
-              ⭐ Biggest Growth Lever
+              ⚡ Action — Do This Now
             </div>
             <div
               style={{
@@ -2485,7 +2485,7 @@ function DashboardContent() {
                 marginBottom: 6,
               }}
             >
-              Get More Reviews This Week
+              Fastest Way to Get More Patients This Week
             </div>
             <div
               style={{
