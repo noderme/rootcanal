@@ -2775,14 +2775,20 @@ function DashboardContent() {
                 marginBottom: 20,
               }}
             >
-              <div
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 20,
-                  fontWeight: 700,
-                }}
-              >
-                🗺️ Your Path to #1
+              <div>
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    marginBottom: 4,
+                  }}
+                >
+                  🗺️ Your Path to #1
+                </div>
+                <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                  Scores are out of 100 — combining your Google reviews, SEO, and website quality.
+                </div>
               </div>
               <span
                 style={{
@@ -2793,6 +2799,7 @@ function DashboardContent() {
                   background: "rgba(212,168,67,0.1)",
                   color: "#D4A843",
                   fontFamily: "'DM Mono', monospace",
+                  flexShrink: 0,
                 }}
               >
                 GROWTH ROADMAP
@@ -2899,10 +2906,11 @@ function DashboardContent() {
                           </div>
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
                             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 700, color: isLocked ? "#6B7B78" : urgencyColor }}>
-                              Score: {comp.score}
+                              {comp.score}<span style={{ fontSize: 11, fontWeight: 400, color: "#4A5A58" }}> / 100</span>
                             </div>
-                            <div style={{ fontSize: 11, color: "#2ECC71" }}>
-                              you lead +{gap}
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>visibility score</div>
+                            <div style={{ fontSize: 11, color: "#2ECC71", marginTop: 2 }}>
+                              you lead by {gap} pts
                             </div>
                           </div>
                         </div>
@@ -3061,9 +3069,10 @@ function DashboardContent() {
                               color: isLocked ? "#6B7B78" : "#F0A500",
                             }}
                           >
-                            Score: {comp.score}
+                            {comp.score}<span style={{ fontSize: 11, fontWeight: 400, color: "#4A5A58" }}> / 100</span>
                           </div>
-                          <div style={{ fontSize: 11, color: "#E74C3C" }}>
+                          <div style={{ fontSize: 11, color: "#6B7B78" }}>visibility score</div>
+                          <div style={{ fontSize: 11, color: "#E74C3C", marginTop: 2 }}>
                             {gap > 0 ? `${gap} pts ahead of you` : "same level"}
                           </div>
                         </div>
