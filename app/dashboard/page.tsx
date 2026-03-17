@@ -1775,7 +1775,6 @@ function DashboardContent() {
           </div>
           {([
             { id: "competitors", label: "🏆 Competitors" },
-            { id: "map",         label: "🗺️ Map" },
             { id: "roadmap",     label: "📈 Growth Plan" },
             { id: "reviews",     label: "⭐ Reviews (G+Y)" },
             { id: "score",       label: "🧠 Intelligence" },
@@ -3987,7 +3986,31 @@ function DashboardContent() {
                 </span>
               </div>
             </div>
-            <MapView data={data} />
+            {!isPro && !isGrowth ? (
+              <div style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ filter: "blur(4px)", pointerEvents: "none", height: 420, background: "#0D1714", borderRadius: 12 }} />
+                <div style={{
+                  position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 16,
+                }}>
+                  <div style={{ fontSize: 32 }}>🗺️</div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, textAlign: "center" }}>
+                    See where you stand on the map
+                  </div>
+                  <div style={{ fontSize: 13, color: "#6B7B78", textAlign: "center", maxWidth: 280 }}>
+                    Visual competitor map with real Google ranks. Upgrade to Pro to unlock.
+                  </div>
+                  <button
+                    onClick={() => setShowUpgradeModal(true)}
+                    style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "12px 28px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                  >
+                    Unlock Map — Upgrade to Pro
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <MapView data={data} />
+            )}
           </div>
         )}
 
