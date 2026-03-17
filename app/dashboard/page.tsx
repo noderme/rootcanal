@@ -2800,20 +2800,155 @@ function DashboardContent() {
             </div>
 
             {(() => {
-              const aheadComps = [...data.competitors]
-                .filter((c) => c.score >= data.overallScore)
-                .sort((a, b) => a.score - b.score);
+              const isTopThree = typeof userRank === "number" && userRank <= 3;
               const behindComps = [...data.competitors]
                 .filter((c) => c.score < data.overallScore)
-                .sort((a, b) => b.score - a.score);
-              // Always show all competitors — ahead first (easiest to catch), then behind (defend lead)
-              const stepsToShow = [...aheadComps, ...behindComps];
+                .sort((a, b) => b.score - a.score); // closest threat first
+              const aheadComps = [...data.competitors]
+                .filter((c) => c.score >= data.overallScore)
+                .sort((a, b) => a.score - b.score); // easiest to overtake first
+
+              if (isTopThree) {
+                // DEFEND MODE — user is already in top 3
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {/* Defend header banner */}
+                    <div style={{
+                      background: "rgba(46,204,113,0.06)",
+                      border: "1px solid rgba(46,204,113,0.2)",
+                      borderRadius: 12,
+                      padding: "14px 18px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      marginBottom: 4,
+                    }}>
+                      <span style={{ fontSize: 22 }}>🛡️</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#2ECC71", marginBottom: 2 }}>
+                          You&apos;re in the Top 3 — protect your position
+                        </div>
+                        <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}>
+                          These practices are closing in. Don&apos;t let them catch up — keep collecting reviews consistently.
+                        </div>
+                      </div>
+                    </div>
+
+                    {behindComps.length === 0 && (
+                      <div style={{ fontSize: 13, color: "#6B7B78", textAlign: "center", padding: "20px 0" }}>
+                        No competitors tracked behind you yet.
+                      </div>
+                    )}
+
+                    {behindComps.map((comp, i) => {
+                      const gap = data.overallScore - comp.score;
+                      const isLocked = !isPro && i > 0;
+                      const urgency = gap <= 5 ? "high" : gap <= 15 ? "medium" : "low";
+                      const catchUpTime = gap <= 5 ? "2–4 weeks" : gap <= 15 ? "1–2 months" : "2–4 months";
+                      const urgencyColor = urgency === "high" ? "#E74C3C" : urgency === "medium" ? "#F0A500" : "#6B7B78";
+                      const compName = (comp.name || "Competitor").length > 28
+                        ? (comp.name || "Competitor").slice(0, 28) + "..."
+                        : comp.name || "Competitor";
+                      return (
+                        <div
+                          key={i}
+                          className="rc-roadmap-item"
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 16,
+                            padding: "16px 20px",
+                            borderRadius: 12,
+                            background: isLocked ? "#0D0F0E" : urgency === "high" ? "rgba(231,76,60,0.04)" : "rgba(240,165,0,0.03)",
+                            border: `1px solid ${isLocked ? "#1A1F1E" : urgency === "high" ? "rgba(231,76,60,0.2)" : "rgba(240,165,0,0.15)"}`,
+                          }}
+                        >
+                          <div style={{
+                            width: 36, height: 36, borderRadius: "50%",
+                            background: isLocked ? "#1A1F1E" : `${urgencyColor}18`,
+                            border: `2px solid ${isLocked ? "#2A3330" : urgencyColor}`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 14, flexShrink: 0,
+                          }}>
+                            {isLocked ? "🔒" : urgency === "high" ? "⚠️" : "👁️"}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: isLocked ? "#6B7B78" : "#F0EBE3" }}>
+                                {compName}
+                              </div>
+                              {i === 0 && (
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 4,
+                                  background: "rgba(231,76,60,0.12)", color: "#E74C3C",
+                                  fontFamily: "'DM Mono', monospace",
+                                }}>
+                                  CLOSEST THREAT
+                                </span>
+                              )}
+                            </div>
+                            {!isLocked ? (
+                              <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.6 }}>
+                                They&apos;re only {gap} point{gap === 1 ? "" : "s"} behind — at this pace they could catch you in{" "}
+                                <span style={{ color: urgencyColor, fontWeight: 600 }}>{catchUpTime}</span>.
+                                {urgency === "high" ? " Act now." : ""}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 12, color: "#6B7B78" }}>🔒 Unlock with Pro to monitor this threat</div>
+                            )}
+                          </div>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 700, color: isLocked ? "#6B7B78" : urgencyColor }}>
+                              Score: {comp.score}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#2ECC71" }}>
+                              you lead +{gap}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Review CTA */}
+                    <div
+                      onClick={() => setActiveTab("reviews")}
+                      style={{
+                        background: "rgba(26,188,156,0.06)",
+                        border: "1px solid rgba(26,188,156,0.25)",
+                        borderRadius: 12,
+                        padding: "16px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 14,
+                        marginTop: 4,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span style={{ fontSize: 22 }}>⭐</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#1ABC9C", marginBottom: 3 }}>
+                          Keep your lead — collect reviews effortlessly
+                        </div>
+                        <div style={{ fontSize: 12, color: "#6B7B78" }}>
+                          Send 1-click review requests to patients and widen your gap before competitors catch up.
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#1ABC9C", whiteSpace: "nowrap" }}>
+                        Go to Reviews →
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // GROWTH MODE — user is NOT in top 3, show path to overtake leaders
+              const stepsToShow = aheadComps;
               return (
                 <div
                   style={{ display: "flex", flexDirection: "column", gap: 12 }}
                 >
                   {stepsToShow.map((comp, i) => {
-                    const gap = Math.abs(comp.score - data.overallScore);
+                    const gap = comp.score - data.overallScore;
                     const reviewGap = Math.max(
                       0,
                       (comp.reviews || 0) - (reviews?.total || 0),
@@ -2875,10 +3010,9 @@ function DashboardContent() {
                                 color: isLocked ? "#6B7B78" : "#F0EBE3",
                               }}
                             >
-                              Step {i + 1}: {comp.score >= data.overallScore ? "Overtake" : "Stay ahead of"}{" "}
+                              Step {i + 1}: Overtake{" "}
                               {(comp.name || "Competitor").length > 25
-                                ? (comp.name || "Competitor").slice(0, 25) +
-                                  "..."
+                                ? (comp.name || "Competitor").slice(0, 25) + "..."
                                 : comp.name || "Competitor"}
                             </div>
                             {i === 0 && (
@@ -2905,11 +3039,9 @@ function DashboardContent() {
                                 lineHeight: 1.6,
                               }}
                             >
-                              {comp.score >= data.overallScore
-                                ? reviewGap > 0
-                                  ? `Get ${reviewGap} more reviews + improve score by ${gap} points — estimated `
-                                  : `Improve your score by ${gap} points — estimated `
-                                : `They're ${gap} points behind — keep collecting reviews or they'll catch up in `}
+                              {reviewGap > 0
+                                ? `Get ${reviewGap} more reviews + close the ${gap}-point score gap — estimated `
+                                : `Close the ${gap}-point score gap — estimated `}
                               <span style={{ color: "#F0A500", fontWeight: 600 }}>
                                 {weeks}
                               </span>
@@ -2931,8 +3063,8 @@ function DashboardContent() {
                           >
                             Score: {comp.score}
                           </div>
-                          <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                            {gap > 0 ? `+${gap} ahead` : "same level"}
+                          <div style={{ fontSize: 11, color: "#E74C3C" }}>
+                            {gap > 0 ? `${gap} pts ahead of you` : "same level"}
                           </div>
                         </div>
                       </div>
