@@ -1423,14 +1423,14 @@ function DashboardContent() {
   };
 
   const loadingSteps = [
-    { label: "Crawling live website structure & metadata..." },
-    { label: "Running real-time PageSpeed & SEO analysis..." },
-    { label: "Fetching live Google Places data..." },
-    { label: `Mapping local competitors in ${displayCity || "your area"} in real-time...` },
-    { label: "Pulling latest patient reviews from Google..." },
-    { label: "Running AI sentiment analysis on review data..." },
-    { label: "Generating personalized growth insights..." },
-    { label: "Building your report..." },
+    { label: "Analysing how your clinic appears in local patient searches…" },
+    { label: "Evaluating factors that influence patient discovery and booking decisions…" },
+    { label: `Identifying nearby clinics currently attracting patient attention in ${displayCity || "your area"}…` },
+    { label: "Reviewing how patients are finding and evaluating local dental clinics…" },
+    { label: "Detecting patterns in patient feedback that may influence trust and referrals…" },
+    { label: "Assessing your clinic's visibility relative to nearby competitors…" },
+    { label: "Preparing recommendations to improve your local visibility…" },
+    { label: "Preparing your visibility summary…" },
   ];
 
   // ── AUTH SCREENS ────────────────────────────────────────────────────────────
@@ -1530,6 +1530,13 @@ function DashboardContent() {
 
         {/* Loading card */}
         <div style={{ width: "100%", maxWidth: 480, background: "#151918", border: "1px solid #2A3330", borderRadius: 16, padding: "28px 28px 24px" }}>
+          {/* Contextual headline */}
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: "rgba(240,235,227,0.7)", lineHeight: 1.4 }}>
+              We&apos;re analysing how patients discover your clinic online.
+            </div>
+          </div>
+
           {/* Steps */}
           <div style={{ marginBottom: 24, display: "flex", flexDirection: "column", alignItems: "center" }}>
             {loadingSteps.map((step, i) => (
@@ -1553,11 +1560,16 @@ function DashboardContent() {
             <div style={{ height: "100%", borderRadius: 99, background: "linear-gradient(90deg, #1ABC9C, #2ECC71)", width: `${((loadingStep + 1) / loadingSteps.length) * 100}%`, transition: "width 0.8s ease" }} />
           </div>
           <div style={{ marginTop: 12, fontSize: 12, color: "#3A5349", textAlign: "center" }}>
-            {Math.round(((loadingStep + 1) / loadingSteps.length) * 100)}% complete
+            {loadingStep >= loadingSteps.length - 1
+              ? "Visibility analysis ready"
+              : `${Math.round(((loadingStep + 1) / loadingSteps.length) * 100)}%`}
           </div>
         </div>
 
-        <div style={{ marginTop: 20, fontSize: 12, color: "#2A3330" }}>Powered by AI + Google data</div>
+        {/* Reassurance microcopy */}
+        <div style={{ marginTop: 16, fontSize: 12, color: "#3A4A47", textAlign: "center", maxWidth: 380, lineHeight: 1.6 }}>
+          This analysis typically takes a few seconds and helps identify practical growth opportunities.
+        </div>
       </div>
     );
 
