@@ -2247,46 +2247,60 @@ function DashboardContent() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" as const }}>
-                <input
-                  type="text"
-                  placeholder="Patient email or phone number"
-                  value={reviewContact}
-                  onChange={e => { setReviewContact(e.target.value); setReviewError(""); }}
-                  onKeyDown={async e => {
-                    if (e.key !== "Enter" || !isValidContact(reviewContact) || !data.placeId) return;
-                    setReviewSending(true); setReviewError("");
-                    const isEmail = reviewContact.includes("@");
-                    try {
-                      const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
-                      const result = await res.json();
-                      if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
-                    } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
-                  }}
-                  style={{ flex: 1, minWidth: 200, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(26,188,156,0.25)", borderRadius: 10, padding: "13px 16px", color: "#F0EBE3", fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: "none" }}
-                />
-                <button
-                  onClick={async () => {
-                    if (!isValidContact(reviewContact) || !data.placeId) return;
-                    setReviewSending(true); setReviewError("");
-                    const isEmail = reviewContact.includes("@");
-                    try {
-                      const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
-                      const result = await res.json();
-                      if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
-                    } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
-                  }}
-                  disabled={reviewSending || !isValidContact(reviewContact)}
-                  style={{ background: isValidContact(reviewContact) ? "#1ABC9C" : "#1A2320", color: isValidContact(reviewContact) ? "#000" : "#4A5A57", border: "none", borderRadius: 10, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: isValidContact(reviewContact) ? "pointer" : "default", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" as const, transition: "background 0.15s", boxShadow: isValidContact(reviewContact) ? "0 2px 12px rgba(26,188,156,0.25)" : "none", flexShrink: 0 }}
-                >
-                  {reviewSending ? "Sending..." : "Send Review Request →"}
-                </button>
-              </div>
-            )}
-            {reviewError && <div style={{ fontSize: 12, color: "#E74C3C", marginTop: 8 }}>{reviewError}</div>}
-            {!reviewSent && (
-              <div style={{ fontSize: 11, color: "rgba(240,235,227,0.25)", marginTop: 10 }}>
-                Sends a Google review link via email or SMS · No app needed · Takes 2 seconds
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" as const }}>
+                  <input
+                    type="text"
+                    placeholder="Patient email or phone number"
+                    value={reviewContact}
+                    onChange={e => { setReviewContact(e.target.value); setReviewError(""); }}
+                    onKeyDown={async e => {
+                      if (e.key !== "Enter" || !isValidContact(reviewContact) || !data.placeId) return;
+                      setReviewSending(true); setReviewError("");
+                      const isEmail = reviewContact.includes("@");
+                      try {
+                        const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
+                        const result = await res.json();
+                        if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
+                      } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
+                    }}
+                    style={{ flex: 1, minWidth: 200, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(26,188,156,0.25)", borderRadius: 10, padding: "13px 16px", color: "#F0EBE3", fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: "none" }}
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!isValidContact(reviewContact) || !data.placeId) return;
+                      setReviewSending(true); setReviewError("");
+                      const isEmail = reviewContact.includes("@");
+                      try {
+                        const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
+                        const result = await res.json();
+                        if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
+                      } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
+                    }}
+                    disabled={reviewSending}
+                    style={{
+                      background: isValidContact(reviewContact) ? "#1ABC9C" : "rgba(26,188,156,0.1)",
+                      color: isValidContact(reviewContact) ? "#000" : "#1ABC9C",
+                      border: isValidContact(reviewContact) ? "none" : "1px solid rgba(26,188,156,0.35)",
+                      borderRadius: 10,
+                      padding: "13px 22px",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: isValidContact(reviewContact) ? "pointer" : "default",
+                      fontFamily: "'DM Sans', sans-serif",
+                      whiteSpace: "nowrap" as const,
+                      transition: "background 0.18s, color 0.18s, box-shadow 0.18s",
+                      boxShadow: isValidContact(reviewContact) ? "0 4px 18px rgba(26,188,156,0.35)" : "none",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {reviewSending ? "Sending..." : "Send Review Request →"}
+                  </button>
+                </div>
+                <div style={{ fontSize: 12, color: "rgba(240,235,227,0.45)", paddingLeft: 2, lineHeight: 1.5 }}>
+                  Takes ~2 seconds. Sends a direct Google review link — no setup needed.
+                </div>
+                {reviewError && <div style={{ fontSize: 12, color: "#E74C3C" }}>{reviewError}</div>}
               </div>
             )}
           </div>
