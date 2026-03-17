@@ -3441,7 +3441,7 @@ function DashboardContent() {
                     }}>
                       <span style={{ fontSize: 14 }}>🎯</span>
                       <div style={{ fontSize: 12, color: "rgba(247,243,237,0.6)", lineHeight: 1.5 }}>
-                        Focus on the next step to begin improving visibility. The rest will follow.
+                        Each step you complete moves more local patients toward your clinic.
                       </div>
                     </div>
                   )}
@@ -3555,7 +3555,7 @@ function DashboardContent() {
                           >
                             {reviewGap > 0
                               ? `Closing this review gap moves you up in rank and recaptures lost bookings — estimated `
-                              : `Consistent reviews protect your rank from competitors gaining on you — estimated `}
+                              : `Clinics gaining steady reviews often move ahead of similarly rated competitors — estimated `}
                             <span style={{ color: isUpcoming ? "#6B7B78" : "#F0A500", fontWeight: 600 }}>
                               {weeks}
                             </span>
