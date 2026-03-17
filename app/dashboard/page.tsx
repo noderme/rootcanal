@@ -1268,7 +1268,7 @@ function DashboardContent() {
 
   // Fetch audit data
   useEffect(() => {
-    if (!url && !nameParam) return;
+    if (!url && !nameParam) { setLoading(false); return; }
     const totalSteps = 8;
     let i = 0;
     const interval = setInterval(() => {
