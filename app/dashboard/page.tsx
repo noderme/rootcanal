@@ -1426,9 +1426,9 @@ function DashboardContent() {
     { label: "Analysing how your clinic appears in local patient searches…" },
     { label: "Evaluating factors that influence patient discovery and booking decisions…" },
     { label: `Identifying nearby clinics currently attracting patient attention in ${displayCity || "your area"}…` },
-    { label: "Reviewing how patients are finding and evaluating local dental clinics…" },
+    { label: "Understanding what influences patients when choosing between nearby clinics…" },
     { label: "Detecting patterns in patient feedback that may influence trust and referrals…" },
-    { label: "Assessing your clinic's visibility relative to nearby competitors…" },
+    { label: "Comparing how easily patients can discover your clinic versus nearby competitors…" },
     { label: "Preparing recommendations to improve your local visibility…" },
     { label: "Preparing your visibility summary…" },
   ];
