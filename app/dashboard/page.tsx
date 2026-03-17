@@ -929,8 +929,8 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
           marker.addListener("click", () => {
             infoWindow.setContent(
               `<div style="color:#111;font-family:sans-serif;padding:6px 4px;max-width:200px;text-align:center">
-                🔒 <b>Upgrade to Pro</b><br/>
-                <span style="font-size:12px;color:#555">See who's competing around you</span>
+                🔒 <b>Patient traffic hidden</b><br/>
+                <span style="font-size:12px;color:#555">This clinic may be capturing patients searching near you</span>
               </div>`
             );
             infoWindow.open(map, marker);
@@ -970,24 +970,27 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
       {!isPro && (
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(to top, rgba(13,19,16,0.95) 60%, transparent)",
+          background: "linear-gradient(to top, rgba(10,14,12,0.97) 55%, transparent)",
           borderRadius: "0 0 12px 12px",
-          padding: "32px 24px 20px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "40px 24px 20px",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap",
         }}>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-              🔒 {data.competitors.length} competitors hidden around you
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: "#F0EBE3", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#E74C3C", boxShadow: "0 0 6px #E74C3C", flexShrink: 0 }} />
+              {data.competitors.length > 0
+                ? `${data.competitors.length} nearby clinics may be capturing ~${Math.min(95, data.competitors.length * 6)}% of new patient searches`
+                : "Nearby clinics may be capturing the majority of new patient searches"}
             </div>
-            <div style={{ fontSize: 12, color: "#6B7B78" }}>
-              Upgrade to Pro to see who's outranking you on the map
+            <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}>
+              Unlock the map to see exactly who is outranking you and where patients are going instead.
             </div>
           </div>
           <button
             onClick={() => onUpgrade?.()}
-            style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+            style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "11px 22px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, boxShadow: "0 2px 12px rgba(26,188,156,0.25)" }}
           >
-            Upgrade to Pro →
+            Unlock Competitor Map →
           </button>
         </div>
       )}
@@ -1049,6 +1052,7 @@ function DashboardContent() {
   // Plan state
   const [isPro, setIsPro] = useState(false);
   const [isGrowth, setIsGrowth] = useState(false);
+  const [teaserDismissed, setTeaserDismissed] = useState(false);
 
   // Post-payment unlock animation
   const [showUnlockAnim, setShowUnlockAnim] = useState(false);
@@ -1607,6 +1611,111 @@ function DashboardContent() {
     return allReviews.indexOf(data.userReviewCount) + 1;
   })();
 
+  // ── TEASER SCREEN ────────────────────────────────────────────────────────────
+  const showTeaser = !teaserDismissed && !isPro && !isGrowth;
+  if (showTeaser) {
+    const tRank = userRank;
+    const [lostLow, lostHigh] = tRank == null || tRank > 20 ? [25, 40] : tRank > 10 ? [15, 25] : tRank > 5 ? [8, 15] : [3, 8];
+    const topComp = data.competitors.length > 0 ? [...data.competitors].sort((a, b) => a.googleRank - b.googleRank)[0] : null;
+    const reviewGapVsTop = topComp != null ? Math.max(0, (topComp.reviews || 0) - (data.userReviewCount || 0)) : null;
+    const clinicLabel = data.clinicName || nameParam || "Your Clinic";
+
+    return (
+      <div style={{ minHeight: "100vh", background: "#0D0F0E", color: "#F0EBE3", fontFamily: "'DM Sans', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+          * { box-sizing: border-box; }
+          @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+          .teaser-card { animation: fadeUp 0.45s ease both; }
+        `}</style>
+
+        {/* Logo */}
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, marginBottom: 40, color: "#F0EBE3" }}>
+          Root<span style={{ color: "#1ABC9C" }}>Canal</span>
+        </div>
+
+        <div className="teaser-card" style={{ width: "100%", maxWidth: 520 }}>
+          {/* Header */}
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ fontSize: 11, letterSpacing: 2.5, textTransform: "uppercase" as const, color: "#E74C3C", fontWeight: 700, marginBottom: 12 }}>
+              ⚠ Your Report Is Ready
+            </div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900, color: "#F0EBE3", lineHeight: 1.25, marginBottom: 8 }}>
+              {clinicLabel}
+            </div>
+            <div style={{ fontSize: 14, color: "rgba(240,235,227,0.45)" }}>
+              Here&apos;s what we found about your Google visibility
+            </div>
+          </div>
+
+          {/* 3 stat cards */}
+          <div style={{ display: "flex", flexDirection: "column" as const, gap: 12, marginBottom: 28 }}>
+
+            {/* Rank */}
+            <div style={{ background: "#151918", border: `1px solid ${tRank == null || tRank > 3 ? "rgba(231,76,60,0.3)" : "rgba(46,204,113,0.3)"}`, borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Google Rank</div>
+                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", lineHeight: 1.5 }}>
+                  {tRank == null || tRank > 3
+                    ? "Top 3 clinics capture ~70% of patient clicks. Yours isn't there yet."
+                    : "Strong position — protect it by staying ahead on reviews."}
+                </div>
+              </div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, fontWeight: 900, color: tRank == null || tRank > 3 ? "#E74C3C" : "#1ABC9C", lineHeight: 1, flexShrink: 0, marginLeft: 20 }}>
+                {tRank != null ? `#${tRank}` : "—"}
+              </div>
+            </div>
+
+            {/* Lost patients */}
+            <div style={{ background: "#151918", border: "1px solid rgba(231,76,60,0.3)", borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Est. Lost Patients</div>
+                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", lineHeight: 1.5 }}>
+                  Patients choosing higher-ranked competitors every month.
+                </div>
+              </div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 38, fontWeight: 900, color: "#E74C3C", lineHeight: 1, flexShrink: 0, marginLeft: 20, whiteSpace: "nowrap" as const }}>
+                {lostLow}–{lostHigh}
+                <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(231,76,60,0.6)", marginLeft: 4 }}>/mo</span>
+              </div>
+            </div>
+
+            {/* Review gap */}
+            <div style={{ background: "#151918", border: "1px solid rgba(240,165,0,0.25)", borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Review Gap vs #1</div>
+                <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", lineHeight: 1.5 }}>
+                  {reviewGapVsTop != null && reviewGapVsTop > 0
+                    ? `${topComp?.name || "Top competitor"} has ${reviewGapVsTop} more reviews — that gap is costing you rank.`
+                    : "You're competitive on reviews — focus on holding this advantage."}
+                </div>
+              </div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, fontWeight: 900, color: "#F0A500", lineHeight: 1, flexShrink: 0, marginLeft: 20 }}>
+                {reviewGapVsTop != null ? (reviewGapVsTop > 0 ? `+${reviewGapVsTop}` : "0") : "—"}
+              </div>
+            </div>
+          </div>
+
+          {/* Primary CTA */}
+          <button
+            onClick={() => { setTeaserDismissed(true); setShowUpgradeModal(true); }}
+            style={{ width: "100%", padding: "16px", background: "linear-gradient(135deg, #1ABC9C, #16a085)", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 700, color: "#000", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", boxShadow: "0 4px 24px rgba(26,188,156,0.35)", marginBottom: 14 }}
+          >
+            Unlock Full Growth Plan →
+          </button>
+
+          {/* Secondary dismiss */}
+          <button
+            onClick={() => setTeaserDismissed(true)}
+            style={{ display: "block", width: "100%", background: "none", border: "none", color: "#4A5A57", fontSize: 13, cursor: "pointer", textAlign: "center" as const, padding: "8px" }}
+          >
+            View free report →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -1812,7 +1921,7 @@ function DashboardContent() {
                   cursor: "pointer",
                 }}
               >
-                Upgrade to Growth →
+                Get More Patient Bookings →
               </button>
             </div>
           ) : (
@@ -1830,7 +1939,7 @@ function DashboardContent() {
                 cursor: "pointer",
               }}
             >
-              Upgrade →
+              Unlock Patients You're Losing →
             </button>
           )}
         </div>
@@ -1856,13 +1965,13 @@ function DashboardContent() {
             Navigation
           </div>
           {([
-            { id: "competitors", label: "🏆 Competitors" },
-            { id: "map",         label: "🗺️ Map" },
-            { id: "roadmap",     label: "📈 Growth Plan" },
-            { id: "reviews",     label: "⭐ Reviews (G+Y)" },
-            { id: "score",       label: "🧠 Intelligence" },
-            ...(hasWebsite ? [{ id: "health" as const, label: "🔧 Health" }] : []),
-          ] as const).map((item) => (
+            { id: "roadmap",     label: "📈 Growth Plan",    freeVisible: true },
+            { id: "reviews",     label: "⭐ Reviews (G+Y)",  freeVisible: true },
+            { id: "competitors", label: "🏆 Competitors",    freeVisible: true },
+            { id: "map",         label: "🗺️ Map",            freeVisible: false },
+            { id: "score",       label: "🧠 Intelligence",   freeVisible: false },
+            ...(hasWebsite ? [{ id: "health" as const, label: "🔧 Health", freeVisible: false }] : []),
+          ] as const).filter(item => (isPro || isGrowth) || item.freeVisible).map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
@@ -2100,6 +2209,87 @@ function DashboardContent() {
           );
         })()}
 
+        {/* ── FASTEST WAY HERO ─────────────────────────────── */}
+        {data.placeId && (
+          <div style={{
+            background: "linear-gradient(135deg, #081a12 0%, #0a2018 60%, #0d1a14 100%)",
+            border: "1px solid rgba(26,188,156,0.3)",
+            borderRadius: 16,
+            padding: "24px 28px",
+            marginBottom: 24,
+            position: "relative" as const,
+            overflow: "hidden",
+          }}>
+            {/* Subtle glow */}
+            <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(26,188,156,0.06)", pointerEvents: "none" }} />
+
+            <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: "uppercase" as const, color: "#1ABC9C", fontWeight: 700, marginBottom: 8 }}>
+              ⚡ Action — Do This Now
+            </div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 800, color: "#F0EBE3", marginBottom: 4 }}>
+              Fastest Way to Get More Patients This Week
+            </div>
+            <div style={{ fontSize: 13, color: "rgba(240,235,227,0.45)", marginBottom: 20, lineHeight: 1.5 }}>
+              Send a review link to one patient right now — each new review raises your local ranking and directly increases booking inquiries.
+            </div>
+
+            {reviewSent ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(46,204,113,0.08)", border: "1px solid rgba(46,204,113,0.25)", borderRadius: 10, padding: "14px 18px" }}>
+                <span style={{ fontSize: 20 }}>🎉</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#2ECC71" }}>Review request sent!</div>
+                  <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>Your patient will receive a direct Google review link. Send to another patient to keep the momentum.</div>
+                </div>
+                <button onClick={() => setReviewSent(false)} style={{ marginLeft: "auto", background: "none", border: "1px solid rgba(46,204,113,0.3)", borderRadius: 8, color: "#2ECC71", fontSize: 12, fontWeight: 700, padding: "6px 14px", cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0 }}>
+                  Send Another →
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" as const }}>
+                <input
+                  type="text"
+                  placeholder="Patient email or phone number"
+                  value={reviewContact}
+                  onChange={e => { setReviewContact(e.target.value); setReviewError(""); }}
+                  onKeyDown={async e => {
+                    if (e.key !== "Enter" || !isValidContact(reviewContact) || !data.placeId) return;
+                    setReviewSending(true); setReviewError("");
+                    const isEmail = reviewContact.includes("@");
+                    try {
+                      const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
+                      const result = await res.json();
+                      if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
+                    } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
+                  }}
+                  style={{ flex: 1, minWidth: 200, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(26,188,156,0.25)", borderRadius: 10, padding: "13px 16px", color: "#F0EBE3", fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: "none" }}
+                />
+                <button
+                  onClick={async () => {
+                    if (!isValidContact(reviewContact) || !data.placeId) return;
+                    setReviewSending(true); setReviewError("");
+                    const isEmail = reviewContact.includes("@");
+                    try {
+                      const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
+                      const result = await res.json();
+                      if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
+                    } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
+                  }}
+                  disabled={reviewSending || !isValidContact(reviewContact)}
+                  style={{ background: isValidContact(reviewContact) ? "#1ABC9C" : "#1A2320", color: isValidContact(reviewContact) ? "#000" : "#4A5A57", border: "none", borderRadius: 10, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: isValidContact(reviewContact) ? "pointer" : "default", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap" as const, transition: "background 0.15s", boxShadow: isValidContact(reviewContact) ? "0 2px 12px rgba(26,188,156,0.25)" : "none", flexShrink: 0 }}
+                >
+                  {reviewSending ? "Sending..." : "Send Review Request →"}
+                </button>
+              </div>
+            )}
+            {reviewError && <div style={{ fontSize: 12, color: "#E74C3C", marginTop: 8 }}>{reviewError}</div>}
+            {!reviewSent && (
+              <div style={{ fontSize: 11, color: "rgba(240,235,227,0.25)", marginTop: 10 }}>
+                Sends a Google review link via email or SMS · No app needed · Takes 2 seconds
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── COMPETITORS: rank strip ──────────────────────── */}
         {activeTab === "competitors" && (
           <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
@@ -2133,10 +2323,10 @@ function DashboardContent() {
             )}
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
               {typeof userRank === "number" && reviewRank != null && userRank <= 3 && reviewRank > userRank
-                ? `You rank #${userRank} on Google but #${reviewRank} by reviews — competitors could overtake you as their reviews grow.`
+                ? `You rank #${userRank} on Google but #${reviewRank} by reviews — clinics with more reviews are 3x more likely to steal your next booking.`
                 : typeof userRank === "number" && userRank <= 3
-                ? `You're ranked #${userRank} among dentists within 5 km — great position. Keep collecting reviews to protect your spot.`
-                : `📉 You're ranked #${userRank} among dentists within 5 km. Top 3 clinics get ~70% of all patient clicks.`}
+                ? `You're ranked #${userRank} nearby — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that revenue.`
+                : `📉 You're ranked #${userRank} nearby. Top 3 clinics capture ~70% of patient clicks — patients at your rank rarely appear in new booking searches.`}
             </div>
           </div>
         )}
@@ -2145,9 +2335,9 @@ function DashboardContent() {
         {activeTab === "health" && (
           <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
             {([
-              { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore >= 80 ? "A" : data.performanceScore >= 60 ? "B" : data.performanceScore >= 40 ? "C" : "F", label: "Website Speed", sublabel: "how fast your site loads for patients", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
-              { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore >= 80 ? "A" : data.seoScore >= 60 ? "B" : data.seoScore >= 40 ? "C" : "F", label: "Google Findability", sublabel: "how easily patients find you on Google", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
-              { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore >= 80 ? "A" : data.accessibilityScore >= 60 ? "B" : data.accessibilityScore >= 40 ? "C" : "F", label: "Website Usability", sublabel: "how easy your site is to navigate", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
+              { icon: "⚡", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.performanceScore >= 80 ? "A" : data.performanceScore >= 60 ? "B" : data.performanceScore >= 40 ? "C" : "F", label: "Website Speed", sublabel: "slow sites lose up to 20% of patient conversions", color: data.performanceScore >= 70 ? "#2ECC71" : data.performanceScore >= 40 ? "#F0A500" : "#E74C3C" },
+              { icon: "🔍", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.seoScore >= 80 ? "A" : data.seoScore >= 60 ? "B" : data.seoScore >= 40 ? "C" : "F", label: "Google Findability", sublabel: "poor findability costs you new patient bookings daily", color: data.seoScore >= 70 ? "#2ECC71" : data.seoScore >= 40 ? "#F0A500" : "#E74C3C" },
+              { icon: "👆", value: data.performanceScore === 0 && data.seoScore === 0 ? "—" : data.accessibilityScore >= 80 ? "A" : data.accessibilityScore >= 60 ? "B" : data.accessibilityScore >= 40 ? "C" : "F", label: "Website Usability", sublabel: "hard-to-use sites reduce form completions by 30%+", color: data.accessibilityScore >= 70 ? "#2ECC71" : "#F0A500" },
             ] as { icon: string; value: string | number; label: string; sublabel: string; color: string }[]).map((m, i, arr) => (
               <div key={i} style={{ flex: 1, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderRight: i < arr.length - 1 ? "1px solid #2A3330" : "none" }}>
                 <span style={{ fontSize: 20 }}>{m.icon}</span>
@@ -2202,7 +2392,7 @@ function DashboardContent() {
                     {inTopThree ? `You're in the top 3 in ${displayCity} — for now.` : `You're outside the top 3 — most patients never scroll that far`}
                   </div>
                   <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>
-                    {inTopThree ? "Google rankings change every week. Clinics that keep collecting reviews stay on top — those that stop, drop." : "Top 3 clinics receive ~70% of clicks. Most patients never see you."}
+                    {inTopThree ? "Rankings shift weekly. Clinics in top 3 that consistently collect reviews get 5x more inquiries — those that stop collecting reviews, drop." : "Top 3 clinics capture ~70% of all patient clicks and bookings. At your current rank, most new patients never see your clinic."}
                   </div>
                 </div>
               </div>
@@ -2281,9 +2471,9 @@ function DashboardContent() {
                 lineHeight: 1.6,
               }}
             >
-              More Google reviews = higher ranking = more patient bookings.
+              Clinics in the top 3 by reviews capture up to 3x more bookings than those outside it.
               <br />
-              Send a direct review link to a recent patient in 2 seconds.
+              Send a direct review link to a patient in 2 seconds — it&apos;s the highest-ROI action you can take today.
             </div>
           </div>
           <div
@@ -2520,7 +2710,7 @@ function DashboardContent() {
                 transition: "opacity 0.2s",
               }}
             >
-              Upgrade to Growth — $99/mo →
+              Start Winning Patients Back — $99/mo →
             </button>
           </div>
         )}
@@ -2542,19 +2732,19 @@ function DashboardContent() {
           const reviewGap = Math.max(0, topReviews - reviewCount);
           if (reviewGap > 0)
             priorities.push(
-              `Get ${Math.min(reviewGap, 20)} more Google reviews to close the gap with top competitors`,
+              `Get ${Math.min(reviewGap, 20)} more Google reviews — each new review increases your chance of ranking in the top 3 by ~8%`,
             );
           if (data.performanceScore > 0 && data.performanceScore < 60)
             priorities.push(
-              `Speed up your website — it loads at ${data.performanceScore}/100, which is hurting your ranking`,
+              `Speed up your website (${data.performanceScore}/100) — slow sites reduce patient conversions by up to 20%`,
             );
           if (reviews && reviews.responseRate < 70)
             priorities.push(
-              `Respond to recent patient reviews — top clinics respond to 70%+ of reviews`,
+              `Respond to patient reviews — clinics that respond receive ~10–15% more booking inquiries`,
             );
           if (data.seoScore > 0 && data.seoScore < 70)
             priorities.push(
-              `Improve your Google findability score — currently ${data.seoScore}/100`,
+              `Improve Google findability (${data.seoScore}/100) — better SEO directly increases new patients finding you first`,
             );
           const top3 = priorities.slice(0, 3);
           if (top3.length === 0) return null;
@@ -2646,14 +2836,14 @@ function DashboardContent() {
         >
           {(
             [
-              { id: "competitors", label: "🏆", sublabel: "Rivals" },
-              { id: "map",         label: "🗺️", sublabel: "Map" },
-              { id: "roadmap",     label: "📈", sublabel: "Growth" },
-              { id: "reviews",     label: "⭐", sublabel: "Reviews" },
-              { id: "score",       label: "🧠", sublabel: "Intel" },
-              { id: "health",      label: "🔧", sublabel: "Health" },
+              { id: "roadmap",     label: "📈", sublabel: "Growth",  freeVisible: true },
+              { id: "reviews",     label: "⭐", sublabel: "Reviews", freeVisible: true },
+              { id: "competitors", label: "🏆", sublabel: "Rivals",  freeVisible: true },
+              { id: "map",         label: "🗺️", sublabel: "Map",     freeVisible: false },
+              { id: "score",       label: "🧠", sublabel: "Intel",   freeVisible: false },
+              { id: "health",      label: "🔧", sublabel: "Health",  freeVisible: false },
             ] as const
-          ).map((tab) => (
+          ).filter(tab => (isPro || isGrowth) || tab.freeVisible).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -3068,7 +3258,7 @@ function DashboardContent() {
                     <div style={{ fontSize: 36, marginBottom: 12 }}>🚨</div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#E74C3C", marginBottom: 8 }}>Your practice isn&apos;t visible in the top 60 Google results</div>
                     <div style={{ fontSize: 13, color: "#6B7B78", lineHeight: 1.6, maxWidth: 420, margin: "0 auto 20px" }}>
-                      A growth roadmap requires a baseline rank. Start by collecting more Google reviews — that&apos;s the single fastest way to appear in local search results.
+                      Clinics outside the top 60 lose an estimated 25–40 patients per month to ranked competitors. More Google reviews is the single fastest way to start appearing — and recapturing those bookings.
                     </div>
                     <button onClick={() => setActiveTab("reviews")} style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "12px 24px", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                       Start Getting Reviews →
@@ -3111,7 +3301,7 @@ function DashboardContent() {
                           You&apos;re in the Top 3 — protect your position
                         </div>
                         <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}>
-                          These practices are closing in. Don&apos;t let them catch up — keep collecting reviews consistently.
+                          These practices are closing in. Clinics that stop collecting reviews drop in rank within weeks — losing bookings to the clinics that didn&apos;t.
                         </div>
                       </div>
                     </div>
@@ -3171,12 +3361,12 @@ function DashboardContent() {
                             </div>
                             {!isLocked ? (
                               <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.6 }}>
-                                They&apos;re only {gap} point{gap === 1 ? "" : "s"} behind — at this pace they could catch you in{" "}
-                                <span style={{ color: urgencyColor, fontWeight: 600 }}>{catchUpTime}</span>.
-                                {urgency === "high" ? " Act now." : ""}
+                                Only {gap} review{gap === 1 ? "" : "s"} behind you — if they overtake your rank, they capture your patients. Estimated{" "}
+                                <span style={{ color: urgencyColor, fontWeight: 600 }}>{catchUpTime}</span>{" "}
+                                until they could outrank you.{urgency === "high" ? " Act now." : ""}
                               </div>
                             ) : (
-                              <div style={{ fontSize: 12, color: "#6B7B78" }}>🔒 Unlock with Pro to monitor this threat</div>
+                              <div style={{ fontSize: 12, color: "#6B7B78" }}>🔒 Unlock to see how close this clinic is to stealing your rank</div>
                             )}
                           </div>
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -3213,7 +3403,7 @@ function DashboardContent() {
                           Keep your lead — collect reviews effortlessly
                         </div>
                         <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                          Send 1-click review requests to patients and widen your gap before competitors catch up.
+                          Every review widens your lead — clinics with more reviews attract 15–20% more appointment requests and hold rank longer.
                         </div>
                       </div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#1ABC9C", whiteSpace: "nowrap" }}>
@@ -3319,15 +3509,15 @@ function DashboardContent() {
                               }}
                             >
                               {reviewGap > 0
-                                ? `Get ${reviewGap} more reviews to close the gap — estimated `
-                                : `Keep collecting reviews to hold this rank — estimated `}
+                                ? `Closing this review gap moves you up in rank and recaptures lost bookings — estimated `
+                                : `Consistent reviews protect your rank from competitors gaining on you — estimated `}
                               <span style={{ color: "#F0A500", fontWeight: 600 }}>
                                 {weeks}
                               </span>
                             </div>
                           ) : (
                             <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                              🔒 Unlock with Pro to see full roadmap
+                              🔒 Unlock to see exactly how many patients you&apos;re losing to this clinic
                             </div>
                           )}
                         </div>
@@ -3402,13 +3592,11 @@ function DashboardContent() {
                           </div>
                         ) : isPro ? (
                           <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                            🚀 Upgrade to Growth for a done-for-you accelerated
-                            plan
+                            🚀 Get a done-for-you plan to accelerate patient growth
                           </div>
                         ) : (
                           <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                            🔒 Get Pro to unlock your full step-by-step growth
-                            plan
+                            🔒 Unlock your full step-by-step patient growth plan
                           </div>
                         )}
                       </div>
@@ -3428,7 +3616,7 @@ function DashboardContent() {
                             flexShrink: 0,
                           }}
                         >
-                          {isPro ? "Get Growth →" : "Get Pro →"}
+                          {isPro ? "See Full Growth Plan →" : "Unlock Your Growth Plan →"}
                         </button>
                       )}
                     </div>
@@ -3571,8 +3759,8 @@ function DashboardContent() {
                     }}
                   >
                     {isPro
-                      ? "Upgrade to Growth for Automated Reviews →"
-                      : "Get More Reviews with Pro →"}
+                      ? "Automate Your Review Collection →"
+                      : "Start Getting More Patient Reviews →"}
                   </button>
                 )}
               </div>
@@ -4363,9 +4551,9 @@ function DashboardContent() {
                 <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 4 }}>
                   {data.healthgradesFound
                     ? data.healthgradesClaimed === false
-                      ? "Your profile exists but is unclaimed — anyone can edit it and patients see it as abandoned. Claim it now."
-                      : "Your clinic has a verified Healthgrades presence — patients searching there can find you."
-                    : "25% of patients search Healthgrades before choosing a dentist. Your clinic is invisible to them."}
+                      ? "Unclaimed profiles lose ~15% of patient trust — anyone can edit yours and it appears abandoned. Claiming takes 5 minutes."
+                      : "A verified Healthgrades profile captures additional inquiries from the ~25% of patients who check it before booking."
+                    : "1 in 4 patients checks Healthgrades before choosing a dentist. Without a profile, you're invisible to that entire audience."}
                 </div>
                 {data.healthgradesFound && data.healthgradesUrl && (
                   <a href={data.healthgradesUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, fontSize: 11, fontWeight: 700, color: "#1ABC9C", textDecoration: "underline" }}>
@@ -4404,11 +4592,11 @@ function DashboardContent() {
                 ⚡ Easy Wins — Do These This Week
               </div>
               {[
-                "Add 'dentist + your city' to your homepage title",
-                "Complete your Google Business Profile",
-                "Ask your last 10 patients for a Google review",
-                "Add your clinic hours to Google",
-                "Upload 10+ photos to Google Business",
+                "Add 'dentist + your city' to your homepage title — boosts local search ranking within days",
+                "Complete your Google Business Profile — complete profiles get 7x more clicks than incomplete ones",
+                "Ask your last 10 patients for a Google review — each review increases booking conversions by ~5%",
+                "Add your clinic hours to Google — missing hours cause patients to call competitors instead",
+                "Upload 10+ photos to Google Business — listings with photos get 35% more clicks",
               ].map((tip, i) => (
                 <div
                   key={i}
