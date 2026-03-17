@@ -2070,7 +2070,7 @@ function DashboardContent() {
         {activeTab === "competitors" && (<>
 
         {/* NOT IN TOP 60 BANNER */}
-        {data.notInTop60 && (
+        {userRank == null && (
           <div className="card" style={{ background: "rgba(231,76,60,0.1)", border: "1px solid rgba(231,76,60,0.35)", borderRadius: 16, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
             <span style={{ fontSize: 28 }}>🚨</span>
             <div>
@@ -2967,7 +2967,7 @@ function DashboardContent() {
 
             {(() => {
               // Not visible in top 60 — can't build a rank-based roadmap
-              if (data.notInTop60) {
+              if (userRank == null) {
                 return (
                   <div style={{ textAlign: "center", padding: "32px 20px" }}>
                     <div style={{ fontSize: 36, marginBottom: 12 }}>🚨</div>
