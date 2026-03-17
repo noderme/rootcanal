@@ -144,21 +144,21 @@ function UpgradeModal({
   };
 
   const proFeatures = [
-    "Monthly automated checks",
-    "Full 30-point Google report",
-    "Competitor tracking (3 clinics)",
-    "Google & Yelp review request automation",
-    "Monthly progress report",
-    "Step-by-step fix guides",
+    "Regular scans to track whether your ranking position is improving.",
+    "Detailed breakdown of the exact signals affecting your local search visibility.",
+    "See which nearby clinics are attracting patients before you.",
+    "Automatically ask patients for reviews — the fastest way to improve local ranking.",
+    "Track whether your local search visibility is improving month-to-month.",
+    "Clear actions to help improve ranking signals and patient discovery.",
   ];
 
   const growthFeatures = [
     "Everything in Pro",
-    "Connect Google Business Profile via OAuth",
-    "Google + Yelp review history AI analysis",
-    "Competitor tracking (10 clinics)",
-    "Priority email support",
-    "Quarterly strategy call",
+    "Connect your Google Business Profile for deeper ranking insights.",
+    "AI analysis of your review trends to identify what's driving or limiting your ranking.",
+    "Monitor up to 10 nearby competitors to stay ahead of ranking changes.",
+    "Priority support to help you act on visibility improvements faster.",
+    "Quarterly strategy session to review your ranking progress and adjust your plan.",
   ];
 
   if (screen === "processing") {
@@ -320,6 +320,7 @@ function UpgradeModal({
           position: "relative",
           padding: 40,
           boxSizing: "border-box" as const,
+          animation: "modalEnter 0.24s ease-out both",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -358,11 +359,15 @@ function UpgradeModal({
               fontSize: 26,
               fontWeight: 900,
               color: "#F0EBE3",
+              marginBottom: 8,
             }}
           >
             {mode === "growth-only"
-              ? "Take Your Clinic to the Next Level"
-              : "Start Growing Your Practice Today"}
+              ? "Start Recovering the Patients You're Missing"
+              : "Start Recovering the Patients You're Missing"}
+          </div>
+          <div style={{ fontSize: 13, color: "rgba(240,235,227,0.45)", lineHeight: 1.6 }}>
+            Even a small improvement in local ranking can generate additional treatment enquiries each month.
           </div>
         </div>
 
@@ -433,7 +438,7 @@ function UpgradeModal({
                 </span>
               </div>
               <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 24 }}>
-                For clinics serious about Google growth
+                For clinics that want to improve local ranking visibility and attract more patient enquiries.
               </div>
               <div
                 style={{
@@ -484,7 +489,7 @@ function UpgradeModal({
                   width: "100%",
                 }}
               >
-                Get Pro — $49/mo →
+                Start Improving My Ranking — $49/mo
               </button>
             </div>
           )}
@@ -546,7 +551,7 @@ function UpgradeModal({
               </span>
             </div>
             <div style={{ fontSize: 13, color: "#6B7B78", marginBottom: 24 }}>
-              For clinics that want to dominate their city
+              For clinics aiming to consistently appear ahead of nearby competitors in local searches.
             </div>
             <div
               style={{
@@ -597,20 +602,24 @@ function UpgradeModal({
                 width: "100%",
               }}
             >
-              Get Growth — $99/mo →
+              Unlock Full Visibility Plan — $99/mo
             </button>
           </div>
         </div>
 
-        <div
-          style={{
-            textAlign: "center",
-            marginTop: 20,
-            fontSize: 12,
-            color: "#6B7B78",
-          }}
-        >
-          🔒 Secure checkout via Paddle · Cancel anytime
+        {/* Trust + reassurance */}
+        <div style={{ textAlign: "center", marginTop: 24, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 12, color: "#4A5A57", letterSpacing: 0.3 }}>
+            Built specifically for dental clinics improving their Google visibility.
+          </div>
+          <div style={{ fontSize: 12, color: "#6B7B78", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, flexWrap: "wrap" as const }}>
+            <span>✓ Cancel anytime</span>
+            <span>✓ No long-term contracts</span>
+            <span>✓ Setup takes minutes</span>
+          </div>
+          <div style={{ fontSize: 11, color: "#3A4A47" }}>
+            🔒 Secure checkout via Paddle
+          </div>
         </div>
 
         {/* TEST BUTTON — uncomment to test checkout flow
@@ -1764,6 +1773,7 @@ function DashboardContent() {
         ::-webkit-scrollbar-thumb { background: #2A3330; border-radius: 3px; }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes modalEnter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes sectionGlow { 0% { box-shadow: 0 0 0 0 rgba(26,188,156,0); } 30% { box-shadow: 0 0 0 2px rgba(26,188,156,0.28), inset 0 0 24px rgba(26,188,156,0.04); } 100% { box-shadow: 0 0 0 0 rgba(26,188,156,0); } }
         @keyframes tabUnderline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
         @keyframes progressFill { from { width: 0%; } to { width: var(--pw, 12%); } }
