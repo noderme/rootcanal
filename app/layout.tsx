@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "RootCanal — Dental Growth Intelligence",
@@ -31,7 +30,17 @@ export default function RootLayout({
         {/* Paddle.js — payment checkout */}
         <script src="https://cdn.paddle.com/paddle/v2/paddle.js" async></script>
         {/* Contentsquare */}
-        <script src="https://t.contentsquare.net/uxa/d9829673fa46e.js" async></script>
+        <script dangerouslySetInnerHTML={{ __html: `
+          window._uxa = window._uxa || [];
+          if (typeof CS_CONF === 'undefined') {
+            window._uxa.push(['setPath', window.location.pathname + window.location.search.replace('?', '#')]);
+            var head = document.getElementsByTagName('head')[0];
+            var s = document.createElement('script');
+            s.async = true;
+            s.src = 'https://t.contentsquare.net/uxa/d9829673fa46e.js';
+            head.appendChild(s);
+          }
+        ` }} />
         {/* Service worker registration */}
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
