@@ -29,7 +29,7 @@ interface AuditData {
     rating: number;
     reviews: number;
     address: string;
-    score: number;
+    googleRank: number;
   }[];
   placeId: string;
   scannedAt: string;
@@ -839,6 +839,7 @@ function DashboardContent() {
   const [activeTab, setActiveTab] = useState<
     "competitors" | "roadmap" | "reviews" | "score" | "health"
   >("competitors");
+  const [competitorPage, setCompetitorPage] = useState(0);
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
   const [patientValue, setPatientValue] = useState(150);
   const [reviewContact, setReviewContact] = useState("");
@@ -2391,7 +2392,7 @@ function DashboardContent() {
               reviews &&
               (() => {
                 const topComp = [...data.competitors].sort(
-                  (a, b) => b.score - a.score,
+                  (a, b) => a.googleRank - b.googleRank,
                 )[0];
                 const ratingGap = (
                   (topComp.rating || 0) - (reviews.rating || 0)
@@ -2622,134 +2623,93 @@ function DashboardContent() {
                 );
               })()}
 
-            <div
-              className="card rc-competitor-grid"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: 16,
-                marginBottom: 24,
-                animationDelay: "0.4s",
-              }}
-            >
-              {/* Competitor cards */}
-              {data.competitors
-                .slice(0, isPro ? undefined : 2)
-                .map((comp, i) => (
-                  <div
-                    key={i}
-                    className="comp-row"
-                    style={{
-                      background: "#151918",
-                      border: "1px solid #2A3330",
-                      borderRadius: 14,
-                      padding: 20,
-                      transition: "background 0.2s",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: "#F0EBE3",
-                          paddingRight: 8,
-                        }}
-                      >
-                        {comp.name}
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "#6B7B78",
-                        marginBottom: 12,
-                      }}
-                    >
-                      {comp.address}
-                    </div>
-                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: "'Playfair Display', serif",
-                            fontSize: 20,
-                            fontWeight: 900,
-                            color:
-                              comp.rating >= (reviews?.rating || 0)
-                                ? "#E74C3C"
-                                : "#2ECC71",
-                          }}
-                        >
-                          {comp.rating?.toFixed(1)} ⭐
+            {(() => {
+              // Build full ranked list: insert user's row at their rank position
+              const PAGE_SIZE = 10;
+              const allSorted = [...data.competitors].sort((a, b) => a.googleRank - b.googleRank);
+
+              // Build display rows with user row injected at userRank position
+              type Row = { isUser: true; rank: number } | { isUser: false; comp: typeof allSorted[0] };
+              const rows: Row[] = [];
+              let userInserted = false;
+              for (const comp of allSorted) {
+                if (!userInserted && typeof userRank === "number" && comp.googleRank >= userRank) {
+                  rows.push({ isUser: true, rank: userRank });
+                  userInserted = true;
+                }
+                rows.push({ isUser: false, comp });
+              }
+              if (!userInserted && typeof userRank === "number") {
+                rows.push({ isUser: true, rank: userRank });
+              }
+
+              const totalPages = Math.ceil(rows.length / PAGE_SIZE);
+              const pageRows = rows.slice(competitorPage * PAGE_SIZE, (competitorPage + 1) * PAGE_SIZE);
+
+              return (
+                <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 14, marginBottom: 24, overflow: "hidden" }}>
+                  {/* Header */}
+                  <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "10px 16px", borderBottom: "1px solid #1A2220", fontSize: 11, color: "#4A5A58", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
+                    <div>Rank</div>
+                    <div>Clinic</div>
+                    <div style={{ textAlign: "right" }}>Rating</div>
+                    <div style={{ textAlign: "right" }}>Reviews</div>
+                    <div style={{ textAlign: "right" }}>Status</div>
+                  </div>
+
+                  {pageRows.map((row, i) => {
+                    if (row.isUser) {
+                      return (
+                        <div key={`user-${i}`} style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", background: "rgba(26,188,156,0.07)", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
+                          <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 900, color: "#1ABC9C" }}>#{row.rank}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#1ABC9C" }}>
+                            {data.clinicName || "Your Practice"} <span style={{ fontSize: 10, background: "rgba(26,188,156,0.2)", color: "#1ABC9C", borderRadius: 4, padding: "1px 6px", marginLeft: 4 }}>YOU</span>
+                          </div>
+                          <div style={{ textAlign: "right", fontWeight: 700, color: "#F0EBE3", fontSize: 13 }}>{reviews?.rating?.toFixed(1) ?? "—"} ⭐</div>
+                          <div style={{ textAlign: "right", fontSize: 13, color: "#F0EBE3" }}>{reviews?.total ?? "—"}</div>
+                          <div style={{ textAlign: "right" }} />
                         </div>
-                        <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                          {comp.reviews} reviews
+                      );
+                    }
+                    const comp = row.comp;
+                    const isAhead = comp.googleRank < (userRank ?? 999);
+                    return (
+                      <div key={comp.googleRank} style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
+                        <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: "#6B7B78" }}>#{comp.googleRank}</div>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#C8BFB6" }}>{comp.name}</div>
+                          <div style={{ fontSize: 11, color: "#4A5A58", marginTop: 2 }}>{comp.address?.split(",").slice(0, 2).join(",")}</div>
+                        </div>
+                        <div style={{ textAlign: "right", fontSize: 13, color: "#C8BFB6" }}>{comp.rating?.toFixed(1)} ⭐</div>
+                        <div style={{ textAlign: "right", fontSize: 13, color: "#C8BFB6" }}>{comp.reviews}</div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 12, background: isAhead ? "rgba(231,76,60,0.1)" : "rgba(46,204,113,0.1)", color: isAhead ? "#E74C3C" : "#2ECC71" }}>
+                            {isAhead ? "Ahead" : "Behind"}
+                          </span>
                         </div>
                       </div>
-                      <div style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        padding: "4px 10px",
-                        borderRadius: 20,
-                        background: comp.score > data.overallScore ? "rgba(231,76,60,0.1)" : "rgba(46,204,113,0.1)",
-                        color: comp.score > data.overallScore ? "#E74C3C" : "#2ECC71",
-                      }}>
-                        {comp.score > data.overallScore ? "Ahead of you" : "Behind you"}
-                      </div>
+                    );
+                  })}
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderTop: "1px solid #1A2220" }}>
+                      <button
+                        onClick={() => setCompetitorPage(p => Math.max(0, p - 1))}
+                        disabled={competitorPage === 0}
+                        style={{ background: "none", border: "1px solid #2A3330", color: competitorPage === 0 ? "#2A3330" : "#C8BFB6", borderRadius: 8, padding: "6px 14px", fontSize: 12, cursor: competitorPage === 0 ? "default" : "pointer" }}
+                      >← Prev</button>
+                      <span style={{ fontSize: 12, color: "#6B7B78" }}>Page {competitorPage + 1} of {totalPages}</span>
+                      <button
+                        onClick={() => setCompetitorPage(p => Math.min(totalPages - 1, p + 1))}
+                        disabled={competitorPage === totalPages - 1}
+                        style={{ background: "none", border: "1px solid #2A3330", color: competitorPage === totalPages - 1 ? "#2A3330" : "#C8BFB6", borderRadius: 8, padding: "6px 14px", fontSize: 12, cursor: competitorPage === totalPages - 1 ? "default" : "pointer" }}
+                      >Next →</button>
                     </div>
-                  </div>
-                ))}
-              {/* Locked competitors for free users */}
-              {!isPro && data.competitors.length > 2 && (
-                <div
-                  style={{
-                    background: "#151918",
-                    border: "1px dashed #2A3330",
-                    borderRadius: 14,
-                    padding: 20,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
-                    gap: 10,
-                    gridColumn:
-                      data.competitors.length > 3 ? "1 / -1" : undefined,
-                  }}
-                >
-                  <div style={{ fontSize: 28 }}>🔒</div>
-                  <div
-                    style={{ fontSize: 14, fontWeight: 700, color: "#6B7B78" }}
-                  >
-                    {data.competitors.length - 2} more competitors hidden
-                  </div>
-                  <button
-                    onClick={() => setShowUpgradeModal(true)}
-                    style={{
-                      background: "#1ABC9C",
-                      color: "#000",
-                      border: "none",
-                      padding: "8px 20px",
-                      borderRadius: 8,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
-                    Unlock with Pro →
-                  </button>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
 
           </>
         )}
@@ -2809,18 +2769,16 @@ function DashboardContent() {
             {(() => {
               const isTopThree = typeof userRank === "number" && userRank <= 3;
 
-              // Competitors ranked above user on Google = userRank - 1 practices to overtake
-              // Sort by score ascending so the closest gap (easiest) comes first
-              const sortedAll = [...data.competitors].sort((a, b) => a.score - b.score);
-              const aheadCount = typeof userRank === "number" && userRank > 1 ? userRank - 1 : 0;
-              const aheadComps = aheadCount > 0
-                ? sortedAll.slice(0, Math.min(aheadCount, sortedAll.length))
-                : sortedAll.filter((c) => c.score > data.overallScore);
+              // Competitors with lower googleRank number = ranked above user on Google
+              // Sort descending so closest (rank just above user) comes first as Step 1
+              const aheadComps = [...data.competitors]
+                .filter((c) => typeof userRank === "number" ? c.googleRank < userRank : false)
+                .sort((a, b) => b.googleRank - a.googleRank);
 
-              // Competitors ranked below user — closest score threat first
+              // Competitors ranked below user — closest threat first (rank just below user)
               const behindComps = [...data.competitors]
-                .filter((c) => c.score < data.overallScore)
-                .sort((a, b) => b.score - a.score);
+                .filter((c) => typeof userRank === "number" ? c.googleRank > userRank : false)
+                .sort((a, b) => a.googleRank - b.googleRank);
 
               if (isTopThree) {
                 // DEFEND MODE — user is already in top 3
@@ -2855,10 +2813,10 @@ function DashboardContent() {
                     )}
 
                     {behindComps.map((comp, i) => {
-                      const gap = data.overallScore - comp.score;
-                      const isLocked = !isPro && i > 0;
-                      const urgency = gap <= 5 ? "high" : gap <= 15 ? "medium" : "low";
-                      const catchUpTime = gap <= 5 ? "2–4 weeks" : gap <= 15 ? "1–2 months" : "2–4 months";
+                      const gap = Math.max(0, (reviews?.total || 0) - (comp.reviews || 0)); // review lead over this competitor
+                      const isLocked = !isPro;
+                      const urgency = gap <= 10 ? "high" : gap <= 30 ? "medium" : "low";
+                      const catchUpTime = gap <= 10 ? "2–4 weeks" : gap <= 30 ? "1–2 months" : "2–4 months";
                       const urgencyColor = urgency === "high" ? "#E74C3C" : urgency === "medium" ? "#F0A500" : "#6B7B78";
                       const compName = (comp.name || "Competitor").length > 28
                         ? (comp.name || "Competitor").slice(0, 28) + "..."
@@ -2913,11 +2871,11 @@ function DashboardContent() {
                           </div>
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
                             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 700, color: isLocked ? "#6B7B78" : urgencyColor }}>
-                              {comp.score}<span style={{ fontSize: 11, fontWeight: 400, color: "#4A5A58" }}> / 100</span>
+                              #{comp.googleRank}
                             </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>visibility score</div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
                             <div style={{ fontSize: 11, color: "#2ECC71", marginTop: 2 }}>
-                              you lead by {gap} pts
+                              {gap} reviews ahead
                             </div>
                           </div>
                         </div>
@@ -2963,15 +2921,11 @@ function DashboardContent() {
                   style={{ display: "flex", flexDirection: "column", gap: 12 }}
                 >
                   {stepsToShow.map((comp, i) => {
-                    const gap = comp.score - data.overallScore;
-                    const reviewGap = Math.max(
-                      0,
-                      (comp.reviews || 0) - (reviews?.total || 0),
-                    );
+                    const reviewGap = Math.max(0, (comp.reviews || 0) - (reviews?.total || 0));
                     const weeks =
-                      gap <= 5
+                      reviewGap <= 10
                         ? "2–4 weeks"
-                        : gap <= 15
+                        : reviewGap <= 30
                           ? "1–2 months"
                           : "2–4 months";
                     const isLocked = !isPro && i > 0;
@@ -3055,8 +3009,8 @@ function DashboardContent() {
                               }}
                             >
                               {reviewGap > 0
-                                ? `Get ${reviewGap} more reviews + close the ${gap}-point score gap — estimated `
-                                : `Close the ${gap}-point score gap — estimated `}
+                                ? `Get ${reviewGap} more reviews to close the gap — estimated `
+                                : `Keep collecting reviews to hold this rank — estimated `}
                               <span style={{ color: "#F0A500", fontWeight: 600 }}>
                                 {weeks}
                               </span>
@@ -3076,11 +3030,11 @@ function DashboardContent() {
                               color: isLocked ? "#6B7B78" : "#F0A500",
                             }}
                           >
-                            {comp.score}<span style={{ fontSize: 11, fontWeight: 400, color: "#4A5A58" }}> / 100</span>
+                            #{comp.googleRank}
                           </div>
-                          <div style={{ fontSize: 11, color: "#6B7B78" }}>visibility score</div>
+                          <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
                           <div style={{ fontSize: 11, color: "#E74C3C", marginTop: 2 }}>
-                            {gap > 0 ? `${gap} pts ahead of you` : "same level"}
+                            {reviewGap > 0 ? `${reviewGap} reviews ahead` : "same reviews"}
                           </div>
                         </div>
                       </div>

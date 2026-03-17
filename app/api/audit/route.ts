@@ -38,7 +38,7 @@ interface AuditResult {
     rating: number;
     reviews: number;
     address: string;
-    score: number;
+    googleRank: number;
   }[];
   placeId: string;
   scannedAt: string;
@@ -831,7 +831,7 @@ export async function GET(request: NextRequest) {
       rating: number;
       reviews: number;
       address: string;
-      score: number;
+      googleRank: number;
     }[] = [];
     let userRank: number | undefined;
 
@@ -874,30 +874,30 @@ export async function GET(request: NextRequest) {
       }
 
       if (filteredPlaces.length > 0) {
-        competitors = filteredPlaces.slice(0, 7).map(
-          (
-            place: {
-              name: string;
-              rating?: number;
-              user_ratings_total?: number;
-              formatted_address?: string;
-            },
-            index: number,
-          ) => ({
-            name: place.name,
-            rating: place.rating ?? 0,
-            reviews: place.user_ratings_total ?? 0,
-            address: place.formatted_address ?? "",
-            score: Math.min(
-              95,
-              Math.max(
-                30,
-                Math.round(90 - index * 7 + ((place.rating ?? 0) - 4.0) * 5),
-              ),
-            ),
-          }),
-        );
-        competitors.sort((a, b) => b.score - a.score);
+        // Assign real Google rank (position in Places results = Google prominence rank)
+        // then exclude the user's own clinic from the competitor list
+        competitors = filteredPlaces
+          .map(
+            (
+              place: {
+                name: string;
+                rating?: number;
+                user_ratings_total?: number;
+                formatted_address?: string;
+                place_id?: string;
+              },
+              index: number,
+            ) => ({
+              name: place.name,
+              rating: place.rating ?? 0,
+              reviews: place.user_ratings_total ?? 0,
+              address: place.formatted_address ?? "",
+              googleRank: index + 1,
+              _placeId: place.place_id,
+            }),
+          )
+          .filter((c: { _placeId?: string }) => c._placeId !== clinicPlaceId)
+          .map(({ _placeId: _, ...rest }: { _placeId?: string; name: string; rating: number; reviews: number; address: string; googleRank: number }) => rest);
       }
     } catch (placesError) {
       console.error("Places error:", placesError);
