@@ -88,6 +88,10 @@ function openCheckout({
       customData: {
         clinicUrl: clinicUrl ?? "",
       },
+      settings: {
+        displayMode: "overlay",
+        theme: "dark",
+      },
     });
   }, 300);
 }
