@@ -1661,6 +1661,16 @@ function DashboardContent() {
   // smoothedRank stabilises display across fluctuating raw samples; falls back to userRank
   const displayRank = data.smoothedRank ?? userRank;
 
+  // competitionIntensity — derived from smoothed ahead count, not raw snapshot
+  const smoothedAheadCount = displayRank != null ? Math.max(0, displayRank - 1) : null;
+  const competitionIntensity = (() => {
+    if (smoothedAheadCount == null) return null;
+    if (smoothedAheadCount <= 3)  return { label: "Low Competition",       bg: "rgba(46,204,113,0.1)",  color: "#2ECC71" };
+    if (smoothedAheadCount <= 8)  return { label: "Moderate Competition",  bg: "rgba(52,152,219,0.1)",  color: "#5DADE2" };
+    if (smoothedAheadCount <= 15) return { label: "High Competition",      bg: "rgba(240,165,0,0.1)",   color: "#D4A843" };
+    return                               { label: "Very High Competition", bg: "rgba(180,90,70,0.1)",   color: "#C07860" };
+  })();
+
   const reviewRank = (() => {
     if (data.userReviewCount == null || data.competitors.length === 0) return undefined;
     const allReviews = [...data.competitors.map((c) => c.reviews), data.userReviewCount];
@@ -3138,7 +3148,27 @@ function DashboardContent() {
 
               return (
                 <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 14, marginBottom: 24, overflow: "hidden" }}>
-                  {/* Header */}
+                  {/* Table title + competition intensity badge */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #1A2220" }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: "#F0EBE3" }}>
+                      Local Ranking
+                    </div>
+                    {competitionIntensity && (
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        background: competitionIntensity.bg,
+                        color: competitionIntensity.color,
+                        fontFamily: "'DM Mono', monospace",
+                        letterSpacing: 0.5,
+                      }}>
+                        {competitionIntensity.label}
+                      </span>
+                    )}
+                  </div>
+                  {/* Column headers */}
                   <div className="rc-comp-table-header" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "10px 16px", borderBottom: "1px solid #1A2220", fontSize: 11, color: "#4A5A58", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
                     <div>Rank</div>
                     <div>Clinic</div>
