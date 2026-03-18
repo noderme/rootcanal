@@ -1263,12 +1263,16 @@ function DashboardContent() {
   const [proLoginError, setProLoginError] = useState("");
   const [proLoginLoading, setProLoginLoading] = useState(false);
 
-  const applyPlan = (plan: "pro" | "growth", email: string) => {
+  const applyPlan = (plan: "pro" | "growth" | "trial", email: string) => {
     localStorage.setItem("rc_pro_email", email.toLowerCase().trim());
 
     if (plan === "growth") {
       setIsPro(false);
       setIsGrowth(true);
+    } else if (plan === "trial") {
+      setIsTrial(true);
+      setIsPro(true);
+      setIsGrowth(false);
     } else {
       setIsPro(true);
       setIsGrowth(false);
@@ -1288,10 +1292,10 @@ function DashboardContent() {
         .from("subscribers")
         .select("email, plan, status")
         .eq("clinic_url", normalizeUrl(clinicUrl))
-        .eq("status", "active")
+        .in("status", ["active", "trialing"])
         .single();
       if (sub) {
-        applyPlan(sub.plan as "pro" | "growth", sub.email);
+        applyPlan(sub.plan as "pro" | "growth" | "trial", sub.email);
         return true;
       }
     } catch {}
@@ -1304,10 +1308,10 @@ function DashboardContent() {
         .from("subscribers")
         .select("plan, status")
         .eq("email", email.toLowerCase().trim())
-        .eq("status", "active")
+        .in("status", ["active", "trialing"])
         .single();
       if (sub) {
-        applyPlan(sub.plan as "pro" | "growth", email);
+        applyPlan(sub.plan as "pro" | "growth" | "trial", email);
         return true;
       }
     } catch {}
@@ -1405,16 +1409,38 @@ function DashboardContent() {
       return;
     }
     const email = bannerEmail.toLowerCase().trim();
-    const now = Date.now();
     localStorage.setItem("rc_user_email", email);
-    localStorage.setItem("rc_trial_started_at", now.toString());
+    localStorage.setItem("rc_pro_email", email);
     await supabase.from("leads").insert({ email, url: url || null });
-    await supabase.from("subscribers").upsert(
-      { email, clinic_url: url ? normalizeUrl(url) : null, plan: "trial", status: "active" },
-      { onConflict: "email" },
-    );
-    setIsTrial(true);
-    setIsPro(true);
+
+    // Only start/refresh trial if not already a paying subscriber
+    const { data: existing } = await supabase
+      .from("subscribers")
+      .select("status")
+      .eq("email", email)
+      .single();
+
+    if (!existing || existing.status !== "active") {
+      const now = new Date().toISOString();
+      const trialEnds = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from("subscribers").upsert(
+        {
+          email,
+          clinic_url: url ? normalizeUrl(url) : null,
+          plan: "trial",
+          status: "trialing",
+          trial_started_at: now,
+          trial_ends_at: trialEnds,
+          updated_at: now,
+        },
+        { onConflict: "email" },
+      );
+      setIsTrial(true);
+      setIsPro(true);
+    } else {
+      applyPlan(existing.status === "active" ? "pro" : "trial", email);
+    }
+
     setBannerOtpStep("email");
     setBannerSent(true);
   };
@@ -1497,17 +1523,10 @@ function DashboardContent() {
         const found = await checkByEmail(saved);
         if (found) return;
       }
-      // Check for active free trial
-      const trialStart = localStorage.getItem("rc_trial_started_at");
-      if (trialStart) {
-        const elapsed = Date.now() - parseInt(trialStart, 10);
-        if (elapsed < 7 * 24 * 60 * 60 * 1000) {
-          setIsTrial(true);
-          setIsPro(true);
-        } else {
-          // Trial expired — lock features and show upgrade modal
-          setShowUpgradeModal(true);
-        }
+      // Check trial by email (source of truth is Supabase — pg_cron flips status to 'expired')
+      const trialEmail = localStorage.getItem("rc_user_email");
+      if (trialEmail) {
+        await checkByEmail(trialEmail);
       }
     };
     detect();
