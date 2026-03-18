@@ -32,6 +32,9 @@ interface AuditData {
     googleRank: number;
     lat?: number;
     lng?: number;
+    appearances?: number;
+    firstSeen?: string;
+    lastSeen?: string;
   }[];
   placeId: string;
   scannedAt: string;
@@ -50,6 +53,11 @@ interface AuditData {
   healthgradesClaimed?: boolean;
   healthgradesUrl?: string;
   notInTop60?: boolean;
+  smoothedRank?: number;
+  rankRangeLow?: number;
+  rankRangeHigh?: number;
+  stableCompetitorCount?: number;
+  competitorCountOutlier?: boolean;
 }
 
 interface ReviewData {
@@ -1069,6 +1077,10 @@ function DashboardContent() {
   // Upgrade modal
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  // Stable roadmap target — persisted in localStorage so Step 1 stays consistent
+  const [roadmapTargetName, setRoadmapTargetName] = useState<string | null>(null);
+  const [roadmapTargetChanged, setRoadmapTargetChanged] = useState(false);
+
   // Navigation UX
   const [compactHero, setCompactHero] = useState(false);
   const [tabFlash, setTabFlash] = useState(false);
@@ -1076,6 +1088,39 @@ function DashboardContent() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   const displayCity = city || data?.city || "";
+
+  // ── Stable roadmap target resolution ─────────────────────────────────────
+  useEffect(() => {
+    if (!data) return;
+
+    const rawUserRank = data.userRank ?? (data.competitors.length > 0 ? data.competitors.length + 1 : undefined);
+    if (rawUserRank == null) return;
+
+    // Stable = appeared in at least 2 of the last 4 prior scans
+    const stableAhead = [...data.competitors]
+      .filter((c) => c.googleRank < rawUserRank && (c.appearances ?? 0) >= 2)
+      .sort((a, b) => {
+        const diff = (b.appearances ?? 0) - (a.appearances ?? 0);
+        return diff !== 0 ? diff : b.googleRank - a.googleRank;
+      });
+
+    if (stableAhead.length === 0) return; // no stable history yet — nothing to pin
+
+    const storageKey = `rc_roadmap_target_${(data.clinicName || data.url || "").toLowerCase().replace(/\s+/g, "_")}_${(data.city || "").toLowerCase()}`;
+    const stored = localStorage.getItem(storageKey);
+    const storedStillValid = stored != null && stableAhead.some((c) => c.name === stored);
+
+    if (storedStillValid) {
+      setRoadmapTargetName(stored);
+      setRoadmapTargetChanged(false);
+    } else {
+      const newTarget = stableAhead[0].name;
+      setRoadmapTargetName(newTarget);
+      setRoadmapTargetChanged(stored != null && stored !== newTarget);
+      localStorage.setItem(storageKey, newTarget);
+    }
+  }, [data]);
+
 
   // "I'm already Pro" re-auth modal (for free users who lost localStorage)
   const [showProLogin, setShowProLogin] = useState(false);
@@ -1655,6 +1700,31 @@ function DashboardContent() {
   const warnIssues = data.issues.filter((i) => i.status === "warn");
 
   const userRank = data.userRank ?? (data.competitors.length > 0 ? data.competitors.length + 1 : undefined);
+  // smoothedRank stabilises display across fluctuating raw samples; falls back to userRank
+  const displayRank = data.smoothedRank ?? userRank;
+
+  // competitorStabilityScore — ratio of competitors seen in prior scans (0=all new, 1=all stable)
+  const competitorStabilityScore = (() => {
+    const withData = data.competitors.filter(c => c.appearances !== undefined);
+    if (withData.length === 0) return null;
+    const stable = withData.filter(c => (c.appearances ?? 0) >= 1).length;
+    return stable / withData.length;
+  })();
+  const volatilityNote = (() => {
+    if (competitorStabilityScore === null) return null;
+    if (competitorStabilityScore < 0.6) return { text: "Local competitor visibility fluctuated recently.", dot: "#4A5A58" };
+    return { text: "Competitor visibility has been relatively consistent.", dot: "#2A4A40" };
+  })();
+
+  // competitionIntensity — derived from smoothed ahead count, not raw snapshot
+  const smoothedAheadCount = displayRank != null ? Math.max(0, displayRank - 1) : null;
+  const competitionIntensity = (() => {
+    if (smoothedAheadCount == null) return null;
+    if (smoothedAheadCount <= 3)  return { label: "Low Competition",       bg: "rgba(46,204,113,0.1)",  color: "#2ECC71" };
+    if (smoothedAheadCount <= 8)  return { label: "Moderate Competition",  bg: "rgba(52,152,219,0.1)",  color: "#5DADE2" };
+    if (smoothedAheadCount <= 15) return { label: "High Competition",      bg: "rgba(240,165,0,0.1)",   color: "#D4A843" };
+    return                               { label: "Very High Competition", bg: "rgba(180,90,70,0.1)",   color: "#C07860" };
+  })();
 
   const reviewRank = (() => {
     if (data.userReviewCount == null || data.competitors.length === 0) return undefined;
@@ -2382,8 +2452,12 @@ function DashboardContent() {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                 Google Rank
               </div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{userRank != null ? `#${userRank}` : "—"}</div>
-              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>within 5 km</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof displayRank === "number" && displayRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{displayRank != null ? `#${displayRank}` : "—"}</div>
+              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>
+                {data.rankRangeLow != null && data.rankRangeHigh != null && data.rankRangeLow !== data.rankRangeHigh
+                  ? `range #${data.rankRangeLow}–#${data.rankRangeHigh}`
+                  : "within 5 km"}
+              </div>
             </div>
             {reviewRank != null && (
               <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
@@ -2406,11 +2480,11 @@ function DashboardContent() {
               </div>
             )}
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
-              {typeof userRank === "number" && reviewRank != null && userRank <= 3 && reviewRank > userRank
-                ? `You rank #${userRank} on Google but #${reviewRank} by reviews — clinics with more reviews are 3x more likely to steal your next booking.`
-                : typeof userRank === "number" && userRank <= 3
-                ? `You're ranked #${userRank} nearby — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that revenue.`
-                : `📉 You're ranked #${userRank} nearby. Top 3 clinics capture ~70% of patient clicks — patients at your rank rarely appear in new booking searches.`}
+              {typeof displayRank === "number" && reviewRank != null && displayRank <= 3 && reviewRank > displayRank
+                ? `You rank #${displayRank} on Google but #${reviewRank} by reviews — clinics with more reviews are 3x more likely to steal your next booking.`
+                : typeof displayRank === "number" && displayRank <= 3
+                ? `You're ranked #${displayRank} nearby — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that revenue.`
+                : `📉 You're ranked #${displayRank} nearby. Top 3 clinics capture ~70% of patient clicks — patients at your rank rarely appear in new booking searches.`}
             </div>
           </div>
         )}
@@ -3129,7 +3203,53 @@ function DashboardContent() {
 
               return (
                 <div style={{ background: "#151918", border: "1px solid #2A3330", borderRadius: 14, marginBottom: 24, overflow: "hidden" }}>
-                  {/* Header */}
+                  {/* Table title + competition intensity badge */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #1A2220" }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: "#F0EBE3" }}>
+                      Local Ranking
+                    </div>
+                    {competitionIntensity && (
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "4px 12px",
+                        borderRadius: 20,
+                        background: competitionIntensity.bg,
+                        color: competitionIntensity.color,
+                        fontFamily: "'DM Mono', monospace",
+                        letterSpacing: 0.5,
+                      }}>
+                        {competitionIntensity.label}
+                      </span>
+                    )}
+                  </div>
+                  {/* Strategic summary line */}
+                  {(() => {
+                    if (!competitionIntensity) return null;
+                    const stableAheadCount = data.competitors.filter(
+                      (c) => c.googleRank < (userRank ?? 999) && (c.appearances ?? 0) >= 1
+                    ).length;
+                    const hasStableHistory = data.competitors.some((c) => c.appearances !== undefined);
+                    const label = competitionIntensity.label;
+                    const summary =
+                      label === "Low Competition"
+                        ? "Few nearby clinics consistently appear ahead — a strong opportunity to move into top visibility."
+                        : label === "Moderate Competition"
+                        ? stableAheadCount > 0
+                          ? "Competition is moderate, but a few clinics remain more discoverable nearby."
+                          : "Competition is moderate — local search visibility is within reach with steady effort."
+                        : label === "High Competition"
+                        ? "Several nearby clinics consistently appear ahead in search visibility."
+                        : hasStableHistory
+                        ? "Your clinic is competing in a high-density local market."
+                        : "Many nearby clinics are visible in local searches in this area.";
+                    return (
+                      <div style={{ padding: "8px 16px 10px", borderBottom: "1px solid #1A2220" }}>
+                        <span style={{ fontSize: 12, color: "#5A6B68", lineHeight: 1.5 }}>{summary}</span>
+                      </div>
+                    );
+                  })()}
+                  {/* Column headers */}
                   <div className="rc-comp-table-header" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "10px 16px", borderBottom: "1px solid #1A2220", fontSize: 11, color: "#4A5A58", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
                     <div>Rank</div>
                     <div>Clinic</div>
@@ -3158,7 +3278,14 @@ function DashboardContent() {
                       <div key={comp.googleRank} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
                         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: "#6B7B78" }}>#{comp.googleRank}</div>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#C8BFB6" }}>{comp.name}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#C8BFB6" }}>{comp.name}</span>
+                            {comp.appearances === 0 && (
+                              <span style={{ fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4, background: "rgba(107,123,120,0.12)", color: "#4A5A58", fontFamily: "'DM Mono', monospace", whiteSpace: "nowrap" }}>
+                                Newly observed
+                              </span>
+                            )}
+                          </div>
                           <div style={{ fontSize: 11, color: "#4A5A58", marginTop: 2 }}>{comp.address?.split(",").slice(0, 2).join(",")}</div>
                         </div>
                         <div style={{ textAlign: "right", fontSize: 13, color: "#C8BFB6" }}>{comp.rating?.toFixed(1)} ⭐</div>
@@ -3191,6 +3318,22 @@ function DashboardContent() {
                 </div>
               );
             })()}
+
+            {data.competitorCountOutlier && (
+              <div style={{ fontSize: 11, color: "#4A5A58", lineHeight: 1.6, marginBottom: 8, paddingLeft: 2, display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#3D5A50", marginTop: 4, flexShrink: 0 }} />
+                <span>Competitor count appears lower than usual — results will stabilise as more data is collected.</span>
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: "#3D4D4A", lineHeight: 1.6, marginBottom: 24, paddingLeft: 2, display: "flex", alignItems: "flex-start", gap: 6 }}>
+              {volatilityNote && (
+                <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: volatilityNote.dot, marginTop: 4, flexShrink: 0 }} />
+              )}
+              <span>
+                {volatilityNote?.text ?? "Nearby competing clinics can vary across neighbourhood searches and devices."}{" "}
+                This list reflects commonly appearing local competitors.
+              </span>
+            </div>
 
           </>
         )}
@@ -3273,11 +3416,28 @@ function DashboardContent() {
 
               const isTopThree = typeof userRank === "number" && userRank <= 3;
 
-              // Competitors with lower googleRank number = ranked above user on Google
-              // Sort descending so closest (rank just above user) comes first as Step 1
+              // Derive a stable competitor context label from smoothed rank range
+              // rankRangeLow/High reflect the observed rank band across recent scans
+              const aheadCountLow = data.rankRangeLow != null ? Math.max(0, data.rankRangeLow - 1) : null;
+              const aheadCountHigh = data.rankRangeHigh != null ? Math.max(0, data.rankRangeHigh - 1) : null;
+              const competitorContextLabel = (() => {
+                if (aheadCountLow != null && aheadCountHigh != null && aheadCountLow !== aheadCountHigh) {
+                  return `Typically ${aheadCountLow}–${aheadCountHigh} nearby clinics appear ahead in local searches.`;
+                }
+                return "Nearby competition levels vary across neighbourhood searches.";
+              })();
+
+              // Competitors with lower googleRank number = ranked above user on Google.
+              // Sort: stable competitors (higher appearances) first so the roadmap feels
+              // consistent across scans; within the same stability tier, closest rank first.
               const aheadComps = [...data.competitors]
                 .filter((c) => typeof userRank === "number" ? c.googleRank < userRank : false)
-                .sort((a, b) => b.googleRank - a.googleRank);
+                .sort((a, b) => {
+                  const aApp = a.appearances ?? 0;
+                  const bApp = b.appearances ?? 0;
+                  if (bApp !== aApp) return bApp - aApp; // stable first
+                  return b.googleRank - a.googleRank;    // closest rank first within tier
+                });
 
               // Competitors ranked below user — closest threat first (rank just below user)
               const behindComps = [...data.competitors]
@@ -3379,7 +3539,7 @@ function DashboardContent() {
                             </div>
                             <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
                             <div style={{ fontSize: 11, color: "#2ECC71", marginTop: 2 }}>
-                              {gap} reviews ahead
+                              {gap > 0 ? `~${gap} review lead` : "similar reviews"}
                             </div>
                           </div>
                         </div>
@@ -3419,7 +3579,20 @@ function DashboardContent() {
               }
 
               // GROWTH MODE — user is NOT in top 3, show path to overtake leaders
-              const stepsToShow = aheadComps;
+
+              // Pin the stable roadmap target to position 0 so Step 1 stays consistent.
+              // aheadComps is already sorted stable-first; we just ensure the persisted
+              // target name (if still present and ahead) is always at the front.
+              const pinnedAheadComps = (() => {
+                if (!roadmapTargetName) return aheadComps;
+                const idx = aheadComps.findIndex((c) => c.name === roadmapTargetName);
+                if (idx <= 0) return aheadComps; // already first, or not found — no change
+                const reordered = [...aheadComps];
+                reordered.unshift(...reordered.splice(idx, 1));
+                return reordered;
+              })();
+
+              const stepsToShow = pinnedAheadComps;
               // Free users: show next step + 2 upcoming, collapse the rest
               const freeUser = !isPro && !isGrowth;
               const visibleSteps = freeUser ? stepsToShow.slice(0, 3) : stepsToShow;
@@ -3441,7 +3614,8 @@ function DashboardContent() {
                     }}>
                       <span style={{ fontSize: 14 }}>🎯</span>
                       <div style={{ fontSize: 12, color: "rgba(247,243,237,0.6)", lineHeight: 1.5 }}>
-                        Each step you complete moves more local patients toward your clinic.
+                        Each step you complete moves more local patients toward your clinic.{" "}
+                        <span style={{ color: "#6B7B78" }}>{competitorContextLabel}</span>
                       </div>
                     </div>
                   )}
@@ -3530,6 +3704,15 @@ function DashboardContent() {
                                 NEXT STEP
                               </span>
                             )}
+                            {i === 0 && roadmapTargetChanged && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
+                                background: "rgba(107,123,120,0.1)", color: "#6B7B78",
+                                fontFamily: "'DM Mono', monospace",
+                              }}>
+                                focus updated
+                              </span>
+                            )}
                             {isUpcoming && (
                               <span
                                 style={{
@@ -3574,7 +3757,7 @@ function DashboardContent() {
                           </div>
                           <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
                           <div style={{ fontSize: 11, color: "#E74C3C", marginTop: 2 }}>
-                            {reviewGap > 0 ? `${reviewGap} reviews ahead` : "same reviews"}
+                            {reviewGap > 0 ? `~${reviewGap} more reviews` : "similar review count"}
                           </div>
                         </div>
                       </div>
@@ -3605,7 +3788,9 @@ function DashboardContent() {
                         ))}
                       </div>
                       <div style={{ flex: 1, fontSize: 12, color: "#6B7B78" }}>
-                        +{hiddenCount} more step{hiddenCount !== 1 ? "s" : ""} to reach Top 3
+                        {aheadCountLow != null && aheadCountHigh != null && aheadCountLow !== aheadCountHigh
+                          ? `Your clinic is usually competing against ${aheadCountLow}–${aheadCountHigh} nearby visible clinics — unlock the full path to Top 3`
+                          : "Several more clinics typically appear ahead locally — unlock your full path to Top 3"}
                       </div>
                       <span style={{ fontSize: 11, color: "#1ABC9C", fontWeight: 700 }}>
                         See How to Move Up →
