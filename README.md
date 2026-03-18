@@ -71,12 +71,29 @@ Live at [rootcanal.us](https://rootcanal.us)
 | `/api/request-review` | POST | Send review request via email (Resend) or SMS (Twilio) |
 | `/api/activate-plan` | POST | Activate Pro/Growth plan in Supabase after Paddle checkout |
 | `/api/paddle-webhook` | POST | Receive Paddle subscription events |
+| `/api/start-trial` | POST | Create 7-day trial record in Supabase |
+| `/api/trial-welcome` | POST | Send trial welcome email via Resend |
 | `/api/lookup-user` | GET | Find subscriber by clinic URL, send OTP |
 | `/api/cities` | GET | Google Places city autocomplete (US only) |
+| `/api/webhooks/supabase-trial` | POST | Supabase DB webhook — sends welcome email on trial INSERT |
 
 **Audit accepts two modes:**
 - Website mode: `?url=https://smilesdental.com`
 - GBP-only mode: `?name=Smiles+Dental&city=Austin,+TX`
+
+---
+
+## Trial Email Flow
+
+When a subscriber starts a trial, the following emails fire automatically:
+
+| Trigger | Email | Sent by |
+|---------|-------|---------|
+| INSERT into `subscribers` (plan=trial) | Welcome email | Supabase DB webhook → `/api/webhooks/supabase-trial` |
+| Day 3 of trial | Nurture email | Scraper repo `day-marker.js` (midnight UTC) |
+| Day 7 of trial | Expiry email + status → expired | Scraper repo `day-marker.js` (midnight UTC) |
+
+The Supabase webhook fires on INSERT only — duplicate welcome emails are not possible.
 
 ---
 
@@ -85,7 +102,7 @@ Live at [rootcanal.us](https://rootcanal.us)
 | Table | Purpose |
 |-------|---------|
 | `scans` | Cached audit results (24-hour TTL) |
-| `subscribers` | Pro/Growth subscribers with Paddle subscription IDs |
+| `subscribers` | Subscribers and trial users — plan, status, trial dates, email sent timestamps |
 | `review_requests` | Audit trail of sent review request emails/SMS |
 
 ---
@@ -104,8 +121,12 @@ app/
 │   ├── request-review/   # Email/SMS review requests
 │   ├── activate-plan/    # Plan activation
 │   ├── paddle-webhook/   # Payment webhooks
+│   ├── start-trial/      # Trial creation
+│   ├── trial-welcome/    # Trial welcome email
 │   ├── lookup-user/      # User OTP flow
-│   └── cities/           # City autocomplete
+│   ├── cities/           # City autocomplete
+│   └── webhooks/
+│       └── supabase-trial/  # DB webhook handler for welcome email
 ├── layout.tsx            # Root layout (Paddle, Contentsquare, PWA)
 └── privacy-policy/
     terms-and-conditions/
@@ -137,6 +158,7 @@ NEXT_PUBLIC_PADDLE_CLIENT_TOKEN
 ```
 GOOGLE_API_KEY
 SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_WEBHOOK_SECRET
 ANTHROPIC_API_KEY
 RESEND_API_KEY
 TWILIO_ACCOUNT_SID
@@ -173,4 +195,4 @@ git push origin main
 
 ## Related
 
-- **Scraper / lead gen pipeline** at `/Users/madmax/scraper` — finds dental clinic emails via Hunter.io + contact page scraping, sends cold outreach emails via Resend. Shares the same Supabase instance.
+- **Scraper / lead gen pipeline** — finds dental clinic emails, sends cold outreach, and manages trial lifecycle emails. Shares the same Supabase instance. Runs on a DigitalOcean server via PM2.
