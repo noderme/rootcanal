@@ -1662,6 +1662,19 @@ function DashboardContent() {
   // smoothedRank stabilises display across fluctuating raw samples; falls back to userRank
   const displayRank = data.smoothedRank ?? userRank;
 
+  // competitorStabilityScore — ratio of competitors seen in prior scans (0=all new, 1=all stable)
+  const competitorStabilityScore = (() => {
+    const withData = data.competitors.filter(c => c.appearances !== undefined);
+    if (withData.length === 0) return null;
+    const stable = withData.filter(c => (c.appearances ?? 0) >= 1).length;
+    return stable / withData.length;
+  })();
+  const volatilityNote = (() => {
+    if (competitorStabilityScore === null) return null;
+    if (competitorStabilityScore < 0.6) return { text: "Local competitor visibility fluctuated recently.", dot: "#4A5A58" };
+    return { text: "Competitor visibility has been relatively consistent.", dot: "#2A4A40" };
+  })();
+
   // competitionIntensity — derived from smoothed ahead count, not raw snapshot
   const smoothedAheadCount = displayRank != null ? Math.max(0, displayRank - 1) : null;
   const competitionIntensity = (() => {
@@ -3239,8 +3252,14 @@ function DashboardContent() {
               );
             })()}
 
-            <div style={{ fontSize: 11, color: "#3D4D4A", lineHeight: 1.6, marginBottom: 24, paddingLeft: 2 }}>
-              Nearby competing clinics can vary across neighbourhood searches and devices. This list reflects commonly appearing local competitors.
+            <div style={{ fontSize: 11, color: "#3D4D4A", lineHeight: 1.6, marginBottom: 24, paddingLeft: 2, display: "flex", alignItems: "flex-start", gap: 6 }}>
+              {volatilityNote && (
+                <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: volatilityNote.dot, marginTop: 4, flexShrink: 0 }} />
+              )}
+              <span>
+                {volatilityNote?.text ?? "Nearby competing clinics can vary across neighbourhood searches and devices."}{" "}
+                This list reflects commonly appearing local competitors.
+              </span>
             </div>
 
           </>
