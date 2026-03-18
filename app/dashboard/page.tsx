@@ -1747,7 +1747,7 @@ function DashboardContent() {
   if (showTeaser) {
     const tRank = userRank;
     const [lostLow, lostHigh] = tRank == null || tRank > 20 ? [25, 40] : tRank > 10 ? [15, 25] : tRank > 5 ? [8, 15] : [3, 8];
-    const topComp = data.competitors.length > 0 ? [...data.competitors].sort((a, b) => a.googleRank - b.googleRank)[0] : null;
+    const topComp = data.competitors.length > 0 ? [...data.competitors].sort((a, b) => (b.reviews || 0) - (a.reviews || 0))[0] : null;
     const userReviewCount = reviews?.total ?? data.userReviewCount ?? 0;
     const reviewGapVsTop = topComp != null ? Math.max(0, (topComp.reviews || 0) - userReviewCount) : null;
     const clinicLabel = data.clinicName || nameParam || "Your Clinic";
@@ -1818,7 +1818,7 @@ function DashboardContent() {
             {/* Review gap */}
             <div style={{ background: "#151918", border: "1px solid rgba(240,165,0,0.25)", borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Review Gap vs #1</div>
+                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Review Gap vs Top Competitor</div>
                 <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", lineHeight: 1.5 }}>
                   {reviewGapVsTop != null && reviewGapVsTop > 0
                     ? `${topComp?.name || "Top competitor"} has ${reviewGapVsTop} more reviews — that gap is costing you rank.`
