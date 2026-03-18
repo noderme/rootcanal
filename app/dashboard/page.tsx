@@ -956,11 +956,13 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
           },
           zIndex: 100,
         });
+        const visLabel = c.googleRank <= 3 ? "Higher local visibility" : c.googleRank <= 10 ? "Moderate local visibility" : "Lower local visibility";
         if (isPro) {
           marker.addListener("click", () => {
             infoWindow.setContent(
               `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
-                <b>#${c.googleRank} ${c.name}</b><br/>
+                <b>${c.name}</b><br/>
+                <span style="font-size:11px;color:#555">${visLabel}</span><br/>
                 ⭐ ${c.rating} · ${c.reviews} reviews<br/>
                 <span style="color:#666;font-size:11px">${c.address}</span>
               </div>`
@@ -971,8 +973,8 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
           marker.addListener("click", () => {
             infoWindow.setContent(
               `<div style="color:#111;font-family:sans-serif;padding:6px 4px;max-width:200px;text-align:center">
-                🔒 <b>Patient traffic hidden</b><br/>
-                <span style="font-size:12px;color:#555">This clinic may be capturing patients searching near you</span>
+                <b>${visLabel}</b><br/>
+                <span style="font-size:12px;color:#555">Unlock to see which clinic this is</span>
               </div>`
             );
             infoWindow.open(map, marker);
@@ -2162,7 +2164,7 @@ function DashboardContent() {
             { id: "roadmap",     label: "📈 Growth Plan",    freeVisible: true },
             { id: "reviews",     label: "⭐ Reviews (G+Y)",  freeVisible: true },
             { id: "competitors", label: "🏆 Competitors",    freeVisible: true },
-            { id: "map",         label: "🗺️ Map",            freeVisible: false },
+            { id: "map",         label: "🗺️ Map",            freeVisible: true },
             { id: "score",       label: "🧠 Intelligence",   freeVisible: false },
             ...(hasWebsite ? [{ id: "health" as const, label: "🔧 Health", freeVisible: false }] : []),
           ] as const).filter(item => (isPro || isGrowth) || item.freeVisible).map((item) => (
@@ -2813,7 +2815,7 @@ function DashboardContent() {
               { id: "roadmap",     label: "📈", sublabel: "Growth",  freeVisible: true },
               { id: "reviews",     label: "⭐", sublabel: "Reviews", freeVisible: true },
               { id: "competitors", label: "🏆", sublabel: "Rivals",  freeVisible: true },
-              { id: "map",         label: "🗺️", sublabel: "Map",     freeVisible: false },
+              { id: "map",         label: "🗺️", sublabel: "Map",     freeVisible: true },
               { id: "score",       label: "🧠", sublabel: "Intel",   freeVisible: false },
               { id: "health",      label: "🔧", sublabel: "Health",  freeVisible: false },
             ] as const
@@ -4243,24 +4245,27 @@ function DashboardContent() {
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700 }}>
-                🗺️ Local Rankings Map
+                🗺️ Visibility Map
               </div>
-              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" as const }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
                   <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#1ABC9C", display: "inline-block" }} /> You
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#2ECC71", display: "inline-block" }} /> Top 3
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#2ECC71", display: "inline-block" }} /> Higher visibility
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#F0A500", display: "inline-block" }} /> #4–10
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#F0A500", display: "inline-block" }} /> Moderate visibility
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#E74C3C", display: "inline-block" }} /> #11+
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#E74C3C", display: "inline-block" }} /> Lower visibility
                 </span>
               </div>
             </div>
             <MapView data={data} isPro={isPro || isGrowth} onUpgrade={() => setShowUpgradeModal(true)} />
+            <div style={{ marginTop: 12, fontSize: 11, color: "#3D4D4A", lineHeight: 1.6 }}>
+              Local visibility snapshot based on the latest analysis.{data.lastUpdatedAt ? ` Updated ${new Date(data.lastUpdatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${new Date(data.lastUpdatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}.` : ""}
+            </div>
           </div>
         )}
 
