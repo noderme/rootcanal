@@ -51,13 +51,17 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`✅ Plan activated (client-side): ${email} → ${plan}`);
-    const posthog = getPostHogClient();
-    posthog.capture({
-      distinctId: email.toLowerCase().trim(),
-      event: "plan_activated",
-      properties: { plan, clinic_url: clinicUrl ? normalizeUrl(clinicUrl) : null, source: "client_side" },
-    });
-    await posthog.shutdown();
+    try {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: email.toLowerCase().trim(),
+        event: "plan_activated",
+        properties: { plan, clinic_url: clinicUrl ? normalizeUrl(clinicUrl) : null, source: "client_side" },
+      });
+      await posthog.shutdown();
+    } catch (phErr) {
+      console.error("PostHog error:", phErr);
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("activate-plan error:", err);

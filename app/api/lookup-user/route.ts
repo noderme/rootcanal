@@ -53,10 +53,14 @@ export async function GET(request: NextRequest) {
     options: { shouldCreateUser: true, emailRedirectTo: undefined },
   });
 
-  const posthog = getPostHogClient();
-  posthog.identify({ distinctId: match.email, properties: { email: match.email, clinic_url: match.url } });
-  posthog.capture({ distinctId: match.email, event: "login_otp_sent", properties: { clinic_url: url } });
-  await posthog.shutdown();
+  try {
+    const posthog = getPostHogClient();
+    posthog.identify({ distinctId: match.email, properties: { email: match.email, clinic_url: match.url } });
+    posthog.capture({ distinctId: match.email, event: "login_otp_sent", properties: { clinic_url: url } });
+    await posthog.shutdown();
+  } catch (phErr) {
+    console.error("PostHog error:", phErr);
+  }
 
   return NextResponse.json({ found: true, email: match.email, maskedEmail: maskEmail(match.email) });
 }

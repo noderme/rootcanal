@@ -1225,20 +1225,24 @@ export async function GET(request: NextRequest) {
     }
 
     result.lastUpdatedAt = result.scannedAt;
-    const posthog = getPostHogClient();
-    posthog.capture({
-      distinctId: result.url,
-      event: "audit_completed",
-      properties: {
-        clinic_url: result.url,
-        city: result.city,
-        overall_score: result.overallScore,
-        performance_score: result.performanceScore,
-        seo_score: result.seoScore,
-        google_rank: result.userRank ?? null,
-      },
-    });
-    await posthog.shutdown();
+    try {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: result.url,
+        event: "audit_completed",
+        properties: {
+          clinic_url: result.url,
+          city: result.city,
+          overall_score: result.overallScore,
+          performance_score: result.performanceScore,
+          seo_score: result.seoScore,
+          google_rank: result.userRank ?? null,
+        },
+      });
+      await posthog.shutdown();
+    } catch (phErr) {
+      console.error("PostHog error:", phErr);
+    }
     return NextResponse.json(result);
   } catch (error) {
     console.error("Audit error:", error);

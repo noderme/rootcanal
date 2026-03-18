@@ -96,13 +96,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const posthog = getPostHogClient();
-    posthog.capture({
-      distinctId: clinicUrl || clinicName || "unknown",
-      event: "review_request_sent",
-      properties: { contact_type: type, platform, clinic_name: clinicName, clinic_url: clinicUrl },
-    });
-    await posthog.shutdown();
+    try {
+      const posthog = getPostHogClient();
+      posthog.capture({
+        distinctId: clinicUrl || clinicName || "unknown",
+        event: "review_request_sent",
+        properties: { contact_type: type, platform, clinic_name: clinicName, clinic_url: clinicUrl },
+      });
+      await posthog.shutdown();
+    } catch (phErr) {
+      console.error("PostHog error:", phErr);
+    }
     return NextResponse.json({ success: true, reviewLink });
   } catch (error) {
     console.error("Review request error:", error);

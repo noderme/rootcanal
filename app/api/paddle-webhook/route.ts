@@ -115,13 +115,17 @@ export async function POST(req: NextRequest) {
       }
 
       console.log(`✅ Subscriber saved: ${email} → ${plan}`);
-      const posthog = getPostHogClient();
-      posthog.capture({
-        distinctId: email,
-        event: "subscription_created",
-        properties: { plan, clinic_url: clinicUrl, subscription_id: subscriptionId, paddle_event: eventType },
-      });
-      await posthog.shutdown();
+      try {
+        const posthog = getPostHogClient();
+        posthog.capture({
+          distinctId: email,
+          event: "subscription_created",
+          properties: { plan, clinic_url: clinicUrl, subscription_id: subscriptionId, paddle_event: eventType },
+        });
+        await posthog.shutdown();
+      } catch (phErr) {
+        console.error("PostHog error:", phErr);
+      }
     }
 
     // ── SUBSCRIPTION CANCELLED ────────────────────────────────────────────────
@@ -137,13 +141,17 @@ export async function POST(req: NextRequest) {
           .update({ status: "cancelled", updated_at: new Date().toISOString() })
           .eq("email", email);
         console.log(`❌ Cancelled: ${email}`);
-        const posthog = getPostHogClient();
-        posthog.capture({
-          distinctId: email,
-          event: "subscription_cancelled",
-          properties: { subscription_id: data?.id ?? null },
-        });
-        await posthog.shutdown();
+        try {
+          const posthog = getPostHogClient();
+          posthog.capture({
+            distinctId: email,
+            event: "subscription_cancelled",
+            properties: { subscription_id: data?.id ?? null },
+          });
+          await posthog.shutdown();
+        } catch (phErr) {
+          console.error("PostHog error:", phErr);
+        }
       }
     }
 
