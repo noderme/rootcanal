@@ -1113,8 +1113,6 @@ function DashboardContent() {
   const [tabFlash, setTabFlash] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
-  const reviewHeroRef = useRef<HTMLDivElement>(null);
-  const [showReviewStrip, setShowReviewStrip] = useState(false);
   const [reviewStripDismissed, setReviewStripDismissed] = useState(false);
 
   const displayCity = city || data?.city || "";
@@ -1155,18 +1153,6 @@ function DashboardContent() {
   useEffect(() => {
     setReviewStripDismissed(sessionStorage.getItem("rc_review_strip_dismissed") === "1");
   }, []);
-
-  // ── Review strip: show when "Fastest Way" hero has scrolled out of view ──
-  useEffect(() => {
-    const el = reviewHeroRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setShowReviewStrip(!entry.isIntersecting),
-      { threshold: 0 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [data, activeTab]);
 
   // "I'm already Pro" re-auth modal (for free users who lost localStorage)
   const [showProLogin, setShowProLogin] = useState(false);
@@ -2422,102 +2408,6 @@ function DashboardContent() {
           );
         })()}
         </div>{/* /rc-hero-sticky */}
-
-        {/* ── FASTEST WAY HERO ─────────────────────────────── */}
-        {data.placeId && activeTab !== "reviews" && (
-          <div ref={reviewHeroRef} className="rc-card-lift" style={{
-            background: "linear-gradient(135deg, #081a12 0%, #0a2018 60%, #0d1a14 100%)",
-            border: "1px solid rgba(26,188,156,0.3)",
-            borderRadius: 16,
-            padding: "24px 28px",
-            marginBottom: 24,
-            position: "relative" as const,
-            overflow: "hidden",
-            boxShadow: "0 4px 20px rgba(26,188,156,0.08), 0 2px 8px rgba(0,0,0,0.35)",
-          }}>
-            {/* Subtle glow */}
-            <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(26,188,156,0.06)", pointerEvents: "none" }} />
-
-            <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: "uppercase" as const, color: "#1ABC9C", fontWeight: 700, marginBottom: 8 }}>
-              ⚡ Action — Do This Now
-            </div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 800, color: "#F0EBE3", marginBottom: 4 }}>
-              Fastest Way to Get More Patients This Week
-            </div>
-            <div style={{ fontSize: 13, color: "rgba(240,235,227,0.45)", marginBottom: 20, lineHeight: 1.5 }}>
-              Send a review link to one patient right now — each new review raises your local ranking and directly increases booking inquiries.
-            </div>
-
-            {reviewSent ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(46,204,113,0.08)", border: "1px solid rgba(46,204,113,0.25)", borderRadius: 10, padding: "14px 18px" }}>
-                <span style={{ fontSize: 20 }}>🎉</span>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#2ECC71" }}>Review request sent!</div>
-                  <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>Your patient will receive a direct Google review link. Send to another patient to keep the momentum.</div>
-                </div>
-                <button onClick={() => setReviewSent(false)} style={{ marginLeft: "auto", background: "none", border: "1px solid rgba(46,204,113,0.3)", borderRadius: 8, color: "#2ECC71", fontSize: 12, fontWeight: 700, padding: "6px 14px", cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0 }}>
-                  Send Another →
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" as const }}>
-                  <input
-                    type="text"
-                    placeholder="Patient email or phone number"
-                    value={reviewContact}
-                    onChange={e => { setReviewContact(e.target.value); setReviewError(""); }}
-                    onKeyDown={async e => {
-                      if (e.key !== "Enter" || !isValidContact(reviewContact) || !data.placeId) return;
-                      setReviewSending(true); setReviewError("");
-                      const isEmail = reviewContact.includes("@");
-                      try {
-                        const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
-                        const result = await res.json();
-                        if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
-                      } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
-                    }}
-                    style={{ flex: 1, minWidth: 200, background: "rgba(0,0,0,0.35)", border: "1px solid rgba(26,188,156,0.25)", borderRadius: 10, padding: "13px 16px", color: "#F0EBE3", fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: "none" }}
-                  />
-                  <button
-                    onClick={async () => {
-                      if (!isValidContact(reviewContact) || !data.placeId) return;
-                      setReviewSending(true); setReviewError("");
-                      const isEmail = reviewContact.includes("@");
-                      try {
-                        const res = await fetch("/api/request-review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact: reviewContact.trim(), type: isEmail ? "email" : "phone", clinicName: data.clinicName || nameParam, clinicUrl: data.url || "", placeId: data.placeId, platform: "google", yelpUrl: data.yelpUrl }) });
-                        const result = await res.json();
-                        if (result.success) { setReviewSent(true); setReviewContact(""); } else setReviewError("Failed to send. Try again.");
-                      } catch { setReviewError("Something went wrong."); } finally { setReviewSending(false); }
-                    }}
-                    disabled={reviewSending}
-                    style={{
-                      background: isValidContact(reviewContact) ? "#1ABC9C" : "rgba(26,188,156,0.1)",
-                      color: isValidContact(reviewContact) ? "#000" : "#1ABC9C",
-                      border: isValidContact(reviewContact) ? "none" : "1px solid rgba(26,188,156,0.35)",
-                      borderRadius: 10,
-                      padding: "13px 22px",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: isValidContact(reviewContact) ? "pointer" : "default",
-                      fontFamily: "'DM Sans', sans-serif",
-                      whiteSpace: "nowrap" as const,
-                      transition: "background 0.18s, color 0.18s, box-shadow 0.18s",
-                      boxShadow: isValidContact(reviewContact) ? "0 4px 18px rgba(26,188,156,0.35)" : "none",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {reviewSending ? "Sending..." : "Send Review Request →"}
-                  </button>
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(240,235,227,0.45)", paddingLeft: 2, lineHeight: 1.5 }}>
-                  Takes ~2 seconds. Sends a direct Google review link — no setup needed.
-                </div>
-                {reviewError && <div style={{ fontSize: 12, color: "#E74C3C" }}>{reviewError}</div>}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* ── SNAPSHOT STATUS BAR ─────────────────────────── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 12 }}>
@@ -5301,7 +5191,7 @@ function DashboardContent() {
       )}
 
       {/* ── GLOBAL REVIEW ACTION STRIP ─────────────────────────────────── */}
-      {showReviewStrip && !reviewStripDismissed && data?.placeId && activeTab !== "reviews" && (
+      {!reviewStripDismissed && data?.placeId && (
         <div className="rc-review-strip" style={{
           background: isPro || isGrowth
             ? "rgba(13,20,18,0.92)"
