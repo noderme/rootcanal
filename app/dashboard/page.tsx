@@ -4830,20 +4830,14 @@ function DashboardContent() {
                 })();
 
                 // Competitors with lower googleRank number = ranked above user on Google.
-                // Sort: stable competitors (higher appearances) first so the roadmap feels
-                // consistent across scans; within the same stability tier, closest rank first.
+                // Sort: closest rank first (rank just below user → all the way to #1)
                 const aheadComps = [...data.competitors]
                   .filter((c) =>
                     typeof userRank === "number"
                       ? c.googleRank < userRank
                       : false,
                   )
-                  .sort((a, b) => {
-                    const aApp = a.appearances ?? 0;
-                    const bApp = b.appearances ?? 0;
-                    if (bApp !== aApp) return bApp - aApp; // stable first
-                    return b.googleRank - a.googleRank; // closest rank first within tier
-                  });
+                  .sort((a, b) => b.googleRank - a.googleRank);
 
                 // Competitors ranked below user — closest threat first (rank just below user)
                 const behindComps = [...data.competitors]
