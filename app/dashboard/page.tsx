@@ -1170,7 +1170,9 @@ function DashboardContent() {
   // Soft email capture banner (anonymous users)
   const [showSaveBanner, setShowSaveBanner] = useState(false);
   const [showExitIntent, setShowExitIntent] = useState(false);
-  const [exitIntentDone, setExitIntentDone] = useState(false);
+  const [exitIntentDone, setExitIntentDone] = useState(
+    () => typeof window !== "undefined" && !!localStorage.getItem("exitIntentDone"),
+  );
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -1563,11 +1565,12 @@ function DashboardContent() {
 
   // Exit intent — desktop mouse leave + mobile back button
   useEffect(() => {
-    if (exitIntentDone || loading) return;
+    if (exitIntentDone || loading || isPro || isGrowth) return;
     const handleMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 10 && !exitIntentDone) {
         setShowExitIntent(true);
         setExitIntentDone(true);
+        localStorage.setItem("exitIntentDone", "1");
       }
     };
     // Mobile: push a history state and detect back
@@ -1577,6 +1580,7 @@ function DashboardContent() {
         if (!exitIntentDone) {
           setShowExitIntent(true);
           setExitIntentDone(true);
+          localStorage.setItem("exitIntentDone", "1");
         }
       };
       window.addEventListener("popstate", handlePopState);
@@ -6710,7 +6714,14 @@ function DashboardContent() {
         <UpgradeModal
           mode={isPro && !isGrowth ? "growth-only" : "both"}
           clinicUrl={url}
-          onClose={() => setShowUpgradeModal(false)}
+          onClose={() => {
+            setShowUpgradeModal(false);
+            if (!exitIntentDone) {
+              setShowExitIntent(true);
+              setExitIntentDone(true);
+              localStorage.setItem("exitIntentDone", "1");
+            }
+          }}
           onSuccess={(plan, email) => {
             applyPlan(plan, email);
           }}
