@@ -1113,6 +1113,9 @@ function DashboardContent() {
   const [tabFlash, setTabFlash] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
+  const reviewHeroRef = useRef<HTMLDivElement>(null);
+  const [showReviewStrip, setShowReviewStrip] = useState(false);
+  const [reviewStripDismissed, setReviewStripDismissed] = useState(false);
 
   const displayCity = city || data?.city || "";
 
@@ -1148,6 +1151,22 @@ function DashboardContent() {
     }
   }, [data]);
 
+  // ── Review strip: dismiss state from sessionStorage ─────────────────────
+  useEffect(() => {
+    setReviewStripDismissed(sessionStorage.getItem("rc_review_strip_dismissed") === "1");
+  }, []);
+
+  // ── Review strip: show when "Fastest Way" hero has scrolled out of view ──
+  useEffect(() => {
+    const el = reviewHeroRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setShowReviewStrip(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [data, activeTab]);
 
   // "I'm already Pro" re-auth modal (for free users who lost localStorage)
   const [showProLogin, setShowProLogin] = useState(false);
@@ -1922,6 +1941,9 @@ function DashboardContent() {
         .upgrade-btn:hover { opacity: 0.85 !important; }
         .issue-row:hover { background: rgba(26,188,156,0.04) !important; }
         .comp-row:hover { background: rgba(255,255,255,0.02) !important; }
+        .rc-review-strip { position: fixed; left: 16px; right: 16px; bottom: 74px; z-index: 18; border-radius: 14px; transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.15s ease; }
+        .rc-review-strip:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.55) !important; }
+        @media (min-width: 769px) { .rc-review-strip { left: auto; right: 28px; bottom: 32px; width: 340px; } }
         @media print {
           body { background: #0D0F0E !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #F0EBE3 !important; }
           nav { position: static !important; }
@@ -2403,7 +2425,7 @@ function DashboardContent() {
 
         {/* ── FASTEST WAY HERO ─────────────────────────────── */}
         {data.placeId && activeTab !== "reviews" && (
-          <div className="rc-card-lift" style={{
+          <div ref={reviewHeroRef} className="rc-card-lift" style={{
             background: "linear-gradient(135deg, #081a12 0%, #0a2018 60%, #0d1a14 100%)",
             border: "1px solid rgba(26,188,156,0.3)",
             borderRadius: 16,
@@ -5275,6 +5297,60 @@ function DashboardContent() {
               <button onClick={() => setShowSaveBanner(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── GLOBAL REVIEW ACTION STRIP ─────────────────────────────────── */}
+      {showReviewStrip && !reviewStripDismissed && data?.placeId && activeTab !== "reviews" && (
+        <div className="rc-review-strip" style={{
+          background: isPro || isGrowth
+            ? "rgba(13,20,18,0.92)"
+            : "linear-gradient(135deg, rgba(10,28,20,0.96), rgba(13,26,20,0.98))",
+          border: isPro || isGrowth
+            ? "1px solid rgba(26,188,156,0.15)"
+            : "1px solid rgba(26,188,156,0.3)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
+          padding: "12px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>⭐</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#F0EBE3", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              Send a review request
+            </div>
+            <div style={{ fontSize: 11, color: "#6B7B78", lineHeight: 1.4 }}>
+              Fastest way to improve local visibility
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setActiveTab("reviews");
+              setTimeout(() => contentRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+            }}
+            style={{
+              background: "#1ABC9C", color: "#0D0F0E", border: "none",
+              borderRadius: 8, padding: "7px 13px", fontSize: 12, fontWeight: 700,
+              cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0,
+              boxShadow: "0 2px 10px rgba(26,188,156,0.3)",
+            }}
+          >Send Link →</button>
+          <button
+            onClick={() => {
+              sessionStorage.setItem("rc_review_strip_dismissed", "1");
+              setReviewStripDismissed(true);
+            }}
+            style={{
+              background: "none", border: "none", color: "#4A5A58",
+              fontSize: 18, cursor: "pointer", padding: "2px 4px",
+              flexShrink: 0, lineHeight: 1,
+            }}
+            aria-label="Dismiss"
+          >×</button>
         </div>
       )}
     </div>
