@@ -3198,8 +3198,8 @@ function DashboardContent() {
             {/* ── GLOBAL GROWTH ACTION BAR ────────────────────── */}
             <div
               style={{
-                background: "linear-gradient(135deg, rgba(26,188,156,0.10) 0%, rgba(22,160,133,0.06) 100%)",
-                border: "1px solid rgba(26,188,156,0.20)",
+                background: "linear-gradient(135deg, #121f1c 0%, #0e1b17 100%)",
+                border: "1px solid rgba(26,188,156,0.22)",
                 borderRadius: 16,
                 padding: "12px 20px",
                 marginBottom: 10,
