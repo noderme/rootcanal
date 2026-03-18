@@ -2596,7 +2596,7 @@ function DashboardContent() {
 
           {/* Secondary dismiss */}
           <button
-            onClick={() => setTeaserDismissed(true)}
+            onClick={() => { localStorage.setItem("rc_teaser_seen", "1"); setTeaserDismissed(true); }}
             style={{
               display: "block",
               width: "100%",
