@@ -1756,7 +1756,8 @@ function DashboardContent() {
     const tRank = userRank;
     const [lostLow, lostHigh] = tRank == null || tRank > 20 ? [25, 40] : tRank > 10 ? [15, 25] : tRank > 5 ? [8, 15] : [3, 8];
     const topComp = data.competitors.length > 0 ? [...data.competitors].sort((a, b) => a.googleRank - b.googleRank)[0] : null;
-    const reviewGapVsTop = topComp != null ? Math.max(0, (topComp.reviews || 0) - (data.userReviewCount || 0)) : null;
+    const userReviewCount = reviews?.total ?? data.userReviewCount ?? 0;
+    const reviewGapVsTop = topComp != null ? Math.max(0, (topComp.reviews || 0) - userReviewCount) : null;
     const clinicLabel = data.clinicName || nameParam || "Your Clinic";
 
     return (
