@@ -32,6 +32,7 @@ interface AuditData {
     googleRank: number;
     lat?: number;
     lng?: number;
+    appearances?: number;
   }[];
   placeId: string;
   scannedAt: string;
@@ -3197,7 +3198,14 @@ function DashboardContent() {
                       <div key={comp.googleRank} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
                         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: "#6B7B78" }}>#{comp.googleRank}</div>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#C8BFB6" }}>{comp.name}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#C8BFB6" }}>{comp.name}</span>
+                            {comp.appearances === 0 && (
+                              <span style={{ fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4, background: "rgba(107,123,120,0.12)", color: "#4A5A58", fontFamily: "'DM Mono', monospace", whiteSpace: "nowrap" }}>
+                                Newly observed
+                              </span>
+                            )}
+                          </div>
                           <div style={{ fontSize: 11, color: "#4A5A58", marginTop: 2 }}>{comp.address?.split(",").slice(0, 2).join(",")}</div>
                         </div>
                         <div style={{ textAlign: "right", fontSize: 13, color: "#C8BFB6" }}>{comp.rating?.toFixed(1)} ⭐</div>
@@ -3327,11 +3335,17 @@ function DashboardContent() {
                 return "Nearby competition levels vary across neighbourhood searches.";
               })();
 
-              // Competitors with lower googleRank number = ranked above user on Google
-              // Sort descending so closest (rank just above user) comes first as Step 1
+              // Competitors with lower googleRank number = ranked above user on Google.
+              // Sort: stable competitors (higher appearances) first so the roadmap feels
+              // consistent across scans; within the same stability tier, closest rank first.
               const aheadComps = [...data.competitors]
                 .filter((c) => typeof userRank === "number" ? c.googleRank < userRank : false)
-                .sort((a, b) => b.googleRank - a.googleRank);
+                .sort((a, b) => {
+                  const aApp = a.appearances ?? 0;
+                  const bApp = b.appearances ?? 0;
+                  if (bApp !== aApp) return bApp - aApp; // stable first
+                  return b.googleRank - a.googleRank;    // closest rank first within tier
+                });
 
               // Competitors ranked below user — closest threat first (rank just below user)
               const behindComps = [...data.competitors]

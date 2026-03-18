@@ -42,6 +42,7 @@ interface AuditResult {
     googleRank: number;
     lat?: number;
     lng?: number;
+    appearances?: number; // how many of the last N scans this competitor appeared in
   }[];
   placeId: string;
   userLat?: number;
@@ -1085,29 +1086,48 @@ export async function GET(request: NextRequest) {
       notInTop60,
     };
 
-    // ── Rank smoothing ─────────────────────────────────
-    if (userRank != null) {
-      try {
-        const { data: historicalScans } = await supabase
-          .from("scans")
-          .select("result")
-          .eq("url", hasWebsite ? url : cacheKey)
-          .not("result", "is", null)
-          .order("scanned_at", { ascending: false })
-          .limit(4); // last 4 prior scans + current = N=5
+    // ── Historical scans (shared by rank smoothing + competitor frequency) ──
+    try {
+      const { data: historicalScans } = await supabase
+        .from("scans")
+        .select("result")
+        .eq("url", hasWebsite ? url : cacheKey)
+        .not("result", "is", null)
+        .order("scanned_at", { ascending: false })
+        .limit(4); // last 4 prior scans + current = N=5
 
-        const historicalRanks: number[] = (historicalScans ?? [])
-          .map((row: { result: AuditResult }) => row.result?.userRank)
-          .filter((r: number | undefined): r is number => typeof r === "number")
+      const priorScans = (historicalScans ?? []) as { result: AuditResult }[];
+
+      // ── Rank smoothing ──────────────────────────────
+      if (userRank != null) {
+        const historicalRanks = priorScans
+          .map((row) => row.result?.userRank)
+          .filter((r): r is number => typeof r === "number")
           .reverse(); // oldest first
-
         const stats = computeRankStats(userRank, historicalRanks);
         result.smoothedRank = stats.smoothedRank;
         result.rankRangeLow = stats.rankRangeLow;
         result.rankRangeHigh = stats.rankRangeHigh;
-      } catch {
-        // non-critical — smoothing fails gracefully
       }
+
+      // ── Competitor frequency ────────────────────────
+      // Count how many prior scans each competitor (by normalised name) appeared in.
+      // Current scan is NOT counted here so appearances=0 reliably means "first time seen".
+      if (priorScans.length > 0) {
+        const freq = new Map<string, number>();
+        for (const row of priorScans) {
+          for (const c of row.result?.competitors ?? []) {
+            const key = (c.name ?? "").toLowerCase().trim();
+            if (key) freq.set(key, (freq.get(key) ?? 0) + 1);
+          }
+        }
+        result.competitors = result.competitors.map((c) => ({
+          ...c,
+          appearances: freq.get((c.name ?? "").toLowerCase().trim()) ?? 0,
+        }));
+      }
+    } catch {
+      // non-critical — smoothing/frequency fails gracefully
     }
 
     setCache(cacheKey, result);
