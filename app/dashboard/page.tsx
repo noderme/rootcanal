@@ -862,7 +862,7 @@ function normalizeUrl(url: string): string {
 }
 
 // ─── MAP VIEW ─────────────────────────────────────────────────────────────────
-function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: boolean; onUpgrade?: () => void }) {
+function MapView({ data }: { data: AuditData }) {
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -945,41 +945,29 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
         const marker = new G.Marker({
           position: { lat: c.lat, lng: c.lng },
           map,
-          title: isPro ? c.name : "Competitor",
+          title: c.name,
           icon: {
             path: G.SymbolPath.CIRCLE,
             scale: 10,
-            fillColor: isPro ? color : "#4A5A57",
-            fillOpacity: isPro ? 0.9 : 0.4,
+            fillColor: color,
+            fillOpacity: 0.9,
             strokeColor: "#fff",
-            strokeWeight: isPro ? 2 : 1,
+            strokeWeight: 2,
           },
           zIndex: 100,
         });
         const visLabel = c.googleRank <= 3 ? "Higher local visibility" : c.googleRank <= 10 ? "Moderate local visibility" : "Lower local visibility";
-        if (isPro) {
-          marker.addListener("click", () => {
-            infoWindow.setContent(
-              `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
-                <b>${c.name}</b><br/>
-                <span style="font-size:11px;color:#555">${visLabel}</span><br/>
-                ⭐ ${c.rating} · ${c.reviews} reviews<br/>
-                <span style="color:#666;font-size:11px">${c.address}</span>
-              </div>`
-            );
-            infoWindow.open(map, marker);
-          });
-        } else {
-          marker.addListener("click", () => {
-            infoWindow.setContent(
-              `<div style="color:#111;font-family:sans-serif;padding:6px 4px;max-width:200px;text-align:center">
-                <b>${visLabel}</b><br/>
-                <span style="font-size:12px;color:#555">Unlock to see which clinic this is</span>
-              </div>`
-            );
-            infoWindow.open(map, marker);
-          });
-        }
+        marker.addListener("click", () => {
+          infoWindow.setContent(
+            `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
+              <b>${c.name}</b><br/>
+              <span style="font-size:11px;color:#555">${visLabel}</span><br/>
+              ⭐ ${c.rating} · ${c.reviews} reviews<br/>
+              <span style="color:#666;font-size:11px">${c.address}</span>
+            </div>`
+          );
+          infoWindow.open(map, marker);
+        });
       });
     };
 
@@ -1011,33 +999,6 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
   return (
     <div style={{ position: "relative" }}>
       <div ref={mapRef} className="rc-map-wrap" style={{ width: "100%", height: 420, borderRadius: 12, overflow: "hidden" }} />
-      {!isPro && (
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          background: "linear-gradient(to top, rgba(10,14,12,0.97) 55%, transparent)",
-          borderRadius: "0 0 12px 12px",
-          padding: "40px 24px 20px",
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap",
-        }}>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: "#F0EBE3", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#E74C3C", boxShadow: "0 0 6px #E74C3C", flexShrink: 0 }} />
-              {data.competitors.length > 0
-                ? `${data.competitors.length} nearby clinics are likely capturing the majority of new patient searches in your area`
-                : "Nearby clinics may be capturing the majority of new patient searches"}
-            </div>
-            <div style={{ fontSize: 12, color: "#6B7B78", lineHeight: 1.5 }}>
-              Unlock the map to see exactly who is outranking you and where patients are going instead.
-            </div>
-          </div>
-          <button
-            onClick={() => onUpgrade?.()}
-            style={{ background: "#1ABC9C", color: "#000", border: "none", padding: "11px 22px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, boxShadow: "0 2px 12px rgba(26,188,156,0.25)" }}
-          >
-            Unlock Competitor Map →
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -1826,8 +1787,8 @@ function DashboardContent() {
                 <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Local Visibility</div>
                 <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", lineHeight: 1.5 }}>
                   {tRank == null || tRank > 3
-                    ? "Top 3 clinics capture ~70% of patient clicks. Yours isn't there yet."
-                    : "Strong position — protect it by staying ahead on reviews."}
+                    ? "Most patients contact the top 3 clinics. Yours isn't there yet."
+                    : "You're in the top 3. Keep collecting reviews to hold it."}
                 </div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 20, maxWidth: 170 }}>
@@ -1845,7 +1806,7 @@ function DashboardContent() {
               <div>
                 <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Patients Lost to Competitors / Month</div>
                 <div style={{ fontSize: 11, color: "rgba(240,235,227,0.28)", marginTop: 4, fontStyle: "italic" as const }}>
-                  Visibility-based estimate from local search patterns
+                  Estimated monthly patient impact
                 </div>
               </div>
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 44, fontWeight: 900, color: "#E74C3C", lineHeight: 1, flexShrink: 0, marginLeft: 20, whiteSpace: "nowrap" as const }}>
@@ -2374,11 +2335,9 @@ function DashboardContent() {
                   </span>
                   <span style={{ fontSize: 16, fontWeight: 600, color: "rgba(240,235,227,0.6)" }}>patients / month</span>
                 </div>
-                <div className="rc-hero-microcopy" style={{ fontSize: 11, color: "rgba(240,235,227,0.3)", marginBottom: 12, fontStyle: "italic" as const }}>
-                  Visibility-based estimate from local search patterns
-                </div>
-                <div className="rc-hero-desc" style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", marginBottom: 8, lineHeight: 1.5 }}>
-                  Many patients searching nearby are likely choosing higher-ranked clinics before reaching yours.
+                <div className="rc-hero-microcopy" style={{ fontSize: 12, color: "rgba(240,235,227,0.5)", marginBottom: 10, lineHeight: 1.4 }}>
+                  Most patients choose clinics in the top 3.<br/>
+                  <span style={{ opacity: 0.7 }}>Clinics appearing higher are contacted first.</span>
                 </div>
                 <div className="rc-hero-revenue" style={{ fontSize: 13, color: "rgba(240,235,227,0.35)", marginBottom: 4 }}>
                   Potential revenue opportunity:{" "}
@@ -2486,14 +2445,11 @@ function DashboardContent() {
             )}
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
               {typeof displayRank === "number" && reviewRank != null && displayRank <= 3 && reviewRank > displayRank
-                ? `You appear among the top local results on Google, but nearby clinics with more reviews are increasingly likely to capture bookings ahead of you.`
+                ? `You're in the top results. Clinics with more reviews tend to get contacted first.`
                 : typeof displayRank === "number" && displayRank <= 3
-                ? `Your clinic typically appears among the top nearby results — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that visibility.`
-                : `📉 Your clinic is currently outside the main patient decision range. Top 3 clinics capture ~70% of patient clicks — improving visibility is the highest-impact action available.`}
+                ? `Most patients choose the top 3 clinics. You're there — keep collecting reviews to stay.`
+                : `Most patients choose the top 3 clinics. Your clinic is currently outside that range.`}
             </div>
-          </div>
-          <div style={{ fontSize: 11, color: "#3D4D4A", lineHeight: 1.6, marginBottom: 8, paddingLeft: 2 }}>
-            Local visibility can vary across neighbourhood searches and devices. We show a typical range to reflect real patient discovery patterns.
           </div>
           </>
         )}
@@ -2559,7 +2515,7 @@ function DashboardContent() {
                     {inTopThree ? `You're in the top 3 in ${displayCity} — for now.` : `You're outside the top 3 — most patients never scroll that far`}
                   </div>
                   <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>
-                    {inTopThree ? "Rankings shift weekly. Clinics in top 3 that consistently collect reviews get 5x more inquiries — those that stop collecting reviews, drop." : "Top 3 clinics capture ~70% of all patient clicks and bookings. At your current rank, most new patients never see your clinic."}
+                    {inTopThree ? "Stay consistent with reviews to hold your position." : "Most patients choose the top 3 clinics. Reviews are the fastest way to move up."}
                   </div>
                 </div>
               </div>
@@ -2648,6 +2604,9 @@ function DashboardContent() {
 
         {/* ── CONTENT ANCHOR (scroll target) ───────────────── */}
         <div ref={contentRef} style={{ marginTop: 24 }} />
+        <div style={{ fontSize: 11, color: "#3D4D4A", marginBottom: 16, lineHeight: 1.5 }}>
+          Based on real local search results and recent patient review activity.
+        </div>
 
         {/* COMPETITORS TAB */}
         {activeTab === "competitors" && (
@@ -2735,7 +2694,7 @@ function DashboardContent() {
                   {pageRows.map((row, i) => {
                     if (row.isUser) {
                       return (
-                        <div key={`user-${i}`} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", background: "rgba(26,188,156,0.07)", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
+                        <div key={`user-${i}`} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "8px 16px", background: "rgba(26,188,156,0.07)", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
                           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 15, fontWeight: 900, color: "#1ABC9C" }}>#{row.rank}</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: "#1ABC9C" }}>
                             {data.clinicName || "Your Practice"} <span style={{ fontSize: 10, background: "rgba(26,188,156,0.2)", color: "#1ABC9C", borderRadius: 4, padding: "1px 6px", marginLeft: 4 }}>YOU</span>
@@ -2749,7 +2708,7 @@ function DashboardContent() {
                     const comp = row.comp;
                     const isAhead = comp.googleRank < (userRank ?? 999);
                     return (
-                      <div key={comp.googleRank} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "12px 16px", borderBottom: "1px solid #1A2220", alignItems: "center" }}>
+                      <div key={comp.googleRank} className="rc-comp-row-grid" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "8px 16px", borderBottom: "1px solid #1A2220", alignItems: "center", opacity: 0.9 }}>
                         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 14, fontWeight: 700, color: "#6B7B78" }}>#{comp.googleRank}</div>
                         <div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
@@ -4061,7 +4020,7 @@ function DashboardContent() {
                 </span>
               </div>
             </div>
-            <MapView data={data} isPro={isPro || isGrowth} onUpgrade={() => setShowUpgradeModal(true)} />
+            <MapView data={data} />
             <div style={{ marginTop: 12, fontSize: 11, color: "#3D4D4A", lineHeight: 1.6 }}>
               Local visibility snapshot based on the latest analysis.{data.lastUpdatedAt ? ` Updated ${new Date(data.lastUpdatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${new Date(data.lastUpdatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}.` : ""}
             </div>
