@@ -1573,6 +1573,17 @@ function DashboardContent() {
         }
         setData(d);
         setLoading(false);
+        // Store competitors_analyzed for trial users so ENIGMA can use it in day-7 email
+        if (isTrial && d.competitors?.length > 0) {
+          const trialEmail = localStorage.getItem("rc_user_email");
+          if (trialEmail) {
+            supabase
+              .from("subscribers")
+              .update({ competitors_analyzed: d.competitors.length })
+              .eq("email", trialEmail)
+              .then(() => {});
+          }
+        }
         setReviewsLoading(true);
         fetch(
           `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}&name=${encodeURIComponent(d.clinicName || nameParam)}&plan=${isGrowth ? "growth" : isPro ? "pro" : "free"}`,
