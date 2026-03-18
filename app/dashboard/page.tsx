@@ -1291,14 +1291,10 @@ function DashboardContent() {
   // Look up subscriber by clinic_url (primary) or email (fallback)
   const checkByUrl = async (clinicUrl: string) => {
     try {
-      const { data: sub } = await supabase
-        .from("subscribers")
-        .select("email, plan, status")
-        .eq("clinic_url", normalizeUrl(clinicUrl))
-        .in("status", ["active", "trialing"])
-        .single();
-      if (sub) {
-        applyPlan(sub.plan as "pro" | "growth" | "trial", sub.email);
+      const res = await fetch(`/api/check-subscriber?url=${encodeURIComponent(normalizeUrl(clinicUrl))}`);
+      const data = await res.json();
+      if (data.found) {
+        applyPlan(data.plan as "pro" | "growth" | "trial", data.email);
         return true;
       }
     } catch {}
@@ -1307,14 +1303,10 @@ function DashboardContent() {
 
   const checkByEmail = async (email: string): Promise<boolean> => {
     try {
-      const { data: sub } = await supabase
-        .from("subscribers")
-        .select("plan, status")
-        .eq("email", email.toLowerCase().trim())
-        .in("status", ["active", "trialing"])
-        .single();
-      if (sub) {
-        applyPlan(sub.plan as "pro" | "growth" | "trial", email);
+      const res = await fetch(`/api/check-subscriber?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (data.found) {
+        applyPlan(data.plan as "pro" | "growth" | "trial", email);
         return true;
       }
     } catch {}
@@ -1408,38 +1400,25 @@ function DashboardContent() {
     localStorage.setItem("rc_pro_email", email);
     await supabase.from("leads").insert({ email, url: url || null });
 
-    // Only start/refresh trial if not already a paying subscriber
-    const { data: existing } = await supabase
-      .from("subscribers")
-      .select("status")
-      .eq("email", email)
-      .single();
+    // Start trial via server-side route (uses service key — bypasses RLS)
+    const trialRes = await fetch("/api/start-trial", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, clinicUrl: url ? normalizeUrl(url) : null }),
+    });
+    const trialData = await trialRes.json();
 
-    if (!existing || existing.status !== "active") {
-      const now = new Date().toISOString();
-      const trialEnds = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      await supabase.from("subscribers").upsert(
-        {
-          email,
-          clinic_url: url ? normalizeUrl(url) : null,
-          plan: "trial",
-          status: "trialing",
-          trial_started_at: now,
-          trial_ends_at: trialEnds,
-          updated_at: now,
-        },
-        { onConflict: "email" },
-      );
-      // Send welcome email (fire and forget — don't block UI)
+    if (trialData.alreadyActive) {
+      applyPlan("pro", email);
+    } else {
+      // Send welcome email (fire and forget)
       fetch("/api/trial-welcome", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, trialEndsAt: trialEnds, clinicUrl: url, city, name: nameParam }),
+        body: JSON.stringify({ email, trialEndsAt: trialData.trialEndsAt, clinicUrl: url, city, name: nameParam }),
       }).catch(() => {});
       setIsTrial(true);
       setIsPro(true);
-    } else {
-      applyPlan(existing.status === "active" ? "pro" : "trial", email);
     }
 
     setBannerOtpStep("email");
