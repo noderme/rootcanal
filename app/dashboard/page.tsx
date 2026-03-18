@@ -3254,7 +3254,7 @@ function DashboardContent() {
                           marginBottom: 10,
                         }}
                       >
-                        ⚠ Patients Lost to Competitors
+                        Estimated Local Visibility Gap
                       </div>
                       <div
                         style={{
@@ -3285,23 +3285,19 @@ function DashboardContent() {
                             color: "rgba(240,235,227,0.6)",
                           }}
                         >
-                          patients / month
+                          potential patient enquiries missed / month
                         </span>
                       </div>
                       <div
                         className="rc-hero-microcopy"
                         style={{
-                          fontSize: 12,
-                          color: "rgba(240,235,227,0.5)",
+                          fontSize: 13,
+                          color: "rgba(240,235,227,0.6)",
                           marginBottom: 10,
-                          lineHeight: 1.4,
+                          lineHeight: 1.5,
                         }}
                       >
-                        Most patients choose clinics in the top 3.
-                        <br />
-                        <span style={{ opacity: 0.7 }}>
-                          Clinics appearing higher are contacted first.
-                        </span>
+                        Directional estimate based on your current local visibility band and your configured average patient value.
                       </div>
                       <div
                         className="rc-hero-revenue"
@@ -3311,19 +3307,20 @@ function DashboardContent() {
                           marginBottom: 4,
                         }}
                       >
-                        Potential revenue opportunity:{" "}
+                        Estimated monthly treatment value impact:{" "}
                         <span style={{ color: "#F0A500", fontWeight: 700 }}>
                           {fmt(revLow)}–{fmt(revHigh)} / month
                         </span>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: "rgba(240,235,227,0.2)",
-                            marginLeft: 6,
-                          }}
-                        >
-                          based on avg. patient value of ${patientValue}
-                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "rgba(240,235,227,0.35)",
+                          marginTop: 8,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Clinics typically begin improving local visibility by consistently requesting recent patient reviews.
                       </div>
                     </div>
                     <div style={{ flexShrink: 0 }}>
