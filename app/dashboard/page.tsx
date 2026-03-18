@@ -15,6 +15,30 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
 );
 
+// ── Rank display helpers ───────────────────────────────────────────────────
+// Convert exact rank to visibility band language
+function rankBand(rank: number): string {
+  if (rank <= 3) return "Frequently appears among top local clinics";
+  if (rank <= 10) return "Typically visible in early local search results";
+  if (rank <= 20) return "Usually appears outside the main patient decision range";
+  return "Limited visibility in nearby patient searches";
+}
+// Compact label for small spaces
+function rankShortLabel(rank: number): string {
+  if (rank <= 3) return "Top 3 locally";
+  if (rank <= 10) return "Top 10 locally";
+  if (rank <= 20) return `Around position ${rank}`;
+  return "Outside top results";
+}
+// Positional range string using stored low/high or ±3 fallback
+function rankRangeText(rank: number, low?: number | null, high?: number | null): string {
+  const lo = low ?? Math.max(1, rank - 3);
+  const hi = high ?? rank + 3;
+  if (lo === hi) return `around position ${lo}`;
+  return `typical positions ${lo}–${hi}`;
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 interface AuditData {
   url: string;
   city: string;
@@ -907,7 +931,7 @@ function MapView({ data, isPro = false, onUpgrade }: { data: AuditData; isPro?: 
         infoWindow.setContent(
           `<div style="color:#111;font-family:sans-serif;padding:4px 2px;max-width:200px">
             <b>${data.clinicName || "Your Clinic"}</b><br/>
-            📍 Rank #${data.userRank ?? "?"}<br/>
+            📍 ${data.userRank != null ? rankShortLabel(data.userRank) : "Position unknown"}<br/>
             ⭐ ${data.userReviewCount ?? 0} reviews
           </div>`
         );
@@ -1792,15 +1816,20 @@ function DashboardContent() {
             {/* Rank */}
             <div style={{ background: "#151918", border: `1px solid ${tRank == null || tRank > 3 ? "rgba(231,76,60,0.3)" : "rgba(46,204,113,0.3)"}`, borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Google Rank</div>
+                <div style={{ fontSize: 11, color: "#6B7B78", textTransform: "uppercase" as const, letterSpacing: 1.5, fontWeight: 700, marginBottom: 4 }}>Local Visibility</div>
                 <div style={{ fontSize: 13, color: "rgba(240,235,227,0.5)", lineHeight: 1.5 }}>
                   {tRank == null || tRank > 3
                     ? "Top 3 clinics capture ~70% of patient clicks. Yours isn't there yet."
                     : "Strong position — protect it by staying ahead on reviews."}
                 </div>
               </div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 42, fontWeight: 900, color: tRank == null || tRank > 3 ? "#E74C3C" : "#1ABC9C", lineHeight: 1, flexShrink: 0, marginLeft: 20 }}>
-                {tRank != null ? `#${tRank}` : "—"}
+              <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 20, maxWidth: 170 }}>
+                {tRank != null ? (
+                  <>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: tRank <= 3 ? "#1ABC9C" : "#D4A843", lineHeight: 1.3 }}>{rankShortLabel(tRank)}</div>
+                    <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>{rankRangeText(tRank)}</div>
+                  </>
+                ) : <div style={{ fontSize: 24, fontWeight: 700, color: "#6B7B78" }}>—</div>}
               </div>
             </div>
 
@@ -2501,18 +2530,19 @@ function DashboardContent() {
 
         {/* ── COMPETITORS: rank strip ──────────────────────── */}
         {activeTab === "competitors" && (
-          <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 24, overflow: "hidden" }}>
+          <>
+          <div className="card" style={{ display: "flex", alignItems: "center", background: "#151918", border: "1px solid #2A3330", borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>
             <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
               <div style={{ fontSize: 10, color: "#6B7B78", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                Google Rank
+                Local Visibility
               </div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof displayRank === "number" && displayRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{displayRank != null ? `#${displayRank}` : "—"}</div>
-              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>
-                {data.rankRangeLow != null && data.rankRangeHigh != null && data.rankRangeLow !== data.rankRangeHigh
-                  ? `range #${data.rankRangeLow}–#${data.rankRangeHigh}`
-                  : "within 5 km"}
-              </div>
+              {displayRank != null ? (
+                <>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: displayRank <= 3 ? "#1ABC9C" : "#D4A843", lineHeight: 1.3, marginTop: 2 }}>{rankShortLabel(displayRank)}</div>
+                  <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>{rankRangeText(displayRank, data.rankRangeLow, data.rankRangeHigh)}</div>
+                </>
+              ) : <div style={{ fontSize: 22, fontWeight: 700, color: "#6B7B78" }}>—</div>}
             </div>
             {reviewRank != null && (
               <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
@@ -2536,12 +2566,16 @@ function DashboardContent() {
             )}
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
               {typeof displayRank === "number" && reviewRank != null && displayRank <= 3 && reviewRank > displayRank
-                ? `You rank #${displayRank} on Google but #${reviewRank} by reviews — clinics with more reviews are 3x more likely to steal your next booking.`
+                ? `You appear among the top local results on Google, but nearby clinics with more reviews are increasingly likely to capture bookings ahead of you.`
                 : typeof displayRank === "number" && displayRank <= 3
-                ? `You're ranked #${displayRank} nearby — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that revenue.`
-                : `📉 You're ranked #${displayRank} nearby. Top 3 clinics capture ~70% of patient clicks — patients at your rank rarely appear in new booking searches.`}
+                ? `Your clinic typically appears among the top nearby results — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that visibility.`
+                : `📉 Your clinic is currently outside the main patient decision range. Top 3 clinics capture ~70% of patient clicks — improving visibility is the highest-impact action available.`}
             </div>
           </div>
+          <div style={{ fontSize: 11, color: "#3D4D4A", lineHeight: 1.6, marginBottom: 8, paddingLeft: 2 }}>
+            Local visibility can vary across neighbourhood searches and devices. We show a typical range to reflect real patient discovery patterns.
+          </div>
+          </>
         )}
 
         {/* ── HEALTH: website metrics strip ────────────────── */}
@@ -3590,9 +3624,9 @@ function DashboardContent() {
                           </div>
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
                             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 16, fontWeight: 700, color: isLocked ? "#6B7B78" : urgencyColor }}>
-                              #{comp.googleRank}
+                              Pos. {comp.googleRank}
                             </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
+                            <div style={{ fontSize: 11, color: "#6B7B78" }}>local position</div>
                             <div style={{ fontSize: 11, color: "#2ECC71", marginTop: 2 }}>
                               {gap > 0 ? `~${gap} review lead` : "similar reviews"}
                             </div>
@@ -3808,9 +3842,9 @@ function DashboardContent() {
                               color: isUpcoming ? "#6B7B78" : "#F0A500",
                             }}
                           >
-                            #{comp.googleRank}
+                            Pos. {comp.googleRank}
                           </div>
-                          <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
+                          <div style={{ fontSize: 11, color: "#6B7B78" }}>local position</div>
                           <div style={{ fontSize: 11, color: "#E74C3C", marginTop: 2 }}>
                             {reviewGap > 0 ? `~${reviewGap} more reviews` : "similar review count"}
                           </div>
