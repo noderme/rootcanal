@@ -3221,7 +3221,7 @@ function DashboardContent() {
                   Get more Google reviews this week to improve patient discovery
                 </div>
                 <div style={{ fontSize: 11, color: "rgba(240,235,227,0.35)", lineHeight: 1.4 }}>
-                  Clinics adding 15–20 new reviews often see ranking improvements within a few weeks.
+                  Clinics using automated review requests often begin improving local visibility within 2–4 weeks.
                 </div>
               </div>
               <button
@@ -3240,7 +3240,7 @@ function DashboardContent() {
                   flexShrink: 0,
                 }}
               >
-                Send Review Requests →
+                Start Getting More Reviews →
               </button>
             </div>
             {(userRank == null || userRank > 3) &&
@@ -3358,19 +3358,19 @@ function DashboardContent() {
                         }}
                       >
                         Estimated monthly treatment value impact:{" "}
-                        <span style={{ color: "#F0A500", fontWeight: 700 }}>
+                        <span style={{ color: "#F0A500", fontWeight: 800, fontSize: 15 }}>
                           {fmt(revLow)}–{fmt(revHigh)} / month
                         </span>
                       </div>
                       <div
                         style={{
-                          fontSize: 12,
-                          color: "rgba(240,235,227,0.35)",
-                          marginTop: 8,
+                          fontSize: 11,
+                          color: "rgba(240,235,227,0.30)",
+                          marginTop: 6,
                           lineHeight: 1.5,
                         }}
                       >
-                        Clinics typically begin improving local visibility by consistently requesting recent patient reviews.
+                        Visibility momentum typically builds within the first 14 days of consistent review growth.
                       </div>
                     </div>
                     <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
