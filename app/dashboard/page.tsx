@@ -1904,7 +1904,12 @@ function DashboardContent() {
         @keyframes sectionGlow { 0% { box-shadow: 0 0 0 0 rgba(26,188,156,0); } 30% { box-shadow: 0 0 0 2px rgba(26,188,156,0.28), inset 0 0 24px rgba(26,188,156,0.04); } 100% { box-shadow: 0 0 0 0 rgba(26,188,156,0); } }
         @keyframes tabUnderline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
         @keyframes progressFill { from { width: 0%; } to { width: var(--pw, 12%); } }
-        .card { animation: fadeUp 0.5s ease both; }
+        .card { animation: fadeUp 0.5s ease both; box-shadow: 0 2px 10px rgba(0,0,0,0.35); transition: box-shadow 0.15s ease, transform 0.15s ease; }
+        .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .rc-card-lift { transition: box-shadow 0.15s ease, transform 0.15s ease; }
+        .rc-card-lift:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.52); transform: translateY(-2px); }
+        button { transition: transform 0.12s ease, opacity 0.12s ease !important; }
+        button:not([disabled]):active { transform: scale(0.96) !important; }
         .rc-section-flash { animation: sectionGlow 0.8s ease-out forwards !important; }
         .rc-hero-sticky { position: sticky; top: 65px; z-index: 20; transition: padding 0.25s ease, box-shadow 0.25s ease; }
         .rc-hero-compact .rc-hero-card { padding: 14px 20px !important; }
@@ -2337,6 +2342,7 @@ function DashboardContent() {
               borderRadius: 16,
               padding: "28px 32px",
               marginBottom: 16,
+              boxShadow: compactHero ? "0 4px 24px rgba(0,0,0,0.5)" : "0 4px 24px rgba(231,76,60,0.1), 0 2px 10px rgba(0,0,0,0.4)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -2344,7 +2350,6 @@ function DashboardContent() {
               flexWrap: "wrap" as const,
               position: "relative" as const,
               overflow: "hidden",
-              boxShadow: compactHero ? "0 4px 24px rgba(0,0,0,0.5)" : "none",
               transition: "padding 0.25s ease, box-shadow 0.25s ease",
             }}>
               {/* Glow accent */}
@@ -2398,7 +2403,7 @@ function DashboardContent() {
 
         {/* ── FASTEST WAY HERO ─────────────────────────────── */}
         {data.placeId && activeTab !== "reviews" && (
-          <div style={{
+          <div className="rc-card-lift" style={{
             background: "linear-gradient(135deg, #081a12 0%, #0a2018 60%, #0d1a14 100%)",
             border: "1px solid rgba(26,188,156,0.3)",
             borderRadius: 16,
@@ -2406,6 +2411,7 @@ function DashboardContent() {
             marginBottom: 24,
             position: "relative" as const,
             overflow: "hidden",
+            boxShadow: "0 4px 20px rgba(26,188,156,0.08), 0 2px 8px rgba(0,0,0,0.35)",
           }}>
             {/* Subtle glow */}
             <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "rgba(26,188,156,0.06)", pointerEvents: "none" }} />
