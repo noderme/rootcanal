@@ -3409,6 +3409,9 @@ function DashboardContent() {
                       >
                         Unlock Growth Plan →
                       </button>
+                      <div style={{ fontSize: 11, color: "rgba(240,235,227,0.30)", textAlign: "center" }}>
+                        Takes less than 2 minutes to start.
+                      </div>
                     </div>
                   </div>
                 );
