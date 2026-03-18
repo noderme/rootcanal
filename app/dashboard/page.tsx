@@ -1188,9 +1188,10 @@ function DashboardContent() {
   const [isPro, setIsPro] = useState(false);
   const [isGrowth, setIsGrowth] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
-  const [teaserDismissed, setTeaserDismissed] = useState(
-    () => typeof window !== "undefined" && !!localStorage.getItem("rc_teaser_seen"),
-  );
+  const [teaserDismissed, setTeaserDismissed] = useState(false);
+  useEffect(() => {
+    if (localStorage.getItem("rc_teaser_seen")) setTeaserDismissed(true);
+  }, []);
 
   // Post-payment unlock animation
   const [showUnlockAnim, setShowUnlockAnim] = useState(false);
