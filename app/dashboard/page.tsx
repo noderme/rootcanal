@@ -1325,7 +1325,6 @@ function DashboardContent() {
       // Cold email link — has email param, skip OTP entirely
       if (emailParam) {
         localStorage.setItem("rc_user_email", emailParam.toLowerCase().trim());
-        localStorage.setItem("rc_auth_time", Date.now().toString());
         setAuthState("authenticated");
         return;
       }
@@ -1337,15 +1336,8 @@ function DashboardContent() {
         setAuthState("authenticated");
         return;
       }
-      // Known email in localStorage — check if verified within last 7 days
+      // No session — check if we have a known email to auto-send OTP
       const saved = localStorage.getItem("rc_user_email");
-      const lastAuth = localStorage.getItem("rc_auth_time");
-      const sevenDays = 7 * 24 * 60 * 60 * 1000;
-      if (saved && lastAuth && Date.now() - parseInt(lastAuth) < sevenDays) {
-        setAuthState("authenticated");
-        return;
-      }
-      // Email known but session expired — auto-send OTP
       if (saved) {
         setAuthEmail(saved);
         setAuthEmailDisplay(saved[0] + "***@" + saved.split("@")[1]);
@@ -1517,22 +1509,27 @@ function DashboardContent() {
     }, 2000);
   };
 
-  // On mount: check by clinic_url first, then localStorage email, then trial
+  // On mount: check by clinic_url first, then Supabase session, then localStorage fallback
   useEffect(() => {
     const detect = async () => {
       if (url) {
         const found = await checkByUrl(url);
         if (found) return;
       }
-      const saved = localStorage.getItem("rc_pro_email");
-      if (saved) {
-        const found = await checkByEmail(saved);
-        if (found) return;
+      // Primary: Supabase session — survives localStorage clears, auto-refreshes
+      const { data: { session } } = await supabase.auth.getSession();
+      const sessionEmail = session?.user?.email;
+      if (sessionEmail) {
+        // Keep localStorage in sync for any legacy code paths
+        localStorage.setItem("rc_pro_email", sessionEmail);
+        localStorage.setItem("rc_user_email", sessionEmail);
+        await checkByEmail(sessionEmail);
+        return;
       }
-      // Check trial by email (source of truth is Supabase — pg_cron flips status to 'expired')
-      const trialEmail = localStorage.getItem("rc_user_email");
-      if (trialEmail) {
-        await checkByEmail(trialEmail);
+      // Fallback: localStorage cache (covers users who haven't re-authed since this deploy)
+      const cached = localStorage.getItem("rc_pro_email") || localStorage.getItem("rc_user_email");
+      if (cached) {
+        await checkByEmail(cached);
       }
     };
     detect();
