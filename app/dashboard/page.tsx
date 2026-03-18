@@ -1040,10 +1040,35 @@ function DashboardContent() {
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewPlatform, setReviewPlatform] = useState<"google" | "yelp" | "both">("google");
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const isValidContact = (v: string) => {
     const val = v.trim();
     if (val.includes("@")) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
     return /^\+?[1-9]\d{9,14}$/.test(val.replace(/[\s\-().]/g, ""));
+  };
+  const handleSendReview = async () => {
+    if (!data?.placeId || !isValidContact(reviewContact)) return;
+    const val = reviewContact.trim();
+    const type = val.includes("@") ? "email" : "phone";
+    setReviewSending(true);
+    setReviewError("");
+    try {
+      const res = await fetch("/api/request-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contact: val, type, clinicName: data.clinicName || nameParam,
+          clinicUrl: data.url, placeId: data.placeId, platform: reviewPlatform,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) setReviewError(json.error || "Failed to send");
+      else setReviewSent(true);
+    } catch {
+      setReviewError("Network error — please try again");
+    } finally {
+      setReviewSending(false);
+    }
   };
 
   // Soft email capture banner (anonymous users)
@@ -4647,10 +4672,7 @@ function DashboardContent() {
             </div>
           </div>
           <button
-            onClick={() => {
-              setActiveTab("reviews");
-              setTimeout(() => contentRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-            }}
+            onClick={() => { setShowReviewModal(true); setReviewSent(false); setReviewError(""); setReviewContact(""); }}
             style={{
               background: "#1ABC9C", color: "#0D0F0E", border: "none",
               borderRadius: 8, padding: "7px 13px", fontSize: 12, fontWeight: 700,
@@ -4670,6 +4692,90 @@ function DashboardContent() {
             }}
             aria-label="Dismiss"
           >×</button>
+        </div>
+      )}
+
+      {/* ── REVIEW REQUEST MODAL ──────────────────────────────────────────── */}
+      {showReviewModal && (
+        <div
+          onClick={() => setShowReviewModal(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 100,
+            background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "#131A18", border: "1px solid rgba(26,188,156,0.2)",
+              borderRadius: 16, padding: 28, width: "100%", maxWidth: 380,
+              fontFamily: "'DM Sans', sans-serif",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.7)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#F0EBE3" }}>Send review request</div>
+                <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 3 }}>Enter patient email or phone number</div>
+              </div>
+              <button onClick={() => setShowReviewModal(false)} style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 20, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
+            </div>
+
+            {reviewSent ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: "#1ABC9C" }}>Review link sent!</div>
+                <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 6 }}>The patient will receive a link to leave a review.</div>
+                <button
+                  onClick={() => { setReviewSent(false); setReviewContact(""); }}
+                  style={{ marginTop: 18, background: "rgba(26,188,156,0.12)", border: "1px solid rgba(26,188,156,0.2)", color: "#1ABC9C", borderRadius: 8, padding: "8px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >Send another</button>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+                  {(["google", "yelp", "both"] as const).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setReviewPlatform(p)}
+                      style={{
+                        flex: 1, padding: "6px 0", borderRadius: 7, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                        background: reviewPlatform === p ? "rgba(26,188,156,0.18)" : "rgba(255,255,255,0.04)",
+                        border: reviewPlatform === p ? "1px solid rgba(26,188,156,0.4)" : "1px solid rgba(255,255,255,0.07)",
+                        color: reviewPlatform === p ? "#1ABC9C" : "#6B7B78",
+                      }}
+                    >{p === "both" ? "Both" : p.charAt(0).toUpperCase() + p.slice(1)}</button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="Email or phone number"
+                  value={reviewContact}
+                  onChange={e => setReviewContact(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && isValidContact(reviewContact) && handleSendReview()}
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 9, padding: "11px 14px", fontSize: 14, color: "#F0EBE3",
+                    outline: "none", fontFamily: "'DM Sans', sans-serif", marginBottom: 8,
+                  }}
+                />
+                {reviewError && <div style={{ fontSize: 12, color: "#E74C3C", marginBottom: 8 }}>{reviewError}</div>}
+                <button
+                  onClick={handleSendReview}
+                  disabled={reviewSending || !isValidContact(reviewContact)}
+                  style={{
+                    width: "100%", background: isValidContact(reviewContact) ? "#1ABC9C" : "rgba(26,188,156,0.2)",
+                    color: isValidContact(reviewContact) ? "#0D0F0E" : "#4A5A57",
+                    border: "none", borderRadius: 9, padding: "12px 0", fontSize: 14, fontWeight: 700,
+                    cursor: isValidContact(reviewContact) ? "pointer" : "default", transition: "background 0.15s",
+                  }}
+                >{reviewSending ? "Sending…" : "Send review link →"}</button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
