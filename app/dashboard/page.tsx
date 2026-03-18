@@ -58,6 +58,7 @@ interface AuditData {
   rankRangeHigh?: number;
   stableCompetitorCount?: number;
   competitorCountOutlier?: boolean;
+  lastUpdatedAt?: string;
 }
 
 interface ReviewData {
@@ -1036,6 +1037,8 @@ function DashboardContent() {
   const [data, setData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
   const [reviews, setReviews] = useState<ReviewData | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -1311,7 +1314,12 @@ function DashboardContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
-  // Fetch audit data
+  // Build audit query URL
+  const auditQuery = hasWebsite
+    ? `/api/audit?url=${encodeURIComponent(url)}`
+    : `/api/audit?name=${encodeURIComponent(nameParam)}&city=${encodeURIComponent(city)}`;
+
+  // Fetch audit data — initial load (with loading screen + min display time)
   useEffect(() => {
     if (!url && !nameParam) { setLoading(false); return; }
     const totalSteps = 8;
@@ -1322,9 +1330,6 @@ function DashboardContent() {
       else clearInterval(interval);
     }, 2200);
     const minLoadTime = new Promise((r) => setTimeout(r, 5000));
-    const auditQuery = hasWebsite
-      ? `/api/audit?url=${encodeURIComponent(url)}`
-      : `/api/audit?name=${encodeURIComponent(nameParam)}&city=${encodeURIComponent(city)}`;
     fetch(auditQuery)
       .then((res) => res.json())
       .then(async (d) => {
@@ -1344,10 +1349,7 @@ function DashboardContent() {
           `/api/reviews?url=${encodeURIComponent(url)}&city=${encodeURIComponent(city)}&name=${encodeURIComponent(d.clinicName || nameParam)}&plan=${isGrowth ? "growth" : isPro ? "pro" : "free"}`,
         )
           .then((r) => r.json())
-          .then((r) => {
-            setReviews(r);
-            setReviewsLoading(false);
-          })
+          .then((r) => { setReviews(r); setReviewsLoading(false); })
           .catch(() => setReviewsLoading(false));
       })
       .catch(() => {
@@ -1355,7 +1357,22 @@ function DashboardContent() {
         setLoading(false);
       });
     return () => clearInterval(interval);
-  }, [url, nameParam, city]);
+  }, [url, nameParam, city]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Manual refresh — bypasses cache, keeps existing data visible while in-flight
+  const handleRefresh = () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshError("");
+    fetch(`${auditQuery}&force=true`)
+      .then((res) => res.json())
+      .then((d) => {
+        if (d.error) { setRefreshError("Refresh unavailable — showing last known data."); return; }
+        setData(d);
+      })
+      .catch(() => setRefreshError("Refresh unavailable — showing last known data."))
+      .finally(() => setRefreshing(false));
+  };
 
   // Compact hero + scroll listener
   useEffect(() => {
@@ -2443,6 +2460,43 @@ function DashboardContent() {
             )}
           </div>
         )}
+
+        {/* ── SNAPSHOT STATUS BAR ─────────────────────────── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 12 }}>
+          <div style={{ fontSize: 11, color: "#3D4D4A" }}>
+            {data.lastUpdatedAt
+              ? `Last updated: ${new Date(data.lastUpdatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${new Date(data.lastUpdatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
+              : "Visibility data loaded"}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {refreshError && (
+              <span style={{ fontSize: 11, color: "#6B7B78" }}>{refreshError}</span>
+            )}
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              style={{
+                background: "none",
+                border: "1px solid #2A3330",
+                borderRadius: 8,
+                padding: "5px 12px",
+                fontSize: 11,
+                color: refreshing ? "#3D4D4A" : "#6B7B78",
+                cursor: refreshing ? "default" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                transition: "color 0.2s",
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ animation: refreshing ? "spin 1s linear infinite" : "none" }}>
+                <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              {refreshing ? "Refreshing…" : "Refresh visibility data"}
+            </button>
+          </div>
+        </div>
 
         {/* ── COMPETITORS: rank strip ──────────────────────── */}
         {activeTab === "competitors" && (

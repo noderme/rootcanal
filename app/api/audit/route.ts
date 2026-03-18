@@ -24,7 +24,7 @@ function parseCityFromAddress(address: string): string {
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────
 const cache = new Map<string, { data: AuditResult; timestamp: number }>();
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
 interface AuditResult {
   url: string;
@@ -70,6 +70,7 @@ interface AuditResult {
   rankRangeHigh?: number;
   stableCompetitorCount?: number;
   competitorCountOutlier?: boolean;
+  lastUpdatedAt?: string;
 }
 
 function getCached(key: string): AuditResult | null {
@@ -168,6 +169,7 @@ export async function GET(request: NextRequest) {
   const url = searchParams.get("url") || "";
   const nameParam = searchParams.get("name") || "";
   const cityParam = searchParams.get("city") || "";
+  const force = searchParams.get("force") === "true";
   const hasWebsite = !!url;
 
   if (!hasWebsite && (!nameParam || !cityParam)) {
@@ -388,31 +390,39 @@ export async function GET(request: NextRequest) {
     : `${nameParam.toLowerCase()}-${cityParam.toLowerCase()}`;
 
   // ── Check Supabase cache first (persistent across serverless invocations) ──
-  try {
-    const since = new Date(Date.now() - CACHE_TTL).toISOString();
-    const { data: cachedRow } = await supabase
-      .from("scans")
-      .select("result, scanned_at")
-      .eq("url", hasWebsite ? url : cacheKey)
-      .not("result", "is", null)
-      .gte("scanned_at", since)
-      .order("scanned_at", { ascending: false })
-      .limit(1)
-      .single();
+  if (!force) {
+    try {
+      const since = new Date(Date.now() - CACHE_TTL).toISOString();
+      const { data: cachedRow } = await supabase
+        .from("scans")
+        .select("result, scanned_at")
+        .eq("url", hasWebsite ? url : cacheKey)
+        .not("result", "is", null)
+        .gte("scanned_at", since)
+        .order("scanned_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    if (cachedRow?.result) {
-      console.log("Supabase cache hit:", cacheKey);
-      return NextResponse.json({ ...cachedRow.result, cached: true });
+      if (cachedRow?.result) {
+        console.log("Supabase cache hit:", cacheKey);
+        return NextResponse.json({
+          ...cachedRow.result,
+          cached: true,
+          lastUpdatedAt: cachedRow.scanned_at,
+        });
+      }
+    } catch {
+      // No cache hit — proceed with full audit
     }
-  } catch {
-    // No cache hit — proceed with full audit
   }
 
   // ── Check in-memory cache (fallback for same instance) ──
-  const cached = getCached(cacheKey);
-  if (cached && cached.placeId) {
-    console.log("Memory cache hit:", cacheKey);
-    return NextResponse.json(cached);
+  if (!force) {
+    const cached = getCached(cacheKey);
+    if (cached && cached.placeId) {
+      console.log("Memory cache hit:", cacheKey);
+      return NextResponse.json({ ...cached, lastUpdatedAt: cached.scannedAt });
+    }
   }
 
   try {
@@ -1213,6 +1223,7 @@ export async function GET(request: NextRequest) {
       console.error("Supabase error:", dbErr);
     }
 
+    result.lastUpdatedAt = result.scannedAt;
     return NextResponse.json(result);
   } catch (error) {
     console.error("Audit error:", error);
