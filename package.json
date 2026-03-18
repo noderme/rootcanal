@@ -13,6 +13,8 @@
     "@types/nodemailer": "^7.0.11",
     "next": "16.1.6",
     "nodemailer": "^8.0.2",
+    "posthog-js": "^1.360.2",
+    "posthog-node": "^5.28.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.3",

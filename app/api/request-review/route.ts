@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import twilio from "twilio";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -95,6 +96,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: clinicUrl || clinicName || "unknown",
+      event: "review_request_sent",
+      properties: { contact_type: type, platform, clinic_name: clinicName, clinic_url: clinicUrl },
+    });
+    await posthog.shutdown();
     return NextResponse.json({ success: true, reviewLink });
   } catch (error) {
     console.error("Review request error:", error);

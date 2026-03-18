@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,6 +51,13 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`✅ Plan activated (client-side): ${email} → ${plan}`);
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: email.toLowerCase().trim(),
+      event: "plan_activated",
+      properties: { plan, clinic_url: clinicUrl ? normalizeUrl(clinicUrl) : null, source: "client_side" },
+    });
+    await posthog.shutdown();
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("activate-plan error:", err);

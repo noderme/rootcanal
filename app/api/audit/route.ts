@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { computeRankStats } from "@/lib/rankSmoothing";
 import { mergeCompetitorHistory, type CompetitorHistory } from "@/lib/competitorHistory";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 // ── SUPABASE ──────────────────────────────────────────────
 const supabase = createClient(
@@ -1224,6 +1225,20 @@ export async function GET(request: NextRequest) {
     }
 
     result.lastUpdatedAt = result.scannedAt;
+    const posthog = getPostHogClient();
+    posthog.capture({
+      distinctId: result.url,
+      event: "audit_completed",
+      properties: {
+        clinic_url: result.url,
+        city: result.city,
+        overall_score: result.overallScore,
+        performance_score: result.performanceScore,
+        seo_score: result.seoScore,
+        google_rank: result.userRank ?? null,
+      },
+    });
+    await posthog.shutdown();
     return NextResponse.json(result);
   } catch (error) {
     console.error("Audit error:", error);

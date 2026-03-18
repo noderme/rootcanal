@@ -9,6 +9,7 @@ import {
   openGrowthCheckout,
   openTestCheckout,
 } from "@/lib/paddle";
+import posthog from "posthog-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -152,6 +153,7 @@ function UpgradeModal({
   }, [screen, onClose]);
 
   const handleSelect = (plan: "pro" | "growth" | "test") => {
+    posthog.capture("plan_selected", { plan, clinic_url: clinicUrl });
     const checkout =
       plan === "growth"
         ? openGrowthCheckout
@@ -1185,6 +1187,10 @@ function DashboardContent() {
 
   // Upgrade modal
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const openUpgradeModal = () => {
+    posthog.capture("upgrade_modal_opened");
+    openUpgradeModal();
+  };
 
   // Stable roadmap target — persisted in localStorage so Step 1 stays consistent
   const [roadmapTargetName, setRoadmapTargetName] = useState<string | null>(
@@ -2474,7 +2480,7 @@ function DashboardContent() {
           <button
             onClick={() => {
               setTeaserDismissed(true);
-              setShowUpgradeModal(true);
+              openUpgradeModal();
             }}
             style={{
               width: "100%",
@@ -2742,7 +2748,7 @@ function DashboardContent() {
                 ⭐ Pro Active
               </div>
               <button
-                onClick={() => setShowUpgradeModal(true)}
+                onClick={() => openUpgradeModal()}
                 style={{
                   background: "#D4A843",
                   color: "#000",
@@ -2760,7 +2766,7 @@ function DashboardContent() {
             </div>
           ) : (
             <button
-              onClick={() => setShowUpgradeModal(true)}
+              onClick={() => openUpgradeModal()}
               style={{
                 background: "#1ABC9C",
                 color: "#000",
@@ -3233,7 +3239,7 @@ function DashboardContent() {
                     </div>
                     <div style={{ flexShrink: 0 }}>
                       <button
-                        onClick={() => setShowUpgradeModal(true)}
+                        onClick={() => openUpgradeModal()}
                         style={{
                           background:
                             "linear-gradient(135deg, #1ABC9C, #16a085)",
@@ -3713,7 +3719,7 @@ function DashboardContent() {
                   </div>
                   {!isGrowth && (
                     <button
-                      onClick={() => setShowUpgradeModal(true)}
+                      onClick={() => openUpgradeModal()}
                       style={{
                         marginLeft: "auto",
                         flexShrink: 0,
@@ -3802,7 +3808,7 @@ function DashboardContent() {
                       >
                         {inTopThree && !isGrowth && (
                           <button
-                            onClick={() => setShowUpgradeModal(true)}
+                            onClick={() => openUpgradeModal()}
                             style={{
                               background: "#1ABC9C",
                               color: "#fff",
@@ -3821,7 +3827,7 @@ function DashboardContent() {
                         )}
                         {!inTopThree && !isGrowth && (
                           <button
-                            onClick={() => setShowUpgradeModal(true)}
+                            onClick={() => openUpgradeModal()}
                             style={{
                               background: "#E74C3C",
                               color: "#fff",
@@ -5149,7 +5155,7 @@ function DashboardContent() {
                           border: "1px dashed #1A1F1E",
                           cursor: "pointer",
                         }}
-                        onClick={() => setShowUpgradeModal(true)}
+                        onClick={() => openUpgradeModal()}
                       >
                         <div style={{ display: "flex", gap: 4 }}>
                           {Array.from({ length: Math.min(hiddenCount, 4) }).map(
@@ -5250,7 +5256,7 @@ function DashboardContent() {
                         </div>
                         {!isGrowth && (
                           <button
-                            onClick={() => setShowUpgradeModal(true)}
+                            onClick={() => openUpgradeModal()}
                             style={{
                               background: isPro ? "#D4A843" : "#2ECC71",
                               color: "#000",
@@ -5425,7 +5431,7 @@ function DashboardContent() {
                   </div>
                   {!isGrowth && (
                     <button
-                      onClick={() => setShowUpgradeModal(true)}
+                      onClick={() => openUpgradeModal()}
                       style={{
                         background: "#F0A500",
                         color: "#000",

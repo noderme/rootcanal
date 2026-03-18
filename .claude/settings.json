@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s https://www.rootcanal.us)",
+      "Bash(git commit:*)",
+      "Bash(competitors.\" in all cases to maintain advisory tone.:*)",
+      "Bash(grep -r \"competitor_history\\\\|scans\\\\|supabase\" .env*)",
+      "Bash(python3 -c \"import sys; [print\\(repr\\(l\\)\\) for l in sys.stdin]\")",
+      "Read(//Users/madmax/rootcanal/NR==2426{start=NR} start && /^\\\\s*\\\\\\)\\\\}$/**)",
+      "Bash(python3 -:*)",
+      "Bash(ssh -i ~/.ssh/dig_ocean -o StrictHostKeyChecking=no root@167.99.149.242 \"cd /root/scraper && node enrich.js --city Austin --state TX 2>&1\")",
+      "Bash(rsync -az -e \"ssh -i ~/.ssh/dig_ocean\" /Users/madmax/scraper/send.js /Users/madmax/scraper/pm2.config.js root@167.99.149.242:/root/scraper/)",
+      "Bash(ssh -i ~/.ssh/dig_ocean root@167.99.149.242 \"cd /root/scraper && pm2 delete all 2>/dev/null; pm2 start pm2.config.js && pm2 save && pm2 list\")"
+    ]
+  }
+}

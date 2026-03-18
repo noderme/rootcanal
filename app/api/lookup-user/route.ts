@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,6 +52,11 @@ export async function GET(request: NextRequest) {
     email: match.email,
     options: { shouldCreateUser: true, emailRedirectTo: undefined },
   });
+
+  const posthog = getPostHogClient();
+  posthog.identify({ distinctId: match.email, properties: { email: match.email, clinic_url: match.url } });
+  posthog.capture({ distinctId: match.email, event: "login_otp_sent", properties: { clinic_url: url } });
+  await posthog.shutdown();
 
   return NextResponse.json({ found: true, email: match.email, maskedEmail: maskEmail(match.email) });
 }

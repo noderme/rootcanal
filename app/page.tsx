@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import posthog from "posthog-js";
 
 function HomeInner() {
   const [url, setUrl] = useState("");
@@ -49,9 +50,11 @@ function HomeInner() {
       if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
         cleanUrl = "https://" + cleanUrl;
       }
+      posthog.capture("audit_submitted", { mode: "website", clinic_url: cleanUrl });
       router.push(`/dashboard?url=${encodeURIComponent(cleanUrl)}`);
     } else {
       if (!clinicName || !clinicCity) { setLoading(false); return; }
+      posthog.capture("audit_submitted", { mode: "gbp", clinic_name: clinicName.trim(), clinic_city: clinicCity.trim() });
       router.push(`/dashboard?name=${encodeURIComponent(clinicName.trim())}&city=${encodeURIComponent(clinicCity.trim())}`);
     }
   };
