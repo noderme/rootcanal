@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { computeRankStats } from "@/lib/rankSmoothing";
 
 // ── SUPABASE ──────────────────────────────────────────────
 const supabase = createClient(
@@ -60,6 +61,9 @@ interface AuditResult {
   healthgradesUrl?: string;
   notInTop60?: boolean;
   cached?: boolean;
+  smoothedRank?: number;
+  rankRangeLow?: number;
+  rankRangeHigh?: number;
 }
 
 function getCached(key: string): AuditResult | null {
@@ -1080,6 +1084,31 @@ export async function GET(request: NextRequest) {
       healthgradesUrl,
       notInTop60,
     };
+
+    // ── Rank smoothing ─────────────────────────────────
+    if (userRank != null) {
+      try {
+        const { data: historicalScans } = await supabase
+          .from("scans")
+          .select("result")
+          .eq("url", hasWebsite ? url : cacheKey)
+          .not("result", "is", null)
+          .order("scanned_at", { ascending: false })
+          .limit(4); // last 4 prior scans + current = N=5
+
+        const historicalRanks: number[] = (historicalScans ?? [])
+          .map((row: { result: AuditResult }) => row.result?.userRank)
+          .filter((r: number | undefined): r is number => typeof r === "number")
+          .reverse(); // oldest first
+
+        const stats = computeRankStats(userRank, historicalRanks);
+        result.smoothedRank = stats.smoothedRank;
+        result.rankRangeLow = stats.rankRangeLow;
+        result.rankRangeHigh = stats.rankRangeHigh;
+      } catch {
+        // non-critical — smoothing fails gracefully
+      }
+    }
 
     setCache(cacheKey, result);
 

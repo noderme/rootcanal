@@ -50,6 +50,9 @@ interface AuditData {
   healthgradesClaimed?: boolean;
   healthgradesUrl?: string;
   notInTop60?: boolean;
+  smoothedRank?: number;
+  rankRangeLow?: number;
+  rankRangeHigh?: number;
 }
 
 interface ReviewData {
@@ -1655,6 +1658,8 @@ function DashboardContent() {
   const warnIssues = data.issues.filter((i) => i.status === "warn");
 
   const userRank = data.userRank ?? (data.competitors.length > 0 ? data.competitors.length + 1 : undefined);
+  // smoothedRank stabilises display across fluctuating raw samples; falls back to userRank
+  const displayRank = data.smoothedRank ?? userRank;
 
   const reviewRank = (() => {
     if (data.userReviewCount == null || data.competitors.length === 0) return undefined;
@@ -2382,8 +2387,12 @@ function DashboardContent() {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                 Google Rank
               </div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof userRank === "number" && userRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{userRank != null ? `#${userRank}` : "—"}</div>
-              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>within 5 km</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, color: typeof displayRank === "number" && displayRank <= 3 ? "#1ABC9C" : "#E74C3C", lineHeight: 1 }}>{displayRank != null ? `#${displayRank}` : "—"}</div>
+              <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>
+                {data.rankRangeLow != null && data.rankRangeHigh != null && data.rankRangeLow !== data.rankRangeHigh
+                  ? `range #${data.rankRangeLow}–#${data.rankRangeHigh}`
+                  : "within 5 km"}
+              </div>
             </div>
             {reviewRank != null && (
               <div style={{ padding: "14px 20px", borderRight: "1px solid #2A3330", flexShrink: 0 }}>
@@ -2406,11 +2415,11 @@ function DashboardContent() {
               </div>
             )}
             <div style={{ padding: "14px 24px", fontSize: 13, color: "#6B7B78", lineHeight: 1.6 }}>
-              {typeof userRank === "number" && reviewRank != null && userRank <= 3 && reviewRank > userRank
-                ? `You rank #${userRank} on Google but #${reviewRank} by reviews — clinics with more reviews are 3x more likely to steal your next booking.`
-                : typeof userRank === "number" && userRank <= 3
-                ? `You're ranked #${userRank} nearby — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that revenue.`
-                : `📉 You're ranked #${userRank} nearby. Top 3 clinics capture ~70% of patient clicks — patients at your rank rarely appear in new booking searches.`}
+              {typeof displayRank === "number" && reviewRank != null && displayRank <= 3 && reviewRank > displayRank
+                ? `You rank #${displayRank} on Google but #${reviewRank} by reviews — clinics with more reviews are 3x more likely to steal your next booking.`
+                : typeof displayRank === "number" && displayRank <= 3
+                ? `You're ranked #${displayRank} nearby — top 3 clinics capture ~70% of patient clicks. Every review you collect protects that revenue.`
+                : `📉 You're ranked #${displayRank} nearby. Top 3 clinics capture ~70% of patient clicks — patients at your rank rarely appear in new booking searches.`}
             </div>
           </div>
         )}
