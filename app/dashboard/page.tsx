@@ -1319,7 +1319,7 @@ function DashboardContent() {
     const init = async () => {
       // Cold email link — has email param, skip OTP entirely
       if (emailParam) {
-        localStorage.setItem("rc_user_email", emailParam.toLowerCase().trim());
+        setAuthEmail(emailParam.toLowerCase().trim());
         setAuthState("authenticated");
         return;
       }
@@ -1329,21 +1329,6 @@ function DashboardContent() {
       } = await supabase.auth.getSession();
       if (session) {
         setAuthState("authenticated");
-        return;
-      }
-      // No session — check if we have a known email to auto-send OTP
-      const saved = localStorage.getItem("rc_user_email");
-      const savedUrl = localStorage.getItem("rc_user_url");
-      const domainOf = (u: string) => u.toLowerCase().replace(/https?:\/\/(www\.)?/, "").split("/")[0];
-      const urlMismatch = url && savedUrl && domainOf(savedUrl) !== domainOf(url);
-      if (saved && !urlMismatch) {
-        setAuthEmail(saved);
-        setAuthEmailDisplay(saved[0] + "***@" + saved.split("@")[1]);
-        setAuthState("enter-otp");
-        await supabase.auth.signInWithOtp({
-          email: saved,
-          options: { shouldCreateUser: true, emailRedirectTo: undefined },
-        });
         return;
       }
       // Check leads table by URL — send OTP if found
@@ -1399,7 +1384,6 @@ function DashboardContent() {
       return;
     }
     const email = bannerEmail.toLowerCase().trim();
-    localStorage.setItem("rc_user_email", email);
     localStorage.setItem("rc_pro_email", email);
     await supabase.from("leads").insert({ email, url: url || null });
 
@@ -1453,9 +1437,6 @@ function DashboardContent() {
       setAuthError("Invalid or expired code. Try again.");
       return;
     }
-    localStorage.setItem("rc_user_email", authEmail.toLowerCase().trim());
-    localStorage.setItem("rc_user_url", url || "");
-    localStorage.setItem("rc_auth_time", Date.now().toString());
     setAuthState("authenticated");
   };
 
@@ -1501,16 +1482,7 @@ function DashboardContent() {
       const { data: { session } } = await supabase.auth.getSession();
       const sessionEmail = session?.user?.email;
       if (sessionEmail) {
-        // Keep localStorage in sync for any legacy code paths
-        localStorage.setItem("rc_pro_email", sessionEmail);
-        localStorage.setItem("rc_user_email", sessionEmail);
         await checkByEmail(sessionEmail);
-        return;
-      }
-      // Fallback: localStorage cache (covers users who haven't re-authed since this deploy)
-      const cached = localStorage.getItem("rc_pro_email") || localStorage.getItem("rc_user_email");
-      if (cached) {
-        await checkByEmail(cached);
       }
     };
     detect();
@@ -1552,15 +1524,12 @@ function DashboardContent() {
         setData(d);
         setLoading(false);
         // Store competitors_analyzed for trial users so ENIGMA can use it in day-7 email
-        if (isTrial && d.competitors?.length > 0) {
-          const trialEmail = localStorage.getItem("rc_user_email");
-          if (trialEmail) {
-            supabase
-              .from("subscribers")
-              .update({ competitors_analyzed: d.competitors.length })
-              .eq("email", trialEmail)
-              .then(() => {});
-          }
+        if (isTrial && d.competitors?.length > 0 && authEmail) {
+          supabase
+            .from("subscribers")
+            .update({ competitors_analyzed: d.competitors.length })
+            .eq("email", authEmail)
+            .then(() => {});
         }
         setReviewsLoading(true);
         fetch(
