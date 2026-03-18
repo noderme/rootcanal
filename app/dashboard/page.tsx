@@ -1431,7 +1431,7 @@ function DashboardContent() {
       fetch("/api/trial-welcome", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, trialEndsAt: trialEnds }),
+        body: JSON.stringify({ email, trialEndsAt: trialEnds, clinicUrl: url, city, name: nameParam }),
       }).catch(() => {});
       setIsTrial(true);
       setIsPro(true);
@@ -5145,7 +5145,7 @@ function DashboardContent() {
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      gap: 12,
+                      gap: 16,
                     }}
                   >
                     {/* Focus message for free users */}
@@ -5191,6 +5191,7 @@ function DashboardContent() {
                             : "2–4 months";
                       // For free users: step 0 is active, steps 1 & 2 are upcoming (dimmed)
                       const isUpcoming = freeUser && i > 0;
+                      const trialActive = isTrial && !isUpcoming;
                       return (
                         <div
                           key={i}
@@ -5201,13 +5202,16 @@ function DashboardContent() {
                             gap: 16,
                             padding: "16px 20px",
                             borderRadius: 12,
+                            borderTop: i > 0 ? "1px solid rgba(255,255,255,0.04)" : undefined,
                             background: isUpcoming
                               ? "rgba(240,165,0,0.02)"
-                              : "rgba(240,165,0,0.04)",
-                            border: `1px solid ${isUpcoming ? "rgba(240,165,0,0.08)" : "rgba(240,165,0,0.2)"}`,
+                              : trialActive
+                                ? "linear-gradient(135deg, rgba(20,184,166,0.04) 0%, rgba(240,165,0,0.03) 100%)"
+                                : "rgba(240,165,0,0.04)",
+                            border: `1px solid ${isUpcoming ? "rgba(240,165,0,0.08)" : trialActive ? "rgba(20,184,166,0.35)" : "rgba(240,165,0,0.2)"}`,
                             opacity: isUpcoming ? 0.45 : 1,
                             filter: isUpcoming ? "blur(0.4px)" : "none",
-                            transition: "opacity 0.2s",
+                            transition: "all 220ms ease",
                             pointerEvents: isUpcoming ? "none" : "auto",
                           }}
                         >
@@ -5219,7 +5223,8 @@ function DashboardContent() {
                               background: isUpcoming
                                 ? "#1A1F1E"
                                 : "rgba(240,165,0,0.12)",
-                              border: `2px solid ${isUpcoming ? "#2A3330" : "#F0A500"}`,
+                              border: `1.5px solid ${isUpcoming ? "#2A3330" : "rgba(224,152,0,0.85)"}`,
+                              boxShadow: isUpcoming ? "none" : "inset 0 0 6px rgba(0,0,0,0.25)",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -5299,9 +5304,12 @@ function DashboardContent() {
                             </div>
                             <div
                               style={{
-                                fontSize: 12,
-                                color: "#6B7B78",
-                                lineHeight: 1.6,
+                                fontSize: 13,
+                                color: isUpcoming ? "#6B7B78" : "rgba(26,188,156,0.85)",
+                                lineHeight: 1.4,
+                                marginTop: 6,
+                                letterSpacing: "0.2px",
+                                opacity: 0.85,
                               }}
                             >
                               {reviewGap > 0
@@ -5318,23 +5326,24 @@ function DashboardContent() {
                             </div>
                           </div>
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <div style={{ fontSize: 10, color: "#6B7B78", letterSpacing: "0.8px", marginBottom: 2, textTransform: "uppercase" as const }}>
+                              Local Rank
+                            </div>
                             <div
                               style={{
                                 fontFamily: "'DM Mono', monospace",
                                 fontSize: 16,
                                 fontWeight: 700,
+                                letterSpacing: "0.3px",
                                 color: isUpcoming ? "#6B7B78" : "#F0A500",
                               }}
                             >
                               Pos. {comp.googleRank}
                             </div>
-                            <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                              local position
-                            </div>
                             <div
                               style={{
                                 fontSize: 11,
-                                color: "#E74C3C",
+                                color: "rgba(220,60,50,0.85)",
                                 marginTop: 2,
                               }}
                             >

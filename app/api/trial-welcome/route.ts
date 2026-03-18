@@ -5,12 +5,19 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, trialEndsAt } = await request.json();
+    const { email, trialEndsAt, clinicUrl, city, name } = await request.json();
     if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
     const endsDate = trialEndsAt
       ? new Date(trialEndsAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
       : "7 days from now";
+
+    const dashboardParams = new URLSearchParams();
+    if (clinicUrl) dashboardParams.set("url", clinicUrl);
+    if (city) dashboardParams.set("city", city);
+    if (name) dashboardParams.set("name", name);
+    if (email) dashboardParams.set("email", email);
+    const dashboardUrl = `https://rootcanal.us/dashboard?${dashboardParams.toString()}`;
 
     const { error } = await resend.emails.send({
       from: "RootCanal <hello@rootcanal.us>",
@@ -45,7 +52,7 @@ export async function POST(request: NextRequest) {
           </ul>
 
           <div style="margin-bottom: 32px;">
-            <a href="https://rootcanal.us/dashboard" style="background: #1ABC9C; color: #000000; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block;">
+            <a href="${dashboardUrl}" style="background: #1ABC9C; color: #000000; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block;">
               Open your dashboard →
             </a>
           </div>
