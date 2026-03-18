@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { computeRankStats } from "@/lib/rankSmoothing";
+import { mergeCompetitorHistory, type CompetitorHistory } from "@/lib/competitorHistory";
 
 // ── SUPABASE ──────────────────────────────────────────────
 const supabase = createClient(
@@ -42,7 +43,9 @@ interface AuditResult {
     googleRank: number;
     lat?: number;
     lng?: number;
-    appearances?: number; // how many of the last N scans this competitor appeared in
+    appearances?: number; // total scans this competitor has been seen in (from history)
+    firstSeen?: string;   // ISO 8601 — first observation timestamp
+    lastSeen?: string;    // ISO 8601 — most recent observation timestamp
   }[];
   placeId: string;
   userLat?: number;
@@ -1112,21 +1115,45 @@ export async function GET(request: NextRequest) {
         result.rankRangeHigh = stats.rankRangeHigh;
       }
 
-      // ── Competitor frequency ────────────────────────
-      // Count how many prior scans each competitor (by normalised name) appeared in.
-      // Current scan is NOT counted here so appearances=0 reliably means "first time seen".
-      if (priorScans.length > 0) {
-        const freq = new Map<string, number>();
-        for (const row of priorScans) {
-          for (const c of row.result?.competitors ?? []) {
-            const key = (c.name ?? "").toLowerCase().trim();
-            if (key) freq.set(key, (freq.get(key) ?? 0) + 1);
-          }
-        }
-        result.competitors = result.competitors.map((c) => ({
-          ...c,
-          appearances: freq.get((c.name ?? "").toLowerCase().trim()) ?? 0,
-        }));
+      // ── Competitor history (persistent) ────────────
+      // Fetch the stored history row for this clinic, merge in current scan,
+      // then enrich result.competitors with appearances / firstSeen / lastSeen.
+      {
+        let existingHistory: CompetitorHistory = [];
+        try {
+          const { data: histRow } = await supabase
+            .from("competitor_history")
+            .select("competitors")
+            .eq("clinic_key", hasWebsite ? url : cacheKey)
+            .single();
+          if (histRow?.competitors) existingHistory = histRow.competitors as CompetitorHistory;
+        } catch { /* table may not exist yet — degrade gracefully */ }
+
+        const now = result.scannedAt;
+        const updatedHistory = mergeCompetitorHistory(
+          existingHistory,
+          result.competitors.map((c) => ({ name: c.name, googleRank: c.googleRank })),
+          now,
+        );
+
+        // Enrich result competitors from history
+        const byName = new Map(updatedHistory.map((o) => [o.normalizedName, o]));
+        result.competitors = result.competitors.map((c) => {
+          const obs = byName.get((c.name ?? "").toLowerCase().trim());
+          return obs
+            ? { ...c, appearances: obs.appearances, firstSeen: obs.firstSeen, lastSeen: obs.lastSeen }
+            : c;
+        });
+
+        // Persist updated history (upsert — creates row on first scan)
+        try {
+          await supabase.from("competitor_history").upsert({
+            clinic_key: hasWebsite ? url : cacheKey,
+            city,
+            competitors: updatedHistory,
+            updated_at: now,
+          }, { onConflict: "clinic_key" });
+        } catch { /* non-critical */ }
       }
 
       // ── Competitor count outlier guard ──────────────

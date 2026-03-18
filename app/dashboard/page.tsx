@@ -33,6 +33,8 @@ interface AuditData {
     lat?: number;
     lng?: number;
     appearances?: number;
+    firstSeen?: string;
+    lastSeen?: string;
   }[];
   placeId: string;
   scannedAt: string;
@@ -3221,6 +3223,32 @@ function DashboardContent() {
                       </span>
                     )}
                   </div>
+                  {/* Strategic summary line */}
+                  {(() => {
+                    if (!competitionIntensity) return null;
+                    const stableAheadCount = data.competitors.filter(
+                      (c) => c.googleRank < (userRank ?? 999) && (c.appearances ?? 0) >= 1
+                    ).length;
+                    const hasStableHistory = data.competitors.some((c) => c.appearances !== undefined);
+                    const label = competitionIntensity.label;
+                    const summary =
+                      label === "Low Competition"
+                        ? "Few nearby clinics consistently appear ahead — a strong opportunity to move into top visibility."
+                        : label === "Moderate Competition"
+                        ? stableAheadCount > 0
+                          ? "Competition is moderate, but a few clinics remain more discoverable nearby."
+                          : "Competition is moderate — local search visibility is within reach with steady effort."
+                        : label === "High Competition"
+                        ? "Several nearby clinics consistently appear ahead in search visibility."
+                        : hasStableHistory
+                        ? "Your clinic is competing in a high-density local market."
+                        : "Many nearby clinics are visible in local searches in this area.";
+                    return (
+                      <div style={{ padding: "8px 16px 10px", borderBottom: "1px solid #1A2220" }}>
+                        <span style={{ fontSize: 12, color: "#5A6B68", lineHeight: 1.5 }}>{summary}</span>
+                      </div>
+                    );
+                  })()}
                   {/* Column headers */}
                   <div className="rc-comp-table-header" style={{ display: "grid", gridTemplateColumns: "48px 1fr 80px 80px 90px", padding: "10px 16px", borderBottom: "1px solid #1A2220", fontSize: 11, color: "#4A5A58", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" }}>
                     <div>Rank</div>
