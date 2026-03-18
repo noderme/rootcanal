@@ -1411,12 +1411,6 @@ function DashboardContent() {
     if (trialData.alreadyActive) {
       applyPlan("pro", email);
     } else {
-      // Send welcome email (fire and forget)
-      fetch("/api/trial-welcome", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, trialEndsAt: trialData.trialEndsAt, clinicUrl: url, city, name: nameParam }),
-      }).catch(() => {});
       setIsTrial(true);
       setIsPro(true);
     }
