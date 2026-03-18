@@ -54,6 +54,8 @@ interface AuditData {
   smoothedRank?: number;
   rankRangeLow?: number;
   rankRangeHigh?: number;
+  stableCompetitorCount?: number;
+  competitorCountOutlier?: boolean;
 }
 
 interface ReviewData {
@@ -3289,6 +3291,12 @@ function DashboardContent() {
               );
             })()}
 
+            {data.competitorCountOutlier && (
+              <div style={{ fontSize: 11, color: "#4A5A58", lineHeight: 1.6, marginBottom: 8, paddingLeft: 2, display: "flex", alignItems: "flex-start", gap: 6 }}>
+                <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: "#3D5A50", marginTop: 4, flexShrink: 0 }} />
+                <span>Competitor count appears lower than usual — results will stabilise as more data is collected.</span>
+              </div>
+            )}
             <div style={{ fontSize: 11, color: "#3D4D4A", lineHeight: 1.6, marginBottom: 24, paddingLeft: 2, display: "flex", alignItems: "flex-start", gap: 6 }}>
               {volatilityNote && (
                 <span style={{ display: "inline-block", width: 5, height: 5, borderRadius: "50%", background: volatilityNote.dot, marginTop: 4, flexShrink: 0 }} />

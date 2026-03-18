@@ -65,6 +65,8 @@ interface AuditResult {
   smoothedRank?: number;
   rankRangeLow?: number;
   rankRangeHigh?: number;
+  stableCompetitorCount?: number;
+  competitorCountOutlier?: boolean;
 }
 
 function getCached(key: string): AuditResult | null {
@@ -1125,6 +1127,40 @@ export async function GET(request: NextRequest) {
           ...c,
           appearances: freq.get((c.name ?? "").toLowerCase().trim()) ?? 0,
         }));
+      }
+
+      // ── Competitor count outlier guard ──────────────
+      // Protects the stable displayed count from extreme single-scan swings.
+      // Needs at least 2 prior snapshots to establish a baseline.
+      const historicalCounts = priorScans
+        .map((row) => row.result?.competitors?.length)
+        .filter((n): n is number => typeof n === "number");
+
+      if (historicalCounts.length >= 2) {
+        const sorted = [...historicalCounts].sort((a, b) => a - b);
+        const medianCount = sorted[Math.floor(sorted.length / 2)];
+        const rawCount = result.competitors.length;
+        const deviation = Math.abs(rawCount - medianCount) / Math.max(medianCount, 1);
+
+        if (deviation > 0.5) {
+          // Current count deviates > 50% from the rolling median.
+          // Check whether the immediately prior scan ALSO deviated — if so,
+          // two consecutive outlier readings confirm a genuine shift; accept it.
+          const prevCount = historicalCounts[0]; // index 0 = most recent prior (DESC)
+          const prevDeviation = Math.abs(prevCount - medianCount) / Math.max(medianCount, 1);
+          if (prevDeviation > 0.5) {
+            // Confirmed: reality has shifted — accept raw count as new stable
+            result.stableCompetitorCount = rawCount;
+            result.competitorCountOutlier = false;
+          } else {
+            // Single outlier: hold the median as stable count, flag for UI
+            result.stableCompetitorCount = medianCount;
+            result.competitorCountOutlier = true;
+          }
+        } else {
+          result.stableCompetitorCount = rawCount;
+          result.competitorCountOutlier = false;
+        }
       }
     } catch {
       // non-critical — smoothing/frequency fails gracefully
