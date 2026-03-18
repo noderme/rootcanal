@@ -1120,9 +1120,10 @@ function DashboardContent() {
   const [reviews, setReviews] = useState<ReviewData | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "competitors" | "roadmap" | "reviews" | "score" | "health" | "map"
+    "competitors" | "roadmap" | "reviews" | "score" | "health"
   >("competitors");
   const [competitorPage, setCompetitorPage] = useState(0);
+  const [compView, setCompView] = useState<"list" | "map">("list");
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
   const [patientValue, setPatientValue] = useState(150);
   const [reviewContact, setReviewContact] = useState("");
@@ -1178,10 +1179,15 @@ function DashboardContent() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [bannerEmail, setBannerEmail] = useState("");
   const [bannerSent, setBannerSent] = useState(false);
+  const [bannerOtpStep, setBannerOtpStep] = useState<"email" | "otp">("email");
+  const [bannerOtp, setBannerOtp] = useState("");
+  const [bannerOtpLoading, setBannerOtpLoading] = useState(false);
+  const [bannerOtpError, setBannerOtpError] = useState("");
 
   // Plan state
   const [isPro, setIsPro] = useState(false);
   const [isGrowth, setIsGrowth] = useState(false);
+  const [isTrial, setIsTrial] = useState(false);
   const [teaserDismissed, setTeaserDismissed] = useState(false);
 
   // Post-payment unlock animation
@@ -1370,14 +1376,47 @@ function DashboardContent() {
 
   const submitBannerEmail = async () => {
     if (!bannerEmail.includes("@")) return;
+    setBannerOtpLoading(true);
+    setBannerOtpError("");
+    const { error } = await supabase.auth.signInWithOtp({
+      email: bannerEmail.toLowerCase().trim(),
+      options: { shouldCreateUser: true, emailRedirectTo: undefined },
+    });
+    setBannerOtpLoading(false);
+    if (error) {
+      setBannerOtpError("Failed to send code. Try again.");
+      return;
+    }
+    setBannerOtpStep("otp");
+  };
+
+  const verifyTrialOtp = async () => {
+    if (bannerOtp.trim().length < 6) return;
+    setBannerOtpLoading(true);
+    setBannerOtpError("");
+    const { error } = await supabase.auth.verifyOtp({
+      email: bannerEmail.toLowerCase().trim(),
+      token: bannerOtp.trim(),
+      type: "email",
+    });
+    setBannerOtpLoading(false);
+    if (error) {
+      setBannerOtpError("Invalid code. Try again.");
+      return;
+    }
     const email = bannerEmail.toLowerCase().trim();
+    const now = Date.now();
     localStorage.setItem("rc_user_email", email);
-    localStorage.setItem("rc_auth_time", Date.now().toString());
-    const { error: dbError } = await supabase
-      .from("leads")
-      .insert({ email, url: url || null });
-    if (dbError) console.error("Leads DB error:", dbError);
+    localStorage.setItem("rc_trial_started_at", now.toString());
+    await supabase.from("leads").insert({ email, url: url || null });
+    await supabase.from("subscribers").upsert(
+      { email, clinic_url: url ? normalizeUrl(url) : null, plan: "trial", status: "active" },
+      { onConflict: "email" },
+    );
+    setIsTrial(true);
+    setIsPro(true);
     setBannerSent(true);
+    setShowSaveBanner(false);
   };
 
   const sendOtp = async () => {
@@ -1446,7 +1485,7 @@ function DashboardContent() {
     }, 2000);
   };
 
-  // On mount: check by clinic_url first, then localStorage email
+  // On mount: check by clinic_url first, then localStorage email, then trial
   useEffect(() => {
     const detect = async () => {
       if (url) {
@@ -1454,7 +1493,22 @@ function DashboardContent() {
         if (found) return;
       }
       const saved = localStorage.getItem("rc_pro_email");
-      if (saved) checkByEmail(saved);
+      if (saved) {
+        const found = await checkByEmail(saved);
+        if (found) return;
+      }
+      // Check for active free trial
+      const trialStart = localStorage.getItem("rc_trial_started_at");
+      if (trialStart) {
+        const elapsed = Date.now() - parseInt(trialStart, 10);
+        if (elapsed < 7 * 24 * 60 * 60 * 1000) {
+          setIsTrial(true);
+          setIsPro(true);
+        } else {
+          // Trial expired — lock features and show upgrade modal
+          setShowUpgradeModal(true);
+        }
+      }
     };
     detect();
     initPaddle();
@@ -1545,8 +1599,7 @@ function DashboardContent() {
     | "roadmap"
     | "reviews"
     | "score"
-    | "health"
-    | "map";
+    | "health";
   function navigateToTab(id: TabId) {
     setActiveTab(id);
     setTabFlash(false);
@@ -2825,7 +2878,6 @@ function DashboardContent() {
               { id: "roadmap", label: "📈 Growth Plan", freeVisible: true },
               { id: "reviews", label: "⭐ Reviews (G+Y)", freeVisible: true },
               { id: "competitors", label: "🏆 Competitors", freeVisible: true },
-              { id: "map", label: "🗺️ Map", freeVisible: true },
               { id: "score", label: "🧠 Intelligence", freeVisible: false },
               ...(hasWebsite
                 ? [
@@ -3928,7 +3980,6 @@ function DashboardContent() {
                   sublabel: "Rivals",
                   freeVisible: true,
                 },
-                { id: "map", label: "🗺️", sublabel: "Map", freeVisible: true },
                 {
                   id: "score",
                   label: "🧠",
@@ -4048,7 +4099,7 @@ function DashboardContent() {
                       overflow: "hidden",
                     }}
                   >
-                    {/* Table title + competition intensity badge */}
+                    {/* Table title + view toggle + competition intensity badge */}
                     <div
                       style={{
                         display: "flex",
@@ -4056,6 +4107,7 @@ function DashboardContent() {
                         justifyContent: "space-between",
                         padding: "14px 16px",
                         borderBottom: "1px solid #1A2220",
+                        gap: 8,
                       }}
                     >
                       <div
@@ -4068,23 +4120,55 @@ function DashboardContent() {
                       >
                         Local Ranking
                       </div>
-                      {competitionIntensity && (
-                        <span
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+                        {competitionIntensity && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              padding: "4px 12px",
+                              borderRadius: 20,
+                              background: competitionIntensity.bg,
+                              color: competitionIntensity.color,
+                              fontFamily: "'DM Mono', monospace",
+                              letterSpacing: 0.5,
+                            }}
+                          >
+                            {competitionIntensity.label}
+                          </span>
+                        )}
+                        {/* List / Map toggle */}
+                        <div
                           style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: "4px 12px",
-                            borderRadius: 20,
-                            background: competitionIntensity.bg,
-                            color: competitionIntensity.color,
-                            fontFamily: "'DM Mono', monospace",
-                            letterSpacing: 0.5,
+                            display: "flex",
+                            background: "#0D0F0E",
+                            border: "1px solid #2A3330",
+                            borderRadius: 8,
+                            overflow: "hidden",
                           }}
                         >
-                          {competitionIntensity.label}
-                        </span>
-                      )}
+                          {(["list", "map"] as const).map((v) => (
+                            <button
+                              key={v}
+                              onClick={() => setCompView(v)}
+                              style={{
+                                padding: "5px 12px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                                background: compView === v ? "#1ABC9C" : "transparent",
+                                color: compView === v ? "#000" : "#6B7B78",
+                                border: "none",
+                                cursor: "pointer",
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              {v === "list" ? "☰ List" : "🗺️ Map"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
+                    {compView === "list" && (<>
                     {/* Strategic summary line */}
                     {(() => {
                       if (!competitionIntensity) return null;
@@ -4384,6 +4468,28 @@ function DashboardContent() {
                         >
                           Next →
                         </button>
+                      </div>
+                    )}
+                    </>)}
+                    {compView === "map" && (
+                      <div style={{ padding: 16 }}>
+                        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+                          {[
+                            { color: "#1ABC9C", label: "You" },
+                            { color: "#2ECC71", label: "Higher visibility" },
+                            { color: "#F0A500", label: "Moderate visibility" },
+                            { color: "#E74C3C", label: "Lower visibility" },
+                          ].map(({ color, label }) => (
+                            <span key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#6B7B78" }}>
+                              <span style={{ width: 10, height: 10, borderRadius: "50%", background: color, display: "inline-block" }} />
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                        <MapView data={data} />
+                        <div style={{ marginTop: 12, fontSize: 11, color: "#3D4D4A", lineHeight: 1.6 }}>
+                          Local visibility snapshot based on the latest analysis.
+                        </div>
                       </div>
                     )}
                   </div>
@@ -6074,142 +6180,6 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* MAP TAB */}
-          {activeTab === "map" && (
-            <div
-              className="card"
-              style={{
-                background: "#151918",
-                border: "1px solid #2A3330",
-                borderRadius: 16,
-                padding: 24,
-                marginBottom: 24,
-                animationDelay: "0.35s",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 20,
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: 20,
-                    fontWeight: 700,
-                  }}
-                >
-                  🗺️ Visibility Map
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "center",
-                    flexWrap: "wrap" as const,
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 11,
-                      color: "#6B7B78",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#1ABC9C",
-                        display: "inline-block",
-                      }}
-                    />{" "}
-                    You
-                  </span>
-                  <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 11,
-                      color: "#6B7B78",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#2ECC71",
-                        display: "inline-block",
-                      }}
-                    />{" "}
-                    Higher visibility
-                  </span>
-                  <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 11,
-                      color: "#6B7B78",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#F0A500",
-                        display: "inline-block",
-                      }}
-                    />{" "}
-                    Moderate visibility
-                  </span>
-                  <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 5,
-                      fontSize: 11,
-                      color: "#6B7B78",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: "#E74C3C",
-                        display: "inline-block",
-                      }}
-                    />{" "}
-                    Lower visibility
-                  </span>
-                </div>
-              </div>
-              <MapView data={data} />
-              <div
-                style={{
-                  marginTop: 12,
-                  fontSize: 11,
-                  color: "#3D4D4A",
-                  lineHeight: 1.6,
-                }}
-              >
-                Local visibility snapshot based on the latest analysis.
-                {data.lastUpdatedAt
-                  ? ` Updated ${new Date(data.lastUpdatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} at ${new Date(data.lastUpdatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}.`
-                  : ""}
-              </div>
-            </div>
-          )}
 
           {/* HEALTH TAB */}
           {activeTab === "health" && (
@@ -7050,47 +7020,107 @@ function DashboardContent() {
       )}
 
       {showSaveBanner && (
-        <div
-          className="rc-save-banner"
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: "#151918",
-            borderTop: "1px solid #2A3330",
-            padding: "16px 24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-            zIndex: 1000,
-            fontFamily: "'DM Sans', sans-serif",
-          }}
-        >
-          {bannerSent ? (
-            <>
-              <span style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 600 }}>
-                ✓ Your dashboard is secured.
-              </span>
-              <button
-                onClick={() => setShowSaveBanner(false)}
+        <>
+          {/* OTP popup — appears above the banner */}
+          {bannerOtpStep === "otp" && (
+            <div
+              style={{
+                position: "fixed",
+                bottom: 73,
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "#1A2220",
+                border: "1px solid #2A3330",
+                borderRadius: 14,
+                padding: "20px 24px",
+                zIndex: 1001,
+                width: 320,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#F0EBE3", marginBottom: 4 }}>
+                Check your inbox
+              </div>
+              <div style={{ fontSize: 12, color: "#6B7B78", marginBottom: 14 }}>
+                We sent a 6-digit code to <strong style={{ color: "#C8BFB6" }}>{bannerEmail}</strong>
+              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={bannerOtp}
+                onChange={(e) => setBannerOtp(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && verifyTrialOtp()}
+                placeholder="000000"
+                autoFocus
                 style={{
-                  background: "none",
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: `1px solid ${bannerOtpError ? "#E74C3C" : "#2A3330"}`,
+                  background: "#0D0F0E",
+                  color: "#F7F3ED",
+                  fontSize: 20,
+                  letterSpacing: 8,
+                  textAlign: "center",
+                  boxSizing: "border-box",
+                  marginBottom: bannerOtpError ? 6 : 12,
+                }}
+              />
+              {bannerOtpError && (
+                <div style={{ fontSize: 12, color: "#E74C3C", marginBottom: 10 }}>{bannerOtpError}</div>
+              )}
+              <button
+                onClick={verifyTrialOtp}
+                disabled={bannerOtp.length < 6 || bannerOtpLoading}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 8,
+                  background: "#1ABC9C",
+                  color: "#000",
+                  fontWeight: 700,
+                  fontSize: 14,
                   border: "none",
-                  color: "#6B7B78",
-                  fontSize: 18,
-                  cursor: "pointer",
-                  lineHeight: 1,
+                  cursor: bannerOtp.length < 6 || bannerOtpLoading ? "default" : "pointer",
+                  opacity: bannerOtp.length < 6 || bannerOtpLoading ? 0.5 : 1,
+                  marginBottom: 8,
                 }}
               >
-                ×
+                {bannerOtpLoading ? "Verifying…" : "Start my free trial →"}
               </button>
-            </>
-          ) : (
+              <button
+                onClick={() => { setBannerOtpStep("email"); setBannerOtp(""); setBannerOtpError(""); }}
+                style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 12, cursor: "pointer", width: "100%", textAlign: "center" }}
+              >
+                ← Use a different email
+              </button>
+            </div>
+          )}
+
+          {/* Bottom banner */}
+          <div
+            className="rc-save-banner"
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: "#151918",
+              borderTop: "1px solid #2A3330",
+              padding: "16px 24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              zIndex: 1000,
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
             <>
               <span style={{ color: "#F7F3ED", fontSize: 14 }}>
-                Secure your dashboard
+                🎁 Try all features free for 7 days
               </span>
               <input
                 type="email"
@@ -7098,6 +7128,7 @@ function DashboardContent() {
                 onChange={(e) => setBannerEmail(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submitBannerEmail()}
                 placeholder="your@email.com"
+                disabled={bannerOtpStep === "otp"}
                 style={{
                   padding: "8px 12px",
                   borderRadius: 8,
@@ -7106,11 +7137,12 @@ function DashboardContent() {
                   color: "#F7F3ED",
                   fontSize: 14,
                   width: 220,
+                  opacity: bannerOtpStep === "otp" ? 0.5 : 1,
                 }}
               />
               <button
                 onClick={submitBannerEmail}
-                disabled={!bannerEmail.includes("@")}
+                disabled={!bannerEmail.includes("@") || bannerOtpLoading || bannerOtpStep === "otp"}
                 className="rc-save-btn"
                 style={{
                   padding: "8px 16px",
@@ -7121,27 +7153,21 @@ function DashboardContent() {
                   fontSize: 13,
                   border: "none",
                   cursor: "pointer",
-                  opacity: !bannerEmail.includes("@") ? 0.5 : 1,
+                  opacity: !bannerEmail.includes("@") || bannerOtpLoading || bannerOtpStep === "otp" ? 0.5 : 1,
+                  whiteSpace: "nowrap" as const,
                 }}
               >
-                Save →
+                {bannerOtpLoading && bannerOtpStep === "email" ? "Sending…" : "Start 7 day free trial →"}
               </button>
               <button
                 onClick={() => setShowSaveBanner(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#6B7B78",
-                  fontSize: 18,
-                  cursor: "pointer",
-                  lineHeight: 1,
-                }}
+                style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}
               >
                 ×
               </button>
             </>
-          )}
-        </div>
+          </div>
+        </>
       )}
 
       {/* ── GLOBAL REVIEW ACTION STRIP ─────────────────────────────────── */}
