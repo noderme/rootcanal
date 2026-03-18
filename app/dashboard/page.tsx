@@ -1435,6 +1435,12 @@ function DashboardContent() {
         },
         { onConflict: "email" },
       );
+      // Send welcome email (fire and forget — don't block UI)
+      fetch("/api/trial-welcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, trialEndsAt: trialEnds }),
+      }).catch(() => {});
       setIsTrial(true);
       setIsPro(true);
     } else {
