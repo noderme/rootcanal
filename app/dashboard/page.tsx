@@ -3282,6 +3282,17 @@ function DashboardContent() {
 
               const isTopThree = typeof userRank === "number" && userRank <= 3;
 
+              // Derive a stable competitor context label from smoothed rank range
+              // rankRangeLow/High reflect the observed rank band across recent scans
+              const aheadCountLow = data.rankRangeLow != null ? Math.max(0, data.rankRangeLow - 1) : null;
+              const aheadCountHigh = data.rankRangeHigh != null ? Math.max(0, data.rankRangeHigh - 1) : null;
+              const competitorContextLabel = (() => {
+                if (aheadCountLow != null && aheadCountHigh != null && aheadCountLow !== aheadCountHigh) {
+                  return `Typically ${aheadCountLow}–${aheadCountHigh} nearby clinics appear ahead in local searches.`;
+                }
+                return "Nearby competition levels vary across neighbourhood searches.";
+              })();
+
               // Competitors with lower googleRank number = ranked above user on Google
               // Sort descending so closest (rank just above user) comes first as Step 1
               const aheadComps = [...data.competitors]
@@ -3388,7 +3399,7 @@ function DashboardContent() {
                             </div>
                             <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
                             <div style={{ fontSize: 11, color: "#2ECC71", marginTop: 2 }}>
-                              {gap} reviews ahead
+                              {gap > 0 ? `~${gap} review lead` : "similar reviews"}
                             </div>
                           </div>
                         </div>
@@ -3450,7 +3461,8 @@ function DashboardContent() {
                     }}>
                       <span style={{ fontSize: 14 }}>🎯</span>
                       <div style={{ fontSize: 12, color: "rgba(247,243,237,0.6)", lineHeight: 1.5 }}>
-                        Each step you complete moves more local patients toward your clinic.
+                        Each step you complete moves more local patients toward your clinic.{" "}
+                        <span style={{ color: "#6B7B78" }}>{competitorContextLabel}</span>
                       </div>
                     </div>
                   )}
@@ -3583,7 +3595,7 @@ function DashboardContent() {
                           </div>
                           <div style={{ fontSize: 11, color: "#6B7B78" }}>Google rank</div>
                           <div style={{ fontSize: 11, color: "#E74C3C", marginTop: 2 }}>
-                            {reviewGap > 0 ? `${reviewGap} reviews ahead` : "same reviews"}
+                            {reviewGap > 0 ? `~${reviewGap} more reviews` : "similar review count"}
                           </div>
                         </div>
                       </div>
@@ -3614,7 +3626,9 @@ function DashboardContent() {
                         ))}
                       </div>
                       <div style={{ flex: 1, fontSize: 12, color: "#6B7B78" }}>
-                        +{hiddenCount} more step{hiddenCount !== 1 ? "s" : ""} to reach Top 3
+                        {aheadCountLow != null && aheadCountHigh != null && aheadCountLow !== aheadCountHigh
+                          ? `Your clinic is usually competing against ${aheadCountLow}–${aheadCountHigh} nearby visible clinics — unlock the full path to Top 3`
+                          : "Several more clinics typically appear ahead locally — unlock your full path to Top 3"}
                       </div>
                       <span style={{ fontSize: 11, color: "#1ABC9C", fontWeight: 700 }}>
                         See How to Move Up →
