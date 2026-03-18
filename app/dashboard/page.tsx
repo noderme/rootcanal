@@ -7305,7 +7305,7 @@ function DashboardContent() {
       )}
 
       {/* ── GLOBAL REVIEW ACTION STRIP ─────────────────────────────────── */}
-      {!reviewStripDismissed && data?.placeId && (
+      {false && !reviewStripDismissed && data?.placeId && (
         <div
           className="rc-review-strip"
           style={{
