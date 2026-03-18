@@ -1415,8 +1415,8 @@ function DashboardContent() {
     );
     setIsTrial(true);
     setIsPro(true);
+    setBannerOtpStep("email");
     setBannerSent(true);
-    setShowSaveBanner(false);
   };
 
   const sendOtp = async () => {
@@ -7045,29 +7045,45 @@ function DashboardContent() {
               <div style={{ fontSize: 12, color: "#6B7B78", marginBottom: 14 }}>
                 We sent a 6-digit code to <strong style={{ color: "#C8BFB6" }}>{bannerEmail}</strong>
               </div>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={bannerOtp}
-                onChange={(e) => setBannerOtp(e.target.value.replace(/\D/g, ""))}
-                onKeyDown={(e) => e.key === "Enter" && verifyTrialOtp()}
-                placeholder="000000"
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: 8,
-                  border: `1px solid ${bannerOtpError ? "#E74C3C" : "#2A3330"}`,
-                  background: "#0D0F0E",
-                  color: "#F7F3ED",
-                  fontSize: 20,
-                  letterSpacing: 8,
-                  textAlign: "center",
-                  boxSizing: "border-box",
-                  marginBottom: bannerOtpError ? 6 : 12,
-                }}
-              />
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: bannerOtpError ? 6 : 12 }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <input
+                    key={i}
+                    id={`trial-otp-${i}`}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    autoFocus={i === 0}
+                    value={bannerOtp[i] || ""}
+                    placeholder="🦷"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "");
+                      const arr = bannerOtp.split("");
+                      arr[i] = val;
+                      const next = arr.join("").slice(0, 6);
+                      setBannerOtp(next);
+                      if (val && i < 5) document.getElementById(`trial-otp-${i + 1}`)?.focus();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Backspace" && !bannerOtp[i] && i > 0)
+                        document.getElementById(`trial-otp-${i - 1}`)?.focus();
+                      if (e.key === "Enter") verifyTrialOtp();
+                    }}
+                    style={{
+                      width: 42,
+                      height: 50,
+                      borderRadius: 10,
+                      border: `1px solid ${bannerOtpError ? "#E74C3C" : bannerOtp[i] ? "#1ABC9C" : "#2A3330"}`,
+                      background: "#0D0F0E",
+                      color: "#F7F3ED",
+                      fontSize: bannerOtp[i] ? 22 : 18,
+                      textAlign: "center",
+                      outline: "none",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  />
+                ))}
+              </div>
               {bannerOtpError && (
                 <div style={{ fontSize: 12, color: "#E74C3C", marginBottom: 10 }}>{bannerOtpError}</div>
               )}
@@ -7118,6 +7134,25 @@ function DashboardContent() {
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
+            {bannerSent ? (
+              <>
+                <span style={{ fontSize: 18 }}>🎉</span>
+                <div>
+                  <div style={{ color: "#1ABC9C", fontSize: 14, fontWeight: 700 }}>
+                    You&apos;re now on Pro — 7-day free trial activated!
+                  </div>
+                  <div style={{ color: "#6B7B78", fontSize: 12, marginTop: 2 }}>
+                    All features unlocked. Trial expires in 7 days.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSaveBanner(false)}
+                  style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1, marginLeft: 8 }}
+                >
+                  ×
+                </button>
+              </>
+            ) : (
             <>
               <span style={{ color: "#F7F3ED", fontSize: 14 }}>
                 🎁 Try all features free for 7 days
@@ -7166,6 +7201,7 @@ function DashboardContent() {
                 ×
               </button>
             </>
+            )}
           </div>
         </>
       )}
