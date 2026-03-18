@@ -15,40 +15,50 @@ export async function POST(request: NextRequest) {
     const { error } = await resend.emails.send({
       from: "RootCanal <hello@rootcanal.us>",
       to: email,
-      subject: "Your 7-day free trial has started 🦷",
+      subject: "Your RootCanal free trial has started",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 40px 32px; background: #ffffff;">
-          <div style="text-align: center; margin-bottom: 32px;">
-            <div style="font-size: 48px;">🦷</div>
-            <h1 style="color: #1a1a1a; font-size: 24px; font-weight: 700; margin: 12px 0 4px;">Your free trial is live</h1>
-            <p style="color: #888; font-size: 14px; margin: 0;">Full Pro access until ${endsDate}</p>
+          <div style="margin-bottom: 28px;">
+            <div style="font-size: 36px; margin-bottom: 12px;">🦷</div>
+            <h1 style="color: #1a1a1a; font-size: 22px; font-weight: 700; margin: 0 0 8px;">Your free trial is now active</h1>
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0;">
+              You now have full access to all Pro features on RootCanal until <strong>${endsDate}</strong> — no credit card required.
+            </p>
           </div>
 
           <p style="color: #444; font-size: 15px; line-height: 1.7; margin-bottom: 24px;">
-            You now have full access to all Pro features on RootCanal — no credit card needed.
+            Most clinics begin seeing stronger local visibility when they consistently collect new patient reviews.
           </p>
 
-          <div style="background: #f9f9f9; border-radius: 8px; padding: 20px 24px; margin-bottom: 28px;">
-            <p style="margin: 0 0 12px; font-weight: 700; color: #1a1a1a; font-size: 14px;">What's unlocked during your trial:</p>
-            <ul style="margin: 0; padding-left: 20px; color: #444; font-size: 14px; line-height: 2;">
-              <li>Competitor tracking &amp; ranking map</li>
-              <li>Automated review request emails &amp; SMS</li>
-              <li>Monthly re-scans to track your progress</li>
-              <li>Patient intelligence &amp; growth roadmap</li>
-            </ul>
+          <div style="background: #f0faf7; border-left: 3px solid #1ABC9C; border-radius: 4px; padding: 14px 18px; margin-bottom: 28px;">
+            <p style="margin: 0; color: #1a1a1a; font-size: 15px; font-weight: 600;">
+              A good first step is to send your first review request today.
+            </p>
           </div>
 
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="https://rootcanal.us/dashboard" style="background: #1ABC9C; color: #000000; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">
-              Open my dashboard →
+          <p style="color: #444; font-size: 14px; font-weight: 600; margin-bottom: 10px;">During your trial you can:</p>
+          <ul style="margin: 0 0 28px; padding-left: 20px; color: #555; font-size: 14px; line-height: 2.1;">
+            <li>Track nearby competitors and local visibility changes</li>
+            <li>Send automated review requests by email or SMS</li>
+            <li>Monitor how your patient discovery is evolving</li>
+            <li>Follow a simple growth roadmap based on your current position</li>
+          </ul>
+
+          <div style="margin-bottom: 32px;">
+            <a href="https://rootcanal.us/dashboard" style="background: #1ABC9C; color: #000000; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-weight: 700; font-size: 15px; display: inline-block;">
+              Open your dashboard →
             </a>
           </div>
 
-          <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 32px;">
-            Your trial ends on ${endsDate}. After that, upgrade to keep your rankings protected.
+          <p style="color: #888; font-size: 13px; line-height: 1.6; margin-bottom: 24px;">
+            Your free trial ends on ${endsDate}.<br/>
+            Upgrade anytime to continue protecting and improving your local rankings.
           </p>
+
+          <p style="color: #444; font-size: 14px; margin-bottom: 0;">— The RootCanal Team</p>
+
           <hr style="border: none; border-top: 1px solid #f0f0f0; margin: 24px 0;" />
-          <p style="color: #ddd; font-size: 11px; text-align: center;">
+          <p style="color: #ddd; font-size: 11px; text-align: center; margin: 0;">
             <a href="https://rootcanal.us" style="color: #1ABC9C; text-decoration: none;">RootCanal.us</a> — Dental practice growth platform
           </p>
         </div>
