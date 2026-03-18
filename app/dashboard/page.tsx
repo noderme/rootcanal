@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, Suspense, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
@@ -1189,7 +1189,7 @@ function DashboardContent() {
   const [isGrowth, setIsGrowth] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
   const [teaserDismissed, setTeaserDismissed] = useState(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (localStorage.getItem("rc_teaser_seen")) setTeaserDismissed(true);
   }, []);
 
