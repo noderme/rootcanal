@@ -1073,6 +1073,10 @@ function DashboardContent() {
   // Upgrade modal
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  // Stable roadmap target — persisted in localStorage so Step 1 stays consistent
+  const [roadmapTargetName, setRoadmapTargetName] = useState<string | null>(null);
+  const [roadmapTargetChanged, setRoadmapTargetChanged] = useState(false);
+
   // Navigation UX
   const [compactHero, setCompactHero] = useState(false);
   const [tabFlash, setTabFlash] = useState(false);
@@ -1080,6 +1084,39 @@ function DashboardContent() {
   const heroRef = useRef<HTMLDivElement>(null);
 
   const displayCity = city || data?.city || "";
+
+  // ── Stable roadmap target resolution ─────────────────────────────────────
+  useEffect(() => {
+    if (!data) return;
+
+    const rawUserRank = data.userRank ?? (data.competitors.length > 0 ? data.competitors.length + 1 : undefined);
+    if (rawUserRank == null) return;
+
+    // Stable = appeared in at least 2 of the last 4 prior scans
+    const stableAhead = [...data.competitors]
+      .filter((c) => c.googleRank < rawUserRank && (c.appearances ?? 0) >= 2)
+      .sort((a, b) => {
+        const diff = (b.appearances ?? 0) - (a.appearances ?? 0);
+        return diff !== 0 ? diff : b.googleRank - a.googleRank;
+      });
+
+    if (stableAhead.length === 0) return; // no stable history yet — nothing to pin
+
+    const storageKey = `rc_roadmap_target_${(data.clinicName || data.url || "").toLowerCase().replace(/\s+/g, "_")}_${(data.city || "").toLowerCase()}`;
+    const stored = localStorage.getItem(storageKey);
+    const storedStillValid = stored != null && stableAhead.some((c) => c.name === stored);
+
+    if (storedStillValid) {
+      setRoadmapTargetName(stored);
+      setRoadmapTargetChanged(false);
+    } else {
+      const newTarget = stableAhead[0].name;
+      setRoadmapTargetName(newTarget);
+      setRoadmapTargetChanged(stored != null && stored !== newTarget);
+      localStorage.setItem(storageKey, newTarget);
+    }
+  }, [data]);
+
 
   // "I'm already Pro" re-auth modal (for free users who lost localStorage)
   const [showProLogin, setShowProLogin] = useState(false);
@@ -3506,7 +3543,20 @@ function DashboardContent() {
               }
 
               // GROWTH MODE — user is NOT in top 3, show path to overtake leaders
-              const stepsToShow = aheadComps;
+
+              // Pin the stable roadmap target to position 0 so Step 1 stays consistent.
+              // aheadComps is already sorted stable-first; we just ensure the persisted
+              // target name (if still present and ahead) is always at the front.
+              const pinnedAheadComps = (() => {
+                if (!roadmapTargetName) return aheadComps;
+                const idx = aheadComps.findIndex((c) => c.name === roadmapTargetName);
+                if (idx <= 0) return aheadComps; // already first, or not found — no change
+                const reordered = [...aheadComps];
+                reordered.unshift(...reordered.splice(idx, 1));
+                return reordered;
+              })();
+
+              const stepsToShow = pinnedAheadComps;
               // Free users: show next step + 2 upcoming, collapse the rest
               const freeUser = !isPro && !isGrowth;
               const visibleSteps = freeUser ? stepsToShow.slice(0, 3) : stepsToShow;
@@ -3616,6 +3666,15 @@ function DashboardContent() {
                                 }}
                               >
                                 NEXT STEP
+                              </span>
+                            )}
+                            {i === 0 && roadmapTargetChanged && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 4,
+                                background: "rgba(107,123,120,0.1)", color: "#6B7B78",
+                                fontFamily: "'DM Mono', monospace",
+                              }}>
+                                focus updated
                               </span>
                             )}
                             {isUpcoming && (
