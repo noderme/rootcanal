@@ -1189,7 +1189,7 @@ function DashboardContent() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const openUpgradeModal = () => {
     posthog.capture("upgrade_modal_opened");
-    openUpgradeModal();
+    setShowUpgradeModal(true);
   };
 
   // Stable roadmap target — persisted in localStorage so Step 1 stays consistent
