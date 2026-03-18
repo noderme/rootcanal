@@ -3231,6 +3231,10 @@ function DashboardContent() {
               );
             })()}
 
+            <div style={{ fontSize: 11, color: "#3D4D4A", lineHeight: 1.6, marginBottom: 24, paddingLeft: 2 }}>
+              Nearby competing clinics can vary across neighbourhood searches and devices. This list reflects commonly appearing local competitors.
+            </div>
+
           </>
         )}
 
