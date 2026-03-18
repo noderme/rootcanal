@@ -1188,7 +1188,9 @@ function DashboardContent() {
   const [isPro, setIsPro] = useState(false);
   const [isGrowth, setIsGrowth] = useState(false);
   const [isTrial, setIsTrial] = useState(false);
-  const [teaserDismissed, setTeaserDismissed] = useState(false);
+  const [teaserDismissed, setTeaserDismissed] = useState(
+    () => typeof window !== "undefined" && !!localStorage.getItem("rc_teaser_seen"),
+  );
 
   // Post-payment unlock animation
   const [showUnlockAnim, setShowUnlockAnim] = useState(false);
@@ -1441,6 +1443,7 @@ function DashboardContent() {
 
     setBannerOtpStep("email");
     setBannerSent(true);
+    setTimeout(() => setShowSaveBanner(false), 5000);
   };
 
   const sendOtp = async () => {
@@ -2569,7 +2572,7 @@ function DashboardContent() {
           {/* Primary CTA */}
           <button
             onClick={() => {
-              setTeaserDismissed(true);
+              localStorage.setItem("rc_teaser_seen", "1"); setTeaserDismissed(true);
               openUpgradeModal();
             }}
             style={{
