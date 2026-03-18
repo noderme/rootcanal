@@ -1333,7 +1333,10 @@ function DashboardContent() {
       }
       // No session — check if we have a known email to auto-send OTP
       const saved = localStorage.getItem("rc_user_email");
-      if (saved) {
+      const savedUrl = localStorage.getItem("rc_user_url");
+      const domainOf = (u: string) => u.toLowerCase().replace(/https?:\/\/(www\.)?/, "").split("/")[0];
+      const urlMismatch = url && savedUrl && domainOf(savedUrl) !== domainOf(url);
+      if (saved && !urlMismatch) {
         setAuthEmail(saved);
         setAuthEmailDisplay(saved[0] + "***@" + saved.split("@")[1]);
         setAuthState("enter-otp");
@@ -1451,6 +1454,7 @@ function DashboardContent() {
       return;
     }
     localStorage.setItem("rc_user_email", authEmail.toLowerCase().trim());
+    localStorage.setItem("rc_user_url", url || "");
     localStorage.setItem("rc_auth_time", Date.now().toString());
     setAuthState("authenticated");
   };
