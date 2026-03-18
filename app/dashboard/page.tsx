@@ -2858,18 +2858,19 @@ function DashboardContent() {
             <button
               onClick={() => openUpgradeModal()}
               style={{
-                background: "#1ABC9C",
-                color: "#000",
-                border: "none",
+                background: "transparent",
+                color: "#1ABC9C",
+                border: "1px solid rgba(26,188,156,0.4)",
                 padding: "10px 20px",
                 borderRadius: 8,
                 fontFamily: "'DM Sans', sans-serif",
                 fontSize: 13,
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: "pointer",
+                opacity: 0.8,
               }}
             >
-              Unlock Patients You're Losing →
+              Unlock Growth Plan
             </button>
           )}
         </div>
@@ -3194,6 +3195,54 @@ function DashboardContent() {
             ref={heroRef}
             className={`rc-hero-sticky${compactHero ? " rc-hero-compact" : ""}`}
           >
+            {/* ── GLOBAL GROWTH ACTION BAR ────────────────────── */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, rgba(26,188,156,0.10) 0%, rgba(22,160,133,0.06) 100%)",
+                border: "1px solid rgba(26,188,156,0.20)",
+                borderRadius: 16,
+                padding: "12px 20px",
+                marginBottom: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                flexWrap: "wrap" as const,
+                boxShadow: "0 0 18px rgba(26,188,156,0.06)",
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                  <span style={{ fontSize: 12, color: "#1ABC9C", fontWeight: 700, letterSpacing: 0.3 }}>
+                    ⭐ AI visibility recommendation
+                  </span>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3", marginBottom: 4 }}>
+                  Get more Google reviews this week to improve patient discovery
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(240,235,227,0.35)", lineHeight: 1.4 }}>
+                  Clinics adding 15–20 new reviews often see ranking improvements within a few weeks.
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowReviewModal(true); setReviewSent(false); setReviewError(""); setReviewContact(""); }}
+                style={{
+                  background: "linear-gradient(135deg, #1ABC9C, #16a085)",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "11px 22px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "#000",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap" as const,
+                  boxShadow: "0 4px 16px rgba(26,188,156,0.35)",
+                  flexShrink: 0,
+                }}
+              >
+                Send Review Requests →
+              </button>
+            </div>
             {(userRank == null || userRank > 3) &&
               (() => {
                 const [lostLow, lostHigh] =
@@ -3297,7 +3346,8 @@ function DashboardContent() {
                           lineHeight: 1.5,
                         }}
                       >
-                        Directional estimate based on your current local visibility band and your configured average patient value.
+                        Clinics ranking higher typically receive more patient enquiries.
+                        Increasing review growth can help improve your visibility.
                       </div>
                       <div
                         className="rc-hero-revenue"
@@ -3323,12 +3373,27 @@ function DashboardContent() {
                         Clinics typically begin improving local visibility by consistently requesting recent patient reviews.
                       </div>
                     </div>
-                    <div style={{ flexShrink: 0 }}>
+                    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 5,
+                          border: "1px solid rgba(26,188,156,0.35)",
+                          borderRadius: 20,
+                          padding: "3px 10px",
+                          fontSize: 11,
+                          color: "#1ABC9C",
+                          fontWeight: 500,
+                          whiteSpace: "nowrap" as const,
+                        }}
+                      >
+                        Recommended next step → Send review requests
+                      </div>
                       <button
                         onClick={() => openUpgradeModal()}
                         style={{
-                          background:
-                            "linear-gradient(135deg, #1ABC9C, #16a085)",
+                          background: "linear-gradient(135deg, #1ABC9C, #16a085)",
                           border: "none",
                           borderRadius: 10,
                           padding: "14px 24px",
@@ -3339,6 +3404,7 @@ function DashboardContent() {
                           fontFamily: "'DM Sans', sans-serif",
                           whiteSpace: "nowrap" as const,
                           boxShadow: "0 4px 20px rgba(26,188,156,0.3)",
+                          opacity: 0.85,
                         }}
                       >
                         Unlock Growth Plan →
@@ -3809,15 +3875,16 @@ function DashboardContent() {
                       style={{
                         marginLeft: "auto",
                         flexShrink: 0,
-                        background: "#E74C3C",
-                        color: "#fff",
-                        border: "none",
+                        background: "rgba(231,76,60,0.12)",
+                        color: "#E74C3C",
+                        border: "1px solid rgba(231,76,60,0.3)",
                         padding: "10px 18px",
                         borderRadius: 8,
                         fontSize: 13,
-                        fontWeight: 700,
+                        fontWeight: 600,
                         cursor: "pointer",
                         whiteSpace: "nowrap",
+                        opacity: 0.85,
                       }}
                     >
                       Fix This →
@@ -3915,16 +3982,17 @@ function DashboardContent() {
                           <button
                             onClick={() => openUpgradeModal()}
                             style={{
-                              background: "#E74C3C",
-                              color: "#fff",
-                              border: "none",
+                              background: "rgba(231,76,60,0.12)",
+                              color: "#E74C3C",
+                              border: "1px solid rgba(231,76,60,0.3)",
                               padding: "10px 20px",
                               borderRadius: 8,
                               fontSize: 13,
-                              fontWeight: 700,
+                              fontWeight: 600,
                               cursor: "pointer",
                               fontFamily: "'DM Sans', sans-serif",
                               whiteSpace: "nowrap",
+                              opacity: 0.85,
                             }}
                           >
                             Fix This Now →
@@ -7392,10 +7460,10 @@ function DashboardContent() {
                 <div
                   style={{ fontSize: 15, fontWeight: 600, color: "#1ABC9C" }}
                 >
-                  Review link sent!
+                  Review request sent successfully ✔
                 </div>
-                <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 6 }}>
-                  The patient will receive a link to leave a review.
+                <div style={{ fontSize: 13, color: "#6B7B78", marginTop: 6, lineHeight: 1.5 }}>
+                  This helps strengthen your local visibility momentum.
                 </div>
                 <button
                   onClick={() => {
