@@ -2673,6 +2673,12 @@ function DashboardContent() {
           * { page-break-inside: avoid; }
           @page { margin: 20px; background: #0D0F0E; }
         }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .rc-sidebar { width: 120px !important; }
+          .rc-sidebar-nav-heading { display: none !important; }
+          .rc-sidebar-btn { font-size: 11px !important; padding: 11px 10px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .rc-sidebar-feedback { display: none !important; }
+        }
         @media (max-width: 768px) {
           .rc-hero-sticky { top: 56px !important; }
           .rc-hero-compact .rc-hero-card { padding: 12px 16px !important; }
@@ -2912,6 +2918,7 @@ function DashboardContent() {
           }}
         >
           <div
+            className="rc-sidebar-nav-heading"
             style={{
               padding: "0 20px 16px",
               fontSize: 10,
@@ -2974,7 +2981,7 @@ function DashboardContent() {
             ))}
 
           {/* GIVE FEEDBACK */}
-          <div style={{ padding: "0 12px 8px", marginTop: "auto" }}>
+          <div className="rc-sidebar-feedback" style={{ padding: "0 12px 8px", marginTop: "auto" }}>
             <button
               onClick={() => setShowFeedbackModal(true)}
               style={{
