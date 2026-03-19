@@ -6826,11 +6826,6 @@ function DashboardContent() {
           missedRevHigh={missedRevHigh}
           onClose={() => {
             setShowUpgradeModal(false);
-            if (!exitIntentDone) {
-              setShowExitIntent(true);
-              setExitIntentDone(true);
-              localStorage.setItem("exitIntentDone", "1");
-            }
           }}
           onSuccess={(plan, email) => {
             applyPlan(plan, email);
