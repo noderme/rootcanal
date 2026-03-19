@@ -1356,6 +1356,7 @@ function DashboardContent() {
       if (emailParam) {
         setAuthEmail(emailParam.toLowerCase().trim());
         setAuthState("authenticated");
+        bannerTimer = setTimeout(() => setShowSaveBanner(true), 30000);
         return;
       }
       // Check existing Supabase session
@@ -1473,6 +1474,7 @@ function DashboardContent() {
       return;
     }
     setAuthState("authenticated");
+    setTimeout(() => setShowSaveBanner(true), 30000);
   };
 
   const submitExitIntent = async (answer: string) => {
@@ -7154,7 +7156,7 @@ function DashboardContent() {
         </div>
       )}
 
-      {showSaveBanner && (
+      {showSaveBanner && !isPro && !isGrowth && (
         <>
           {/* OTP popup — appears above the banner */}
           {bannerOtpStep === "otp" && (
