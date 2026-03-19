@@ -132,6 +132,8 @@ type UpgradeModalProps = {
   clinicUrl: string;
   onClose: () => void;
   onSuccess: (plan: "pro" | "growth", email: string) => void;
+  missedRevLow?: number;
+  missedRevHigh?: number;
 };
 
 function UpgradeModal({
@@ -139,6 +141,8 @@ function UpgradeModal({
   clinicUrl,
   onClose,
   onSuccess,
+  missedRevLow,
+  missedRevHigh,
 }: UpgradeModalProps) {
   const [screen, setScreen] = useState<"plans" | "processing" | "success">(
     "plans",
@@ -427,6 +431,25 @@ function UpgradeModal({
           >
             Even a small improvement in local ranking can generate additional
             treatment enquiries each month.
+          </div>
+
+          {/* Missed revenue callout */}
+          <div
+            style={{
+              marginTop: 14,
+              padding: "10px 16px",
+              borderRadius: 8,
+              background: "#7A4F00",
+              border: "1px solid #B87400",
+              color: "#FFE0A0",
+              fontSize: 13,
+              fontWeight: 600,
+              lineHeight: 1.5,
+            }}
+          >
+            {missedRevLow && missedRevHigh
+              ? `Your clinic is estimated to be missing $${missedRevLow.toLocaleString()}–$${missedRevHigh.toLocaleString()}/month in patient enquiries. Pro pays for itself with a single new patient.`
+              : "Your clinic is estimated to be missing $450–$1,200/month in patient enquiries. Pro pays for itself with a single new patient."}
           </div>
         </div>
 
@@ -1198,10 +1221,22 @@ function DashboardContent() {
 
   // Upgrade modal
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeCtaClicked, setUpgradeCtaClicked] = useState(false);
+  const [bannerPulse, setBannerPulse] = useState(false);
   const openUpgradeModal = () => {
     posthog.capture("upgrade_modal_opened");
+    setUpgradeCtaClicked(true);
     setShowUpgradeModal(true);
   };
+
+  // Pulse the sticky bar once after 30s if user hasn't clicked an upgrade CTA
+  useEffect(() => {
+    if (isPro || isGrowth) return;
+    const t = setTimeout(() => {
+      if (!upgradeCtaClicked) setBannerPulse(true);
+    }, 30000);
+    return () => clearTimeout(t);
+  }, [upgradeCtaClicked, isPro, isGrowth]);
 
   // Stable roadmap target — persisted in localStorage so Step 1 stays consistent
   const [roadmapTargetName, setRoadmapTargetName] = useState<string | null>(
@@ -1584,6 +1619,7 @@ function DashboardContent() {
     | "score"
     | "health";
   function navigateToTab(id: TabId) {
+    visitedTabsRef.current.add(id);
     setActiveTab(id);
     setTabFlash(false);
     requestAnimationFrame(() => {
@@ -1599,25 +1635,37 @@ function DashboardContent() {
     });
   }
 
-  // Exit intent — desktop mouse leave + mobile back button
+  // Exit intent — track time on page + tabs visited before allowing trigger
+  const timeOnPageRef = useRef(0);
+  const visitedTabsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const timer = setInterval(() => { timeOnPageRef.current += 1; }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   useEffect(() => {
     if (exitIntentDone || loading || isPro || isGrowth) return;
+
+    const canTrigger = () =>
+      timeOnPageRef.current >= 60 && visitedTabsRef.current.size >= 2;
+
+    const fireExitIntent = () => {
+      setShowExitIntent(true);
+      setExitIntentDone(true);
+      localStorage.setItem("exitIntentDone", "1");
+    };
+
     const handleMouseLeave = (e: MouseEvent) => {
-      if (e.clientY <= 10 && !exitIntentDone) {
-        setShowExitIntent(true);
-        setExitIntentDone(true);
-        localStorage.setItem("exitIntentDone", "1");
+      if (e.clientY <= 10 && !exitIntentDone && canTrigger()) {
+        fireExitIntent();
       }
     };
     // Mobile: push a history state and detect back
     if (typeof window !== "undefined") {
       window.history.pushState({ exitIntent: true }, "");
       const handlePopState = () => {
-        if (!exitIntentDone) {
-          setShowExitIntent(true);
-          setExitIntentDone(true);
-          localStorage.setItem("exitIntentDone", "1");
-        }
+        if (!exitIntentDone && canTrigger()) fireExitIntent();
       };
       window.addEventListener("popstate", handlePopState);
       document.addEventListener("mouseleave", handleMouseLeave);
@@ -2236,7 +2284,20 @@ function DashboardContent() {
   })();
 
   // ── TEASER SCREEN ────────────────────────────────────────────────────────────
-  const showTeaser = !teaserDismissed && !isPro && !isGrowth;
+  const showTeaser = false; // Gate screen removed — users go directly to full dashboard
+
+  // Revenue estimate for pricing modal callout
+  const [missedRevLow, missedRevHigh] = (() => {
+    const [lostLow, lostHigh] =
+      userRank == null || userRank > 20
+        ? [25, 40]
+        : userRank > 10
+          ? [15, 25]
+          : userRank > 5
+            ? [8, 15]
+            : [3, 8];
+    return [lostLow * patientValue, lostHigh * patientValue];
+  })();
   if (showTeaser) {
     const tRank = userRank;
     const [lostLow, lostHigh] =
@@ -6738,6 +6799,8 @@ function DashboardContent() {
         <UpgradeModal
           mode={isPro && !isGrowth ? "growth-only" : "both"}
           clinicUrl={url}
+          missedRevLow={missedRevLow}
+          missedRevHigh={missedRevHigh}
           onClose={() => {
             setShowUpgradeModal(false);
             if (!exitIntentDone) {
@@ -7169,16 +7232,16 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Bottom banner */}
-          <div
-            className="rc-save-banner"
+          {/* Bottom banner — hidden once user enters upgrade flow */}
+          {!upgradeCtaClicked && <div
+            className={`rc-save-banner${bannerPulse ? " rc-save-banner-pulse" : ""}`}
             style={{
               position: "fixed",
               bottom: 0,
               left: 0,
               right: 0,
-              background: "#151918",
-              borderTop: "1px solid #2A3330",
+              background: "#1ABC9C",
+              borderTop: "none",
               padding: "16px 24px",
               display: "flex",
               alignItems: "center",
@@ -7208,7 +7271,7 @@ function DashboardContent() {
               </>
             ) : (
             <>
-              <span style={{ color: "#F7F3ED", fontSize: 14 }}>
+              <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>
                 🎁 Try all features free for 7 days
               </span>
               <input
@@ -7250,13 +7313,13 @@ function DashboardContent() {
               </button>
               <button
                 onClick={() => setShowSaveBanner(false)}
-                style={{ background: "none", border: "none", color: "#6B7B78", fontSize: 18, cursor: "pointer", lineHeight: 1 }}
+                style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", fontSize: 18, cursor: "pointer", lineHeight: 1 }}
               >
                 ×
               </button>
             </>
             )}
-          </div>
+          </div>}
         </>
       )}
 
