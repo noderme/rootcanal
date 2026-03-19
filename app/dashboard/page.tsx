@@ -2679,6 +2679,9 @@ function DashboardContent() {
           .rc-hero-compact .rc-hero-number { font-size: 34px !important; }
           .rc-nav-url { display: none !important; }
           .rc-nav-export { display: none !important; }
+          .rc-nav-home { display: none !important; }
+          .rc-nav-demo { display: none !important; }
+          .rc-bottom-tabs { height: 60px; }
           .rc-score-hero { grid-template-columns: 1fr !important; }
           .rc-metric-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .rc-hero-review { flex-direction: column !important; align-items: stretch !important; }
@@ -2719,7 +2722,7 @@ function DashboardContent() {
           h1 { font-size: 22px !important; }
           .rc-how-it-works-step { width: calc(50% - 8px) !important; }
           .rc-comp-row-grid { grid-template-columns: 1fr !important; }
-          nav .rc-upgrade-btn { font-size: 12px !important; padding: 8px 12px !important; }
+          nav .rc-upgrade-btn { font-size: 11px !important; padding: 8px 10px !important; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         }
         .rc-sidebar-btn:hover { background: rgba(26,188,156,0.08) !important; color: #F0EBE3 !important; }
         .rc-bottom-tabs { display: none; }
@@ -2756,6 +2759,7 @@ function DashboardContent() {
           </a>
           <a
             href="/"
+            className="rc-nav-home"
             style={{
               fontSize: 12,
               color: "#4A5A57",
@@ -2794,6 +2798,7 @@ function DashboardContent() {
               href="https://calendly.com/hello-rootcanal/30min"
               target="_blank"
               rel="noopener noreferrer"
+              className="rc-nav-demo"
               style={{
                 padding: "10px 16px",
                 borderRadius: 8,
@@ -2868,6 +2873,7 @@ function DashboardContent() {
           ) : (
             <button
               onClick={() => openUpgradeModal()}
+              className="rc-upgrade-btn"
               style={{
                 background: "transparent",
                 color: "#1ABC9C",
@@ -4089,7 +4095,7 @@ function DashboardContent() {
                 {
                   id: "competitors",
                   label: "🏆",
-                  sublabel: "Rivals",
+                  sublabel: "Competitors",
                   freeVisible: true,
                 },
                 {
