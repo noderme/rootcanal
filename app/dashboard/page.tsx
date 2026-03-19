@@ -7250,8 +7250,8 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Bottom banner — hidden once user enters upgrade flow */}
-          {!upgradeCtaClicked && <div
+          {/* Bottom banner — shown after 30s for anonymous users, hidden once user enters upgrade flow */}
+          {showSaveBanner && !upgradeCtaClicked && <div
             className={`rc-save-banner${bannerPulse ? " rc-save-banner-pulse" : ""}`}
             style={{
               position: "fixed",
