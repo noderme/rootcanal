@@ -1150,6 +1150,7 @@ function DashboardContent() {
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
   const [patientValue, setPatientValue] = useState(150);
   const [reviewContact, setReviewContact] = useState("");
+  const [reviewYelpUrl, setReviewYelpUrl] = useState("");
   const [reviewSending, setReviewSending] = useState(false);
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
@@ -1179,6 +1180,7 @@ function DashboardContent() {
           clinicUrl: data.url,
           placeId: data.placeId,
           platform: reviewPlatform,
+          yelpUrl: reviewYelpUrl.trim() || undefined,
         }),
       });
       const json = await res.json();
@@ -7555,6 +7557,27 @@ function DashboardContent() {
                     </button>
                   ))}
                 </div>
+                {(reviewPlatform === "yelp" || reviewPlatform === "both") && (
+                  <input
+                    type="text"
+                    placeholder="Yelp business URL (yelp.com/biz/...)"
+                    value={reviewYelpUrl}
+                    onChange={(e) => setReviewYelpUrl(e.target.value)}
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,82,51,0.35)",
+                      borderRadius: 9,
+                      padding: "11px 14px",
+                      fontSize: 14,
+                      color: "#F0EBE3",
+                      outline: "none",
+                      fontFamily: "'DM Sans', sans-serif",
+                      marginBottom: 8,
+                    }}
+                  />
+                )}
                 <input
                   type="text"
                   placeholder="Email or phone number"
