@@ -3263,7 +3263,7 @@ function DashboardContent() {
                 </div>
               </div>
               <button
-                onClick={() => { setShowReviewModal(true); setReviewSent(false); setReviewError(""); setReviewContact(""); }}
+                onClick={() => { setShowReviewModal(true); setReviewSent(false); setReviewError(""); setReviewContact(""); setReviewYelpUrl(data?.yelpUrl || ""); }}
                 style={{
                   background: "linear-gradient(135deg, #1ABC9C, #16a085)",
                   border: "none",
@@ -7393,6 +7393,7 @@ function DashboardContent() {
               setReviewSent(false);
               setReviewError("");
               setReviewContact("");
+              setReviewYelpUrl(data?.yelpUrl || "");
             }}
             style={{
               background: "#1ABC9C",
@@ -7557,7 +7558,7 @@ function DashboardContent() {
                     </button>
                   ))}
                 </div>
-                {(reviewPlatform === "yelp" || reviewPlatform === "both") && (
+                {(reviewPlatform === "yelp" || reviewPlatform === "both") && !data?.yelpUrl && (
                   <input
                     type="text"
                     placeholder="Yelp business URL (yelp.com/biz/...)"
