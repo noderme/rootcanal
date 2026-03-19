@@ -2680,7 +2680,13 @@ function DashboardContent() {
           .rc-sidebar-feedback { display: none !important; }
         }
         @media (max-width: 768px) {
-          .rc-hero-sticky { top: 56px !important; }
+          /* Fix 1 — hero sticky: non-sticky on mobile */
+          .rc-hero-sticky { position: relative !important; top: auto !important; }
+          /* Fix 2 — hero sticky: compact banner, hide secondary content */
+          .rc-hero-sticky .rc-hero-card { padding: 10px 12px !important; }
+          .rc-hero-sticky .rc-hero-subtitle,
+          .rc-hero-sticky .rc-hero-detail,
+          .rc-hero-sticky .rc-hero-meta { display: none !important; }
           .rc-hero-compact .rc-hero-card { padding: 12px 16px !important; }
           .rc-hero-compact .rc-hero-number { font-size: 34px !important; }
           .rc-nav-url { display: none !important; }
@@ -2714,8 +2720,12 @@ function DashboardContent() {
           .rc-comp-row-grid { grid-template-columns: 1fr 1fr !important; row-gap: 4px !important; }
           /* Growth upsell banner */
           .rc-growth-banner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
+          /* Fix 3 — stack bottom fixed elements: tabs at 0, banner above tabs */
+          .rc-bottom-tabs { bottom: 0 !important; }
+          .rc-save-banner { bottom: 60px !important; }
+          .rc-main { padding-bottom: 130px !important; }
           /* Save banner */
-          .rc-save-banner { flex-wrap: wrap !important; padding: 12px 16px 72px !important; gap: 8px !important; }
+          .rc-save-banner { flex-wrap: wrap !important; padding: 12px 16px !important; gap: 8px !important; }
           .rc-save-banner input { flex: 1 1 100% !important; width: 100% !important; box-sizing: border-box !important; }
           .rc-save-banner .rc-save-btn { flex: 1 !important; }
           /* Upgrade modal */
