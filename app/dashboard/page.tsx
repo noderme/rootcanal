@@ -1146,7 +1146,7 @@ function DashboardContent() {
     "competitors" | "roadmap" | "reviews" | "score" | "health"
   >("competitors");
   const [competitorPage, setCompetitorPage] = useState(0);
-  const [compView, setCompView] = useState<"list" | "map">("list");
+  const [compView, setCompView] = useState<"list" | "map">("map");
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
   const [patientValue, setPatientValue] = useState(150);
   const [reviewContact, setReviewContact] = useState("");
