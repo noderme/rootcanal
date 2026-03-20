@@ -25,7 +25,7 @@ function parseCityFromAddress(address: string): string {
 
 // ── IN-MEMORY CACHE ───────────────────────────────────────
 const cache = new Map<string, { data: AuditResult; timestamp: number }>();
-const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 interface AuditResult {
   url: string;
