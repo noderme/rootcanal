@@ -3049,8 +3049,8 @@ function DashboardContent() {
                 opacity: 0.8,
               }}
             >
-              <span className="rc-nav-btn-full">Start Free Trial — Full Access →</span>
-              <span className="rc-nav-btn-short" style={{ display: "none" }}>Free Trial →</span>
+              <span className="rc-nav-btn-full">Get More Patients →</span>
+              <span className="rc-nav-btn-short" style={{ display: "none" }}>Get Patients →</span>
             </button>
           )}
         </div>
@@ -3571,7 +3571,7 @@ function DashboardContent() {
                               opacity: 0.85,
                             }}
                           >
-                            Start Free Trial — Full Access →
+                            Get More Patients →
                           </button>
                           <div style={{ fontSize: 11, color: "rgba(240,235,227,0.30)", textAlign: "center" }}>
                             Takes less than 2 minutes to start.
@@ -5480,7 +5480,7 @@ function DashboardContent() {
                               flexShrink: 0,
                             }}
                           >
-                            Start Free Trial — Full Access →
+                            Get More Patients →
                           </button>
                         )}
                       </div>
