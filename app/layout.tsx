@@ -26,7 +26,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="RootCanal" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         {/* Paddle.js — payment checkout */}
         <script src="https://cdn.paddle.com/paddle/v2/paddle.js" async></script>
         {/* Microsoft Clarity */}

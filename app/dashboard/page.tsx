@@ -1945,6 +1945,7 @@ function DashboardContent() {
                   <input
                     key={i}
                     id={`otp-${i}`}
+                    className="rc-otp-box"
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
@@ -2764,65 +2765,125 @@ function DashboardContent() {
           .rc-sidebar-feedback { display: none !important; }
         }
         @media (max-width: 768px) {
-          /* Fix 1 — hero sticky: non-sticky on mobile */
-          .rc-hero-sticky { position: relative !important; top: auto !important; }
-          /* Fix 2 — hero sticky: compact banner, hide secondary content */
-          .rc-hero-sticky .rc-hero-card { padding: 10px 12px !important; }
-          .rc-hero-sticky .rc-hero-subtitle,
-          .rc-hero-sticky .rc-hero-detail,
-          .rc-hero-sticky .rc-hero-meta { display: none !important; }
-          .rc-hero-compact .rc-hero-card { padding: 12px 16px !important; }
-          .rc-hero-compact .rc-hero-number { font-size: 34px !important; }
+          /* ── NAV ── */
+          nav { padding: 10px 14px !important; }
           .rc-nav-url { display: none !important; }
           .rc-nav-export { display: none !important; }
           .rc-nav-home { display: none !important; }
           .rc-nav-demo { display: none !important; }
-          .rc-bottom-tabs { height: 60px; }
-          .rc-score-hero { grid-template-columns: 1fr !important; }
+          /* Upgrade button in nav: shorter label, tighter padding */
+          nav .rc-upgrade-btn { font-size: 11px !important; padding: 8px 12px !important; white-space: nowrap !important; }
+          .rc-nav-btn-full { display: none !important; }
+          .rc-nav-btn-short { display: inline !important; }
+          /* Plan badges in nav: smaller */
+          nav > div:last-child > div { font-size: 11px !important; padding: 7px 12px !important; }
+
+          /* ── SIDEBAR / BOTTOM TABS ── */
+          .rc-sidebar { display: none !important; }
+          .rc-bottom-tabs { display: flex !important; height: 58px !important; bottom: 0 !important; }
+          /* Bottom tab buttons: icon + label stacked, smaller text */
+          .rc-bottom-tab-btn { flex-direction: column !important; gap: 2px !important; font-size: 9px !important; padding: 6px 4px !important; }
+
+          /* ── MAIN CONTENT AREA ── */
+          .rc-main { padding: 14px 12px 140px !important; }
+
+          /* ── HERO CARD ── */
+          .rc-hero-sticky { position: relative !important; top: auto !important; }
+          .rc-hero-sticky .rc-hero-card { padding: 14px 16px !important; }
+          .rc-hero-sticky .rc-hero-subtitle,
+          .rc-hero-sticky .rc-hero-detail,
+          .rc-hero-sticky .rc-hero-meta { display: none !important; }
+          .rc-hero-compact .rc-hero-card { padding: 12px 14px !important; }
+          .rc-hero-compact .rc-hero-number { font-size: 32px !important; }
+          /* Full hero card: stack vertically */
+          .rc-hero-card { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
+          .rc-hero-card > div:last-child { align-items: flex-start !important; width: 100% !important; }
+          .rc-hero-card > div:last-child button { width: 100% !important; }
+          .rc-hero-number { font-size: 38px !important; }
+          /* Compact banner (Competitors/ROI tabs): stack text and button */
+          .rc-compact-banner-inner { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+          .rc-compact-banner-inner button { width: 100% !important; }
+          .rc-compact-banner-inner span { white-space: normal !important; overflow: visible !important; text-overflow: unset !important; }
+
+          /* ── STATS STRIP (rank/review rank/yelp) ── */
+          .rc-stats-strip { flex-wrap: wrap !important; }
+          .rc-stats-strip > div { flex: 1 1 45% !important; border-right: none !important; border-bottom: 1px solid #2A3330 !important; }
+          .rc-stats-strip > div:last-child { border-bottom: none !important; flex: 1 1 100% !important; }
+
+          /* ── METRICS GRID ── */
           .rc-metric-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .rc-score-hero { grid-template-columns: 1fr !important; }
+
+          /* ── COMPETITOR ROWS ── */
+          .rc-comp-table-header { display: none !important; }
+          .rc-comp-row-grid { grid-template-columns: 40px 1fr 60px !important; }
+          .rc-comp-col-rating { display: none !important; }
+          .rc-comp-col-status { display: none !important; }
+          .rc-competitor-grid { grid-template-columns: 1fr !important; }
+
+          /* ── GROWTH PLAN / ROADMAP ── */
+          .rc-roadmap-item { flex-wrap: wrap !important; gap: 8px !important; padding: 12px 14px !important; }
+          .rc-roadmap-rank-badge { width: 100% !important; text-align: left !important; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; margin-top: 4px !important; }
+          .rc-roadmap-rank-badge > div:first-child { margin-bottom: 0 !important; }
+
+          /* ── REVIEW SECTION ── */
           .rc-hero-review { flex-direction: column !important; align-items: stretch !important; }
           .rc-hero-review > div:last-child { min-width: unset !important; width: 100% !important; }
           .rc-hero-review-row { flex-direction: column !important; }
           .rc-hero-review-row input { width: 100% !important; }
           .rc-hero-review-row button { width: 100% !important; }
-          .rc-competitor-grid { grid-template-columns: 1fr !important; }
-          .rc-main { padding: 16px 12px 80px !important; }
-          nav { padding: 12px 16px !important; }
+
+          /* ── UPGRADE MODAL ── */
+          .rc-upgrade-modal { padding: 20px 14px !important; max-height: 90vh !important; overflow-y: auto !important; }
           .rc-upgrade-grid { grid-template-columns: 1fr !important; }
           .rc-upgrade-btns { flex-direction: column !important; align-items: stretch !important; }
+
+          /* ── GAP ANALYSIS ── */
           .rc-gap-grid { grid-template-columns: 1fr !important; }
           .rc-gap-vs { display: none !important; }
-          .rc-roadmap-item { flex-wrap: wrap !important; }
-          .rc-sidebar { display: none !important; }
-          .rc-bottom-tabs { display: flex !important; }
-          /* How it works pipeline */
+
+          /* ── GROWTH UPSELL BANNER ── */
+          .rc-growth-banner { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          .rc-growth-banner button { width: 100% !important; }
+
+          /* ── SAVE BANNER ── */
+          .rc-save-banner { bottom: 58px !important; flex-wrap: wrap !important; padding: 10px 14px !important; gap: 8px !important; }
+          .rc-save-banner input { flex: 1 1 100% !important; width: 100% !important; box-sizing: border-box !important; }
+          .rc-save-banner .rc-save-btn { flex: 1 !important; }
+
+          /* ── HOW IT WORKS ── */
           .rc-how-it-works { flex-wrap: wrap !important; justify-content: center !important; gap: 8px !important; }
           .rc-how-it-works-step { flex: none !important; width: calc(33% - 8px) !important; min-width: 90px !important; }
           .rc-how-it-works-arrow { display: none !important; }
-          /* Competitors table → card rows */
-          .rc-comp-table-header { display: none !important; }
-          .rc-comp-row-grid { grid-template-columns: 1fr 1fr !important; row-gap: 4px !important; }
-          /* Growth upsell banner */
-          .rc-growth-banner { flex-direction: column !important; align-items: flex-start !important; gap: 14px !important; }
-          /* Fix 3 — stack bottom fixed elements: tabs at 0, banner above tabs */
-          .rc-bottom-tabs { bottom: 0 !important; }
-          .rc-save-banner { bottom: 60px !important; }
-          .rc-main { padding-bottom: 130px !important; }
-          /* Save banner */
-          .rc-save-banner { flex-wrap: wrap !important; padding: 12px 16px !important; gap: 8px !important; }
-          .rc-save-banner input { flex: 1 1 100% !important; width: 100% !important; box-sizing: border-box !important; }
-          .rc-save-banner .rc-save-btn { flex: 1 !important; }
-          /* Upgrade modal */
-          .rc-upgrade-modal { padding: 24px 16px !important; }
-          /* Map */
-          .rc-map-wrap { height: 260px !important; }
+
+          /* ── MAP ── */
+          .rc-map-wrap { height: 240px !important; }
+
+          /* ── TYPOGRAPHY ── */
+          h1 { font-size: 20px !important; line-height: 1.3 !important; }
+          /* Ensure minimum readable font size — override tiny labels */
+          .rc-label-xs { font-size: 11px !important; }
         }
         @media (max-width: 480px) {
+          /* ── EXTRA SMALL SCREENS (iPhone SE, 320px) ── */
           .rc-metric-grid { grid-template-columns: 1fr !important; }
-          h1 { font-size: 22px !important; }
+          h1 { font-size: 18px !important; }
           .rc-how-it-works-step { width: calc(50% - 8px) !important; }
           .rc-comp-row-grid { grid-template-columns: 1fr !important; }
-          nav .rc-upgrade-btn { font-size: 11px !important; padding: 8px 10px !important; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          /* Nav upgrade button: icon only hint */
+          nav .rc-upgrade-btn { font-size: 10px !important; padding: 7px 10px !important; max-width: 130px !important; }
+          /* OTP boxes: slightly smaller to fit 6 on screen */
+          .rc-otp-box { width: 38px !important; height: 46px !important; font-size: 18px !important; }
+          /* Hero number: slightly smaller */
+          .rc-hero-number { font-size: 32px !important; }
+          /* Stats strip: full width each */
+          .rc-stats-strip > div { flex: 1 1 100% !important; }
+          /* Roadmap rank badge: don't shrink */
+          .rc-roadmap-rank { flex-shrink: 0 !important; min-width: 48px !important; }
+          /* Bottom tabs: even smaller text */
+          .rc-bottom-tab-btn { font-size: 8px !important; }
+          /* Upgrade modal: full screen feel */
+          .rc-upgrade-modal { border-radius: 16px !important; padding: 16px 12px !important; }
         }
         .rc-sidebar-btn:hover { background: rgba(26,188,156,0.08) !important; color: #F0EBE3 !important; }
         .rc-bottom-tabs { display: none; }
@@ -2969,7 +3030,8 @@ function DashboardContent() {
                 opacity: 0.8,
               }}
             >
-              Start Free Trial — Full Access →
+              <span className="rc-nav-btn-full">Start Free Trial — Full Access →</span>
+              <span className="rc-nav-btn-short" style={{ display: "none" }}>Free Trial →</span>
             </button>
           )}
         </div>
@@ -3274,6 +3336,7 @@ function DashboardContent() {
                 if (activeTab === "competitors" || activeTab === "score") {
                   return (
                     <div
+                      className="rc-compact-banner-inner"
                       style={{
                         background: "linear-gradient(135deg, #1a0a0a 0%, #200d00 100%)",
                         border: "1px solid rgba(231,76,60,0.3)",
@@ -3554,7 +3617,7 @@ function DashboardContent() {
           {activeTab === "roadmap" && (
             <>
               <div
-                className="card"
+                className="card rc-stats-strip"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -3772,7 +3835,7 @@ function DashboardContent() {
           {/* ── HEALTH: website metrics strip ────────────────── */}
           {activeTab === "health" && (
             <div
-              className="card"
+              className="card rc-stats-strip"
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -4255,6 +4318,7 @@ function DashboardContent() {
                               </span>
                             </div>
                             <div
+                              className="rc-comp-col-rating"
                               style={{
                                 textAlign: "right",
                                 fontWeight: 700,
@@ -4273,7 +4337,7 @@ function DashboardContent() {
                             >
                               {reviews?.total ?? "—"}
                             </div>
-                            <div style={{ textAlign: "right" }} />
+                            <div className="rc-comp-col-status" style={{ textAlign: "right" }} />
                           </div>
                         );
                       }
@@ -4365,6 +4429,7 @@ function DashboardContent() {
                             </div>
                           </div>
                           <div
+                            className="rc-comp-col-rating"
                             style={{
                               textAlign: "right",
                               fontSize: 13,
@@ -4382,7 +4447,7 @@ function DashboardContent() {
                           >
                             {comp.reviews}
                           </div>
-                          <div style={{ textAlign: "right" }}>
+                          <div className="rc-comp-col-status" style={{ textAlign: "right" }}>
                             <span
                               style={{
                                 fontSize: 11,
@@ -5144,6 +5209,7 @@ function DashboardContent() {
                           }}
                         >
                           <div
+                            className="rc-roadmap-rank"
                             style={{
                               width: 36,
                               height: 36,
@@ -5251,7 +5317,7 @@ function DashboardContent() {
                               </span>
                             </div>
                           </div>
-                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div className="rc-roadmap-rank-badge" style={{ textAlign: "right", flexShrink: 0 }}>
                             <div style={{ fontSize: 10, color: "#6B7B78", letterSpacing: "0.8px", marginBottom: 2, textTransform: "uppercase" as const }}>
                               Local Rank
                             </div>
@@ -5335,6 +5401,7 @@ function DashboardContent() {
 
                     {stepsToShow.length > 0 && (
                       <div
+                        className="rc-growth-banner"
                         style={{
                           background: "rgba(46,204,113,0.04)",
                           border: "1px solid rgba(46,204,113,0.15)",
@@ -7046,9 +7113,10 @@ function DashboardContent() {
               <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: bannerOtpError ? 6 : 12 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <input
-                    key={i}
-                    id={`trial-otp-${i}`}
-                    type="text"
+                     key={i}
+                     id={`trial-otp-${i}`}
+                     className="rc-otp-box"
+                     type="text"
                     inputMode="numeric"
                     maxLength={1}
                     autoFocus={i === 0}
