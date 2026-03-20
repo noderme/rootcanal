@@ -5073,12 +5073,50 @@ function DashboardContent() {
                         0,
                         (comp.reviews || 0) - (reviews?.total || 0),
                       );
-                      const weeks =
-                        reviewGap <= 10
-                          ? "2–4 weeks"
-                          : reviewGap <= 30
-                            ? "1–2 months"
-                            : "2–4 months";
+
+                      // Cumulative timeline — recompute inline up to step i
+                      let cumLo = 0, cumHi = 0;
+                      for (let k = 0; k <= i; k++) {
+                        const g = Math.max(0, (stepsToShow[k].reviews || 0) - (reviews?.total || 0));
+                        const [lo, hi] = g < 30 ? [2, 4] : g < 150 ? [4, 8] : [8, 16];
+                        cumLo += lo;
+                        cumHi += hi;
+                      }
+                      const timeLabel = cumHi <= 12
+                        ? `~${cumLo}–${cumHi} weeks from now`
+                        : `~${Math.round(cumLo / 4)}–${Math.round(cumHi / 4)} months from now`;
+
+                      const isLastStep = i === stepsToShow.length - 1;
+
+                      // Gap-based description — never repeat consecutive text
+                      const baseDesc =
+                        reviewGap < 30
+                          ? "You\u2019re neck-and-neck here \u2014 a handful of new reviews could push you past them."
+                          : reviewGap < 150
+                            ? "A consistent review cadence over the next few months closes this gap."
+                            : "This is a significant gap \u2014 focus on review volume before targeting this position.";
+
+                      // Determine previous step's base desc to avoid consecutive repeats
+                      const prevGap = i > 0 ? Math.max(0, (stepsToShow[i - 1].reviews || 0) - (reviews?.total || 0)) : -1;
+                      const prevBase =
+                        prevGap < 0  ? ""
+                        : prevGap < 30  ? "You\u2019re neck-and-neck here \u2014 a handful of new reviews could push you past them."
+                        : prevGap < 150 ? "A consistent review cadence over the next few months closes this gap."
+                        : "This is a significant gap \u2014 focus on review volume before targeting this position.";
+
+                      const desc =
+                        isLastStep
+                          ? "Reaching #1 is the goal \u2014 every step above builds toward this."
+                          : i === 0
+                            ? `This is your most achievable win right now. ${baseDesc}`
+                            : baseDesc === prevBase
+                              ? (reviewGap < 30
+                                  ? "Stay consistent \u2014 your review momentum will carry you through this step too."
+                                  : reviewGap < 150
+                                    ? "Keep the same review cadence \u2014 this position follows naturally."
+                                    : "The gap here is similar \u2014 continued volume is the path forward.")
+                              : baseDesc;
+
                       // For free users: step 0 is active, steps 1 & 2 are upcoming (dimmed)
                       const isUpcoming = freeUser && i > 0;
                       const trialActive = isTrial && !isUpcoming;
@@ -5202,16 +5240,14 @@ function DashboardContent() {
                                 opacity: 0.85,
                               }}
                             >
-                              {reviewGap > 0
-                                ? `Closing this review gap moves you up in rank and recaptures lost bookings — estimated `
-                                : `Clinics gaining steady reviews often move ahead of similarly rated competitors — estimated `}
+                              {desc}{" "}
                               <span
                                 style={{
                                   color: isUpcoming ? "#6B7B78" : "#F0A500",
                                   fontWeight: 600,
                                 }}
                               >
-                                {weeks}
+                                {timeLabel}
                               </span>
                             </div>
                           </div>
