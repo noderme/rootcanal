@@ -4733,6 +4733,9 @@ function DashboardContent() {
                       : false,
                   )
                   .sort((a, b) => {
+                    // Pos. 1 is always last — it's the ultimate goal
+                    if (a.googleRank === 1) return 1;
+                    if (b.googleRank === 1) return -1;
                     const tierDiff = gapTier(a) - gapTier(b);
                     if (tierDiff !== 0) return tierDiff; // easiest tier first
                     return b.googleRank - a.googleRank;  // within tier: closest rank first
