@@ -1671,7 +1671,9 @@ function DashboardContent() {
     visitedTabsRef.current.add(id);
     setActiveTab(id);
     setTabFlash(false);
-    requestAnimationFrame(() => {
+    // For Competitors, wait for the hero compact transition (250ms) before measuring
+    const delay = id === "competitors" ? 300 : 0;
+    const doScroll = () => requestAnimationFrame(() => {
       const el = contentRef.current;
       if (!el) return;
       const heroH = heroRef.current?.offsetHeight ?? 0;
@@ -1682,6 +1684,8 @@ function DashboardContent() {
         setTimeout(() => setTabFlash(false), 800);
       }, 350);
     });
+    if (delay) setTimeout(doScroll, delay);
+    else doScroll();
   }
 
   // Exit intent — track time on page + tabs visited before allowing trigger
@@ -3239,7 +3243,7 @@ function DashboardContent() {
           {/* ── PATIENT LOSS HERO CARD ───────────────────────── */}
           <div
             ref={heroRef}
-            className={`rc-hero-sticky${compactHero ? " rc-hero-compact" : ""}`}
+            className={`rc-hero-sticky${(compactHero || activeTab === "competitors") ? " rc-hero-compact" : ""}`}
           >
             {(userRank == null || userRank > 3) &&
               (() => {
@@ -3262,7 +3266,7 @@ function DashboardContent() {
                         "linear-gradient(135deg, #1a0a0a 0%, #200d00 50%, #0d1a14 100%)",
                       border: "1px solid rgba(231,76,60,0.35)",
                       borderRadius: 16,
-                      padding: "28px 32px",
+                      padding: "20px 24px",
                       marginBottom: 16,
                       boxShadow: compactHero
                         ? "0 4px 24px rgba(0,0,0,0.5)"
@@ -3316,7 +3320,7 @@ function DashboardContent() {
                           className="rc-hero-number"
                           style={{
                             fontFamily: "'Playfair Display', serif",
-                            fontSize: 56,
+                            fontSize: 44,
                             fontWeight: 900,
                             color: "#E74C3C",
                             lineHeight: 1,
@@ -3359,16 +3363,6 @@ function DashboardContent() {
                         <span style={{ color: "#F0A500", fontWeight: 800, fontSize: 15 }}>
                           {fmt(revLow)}–{fmt(revHigh)} / month
                         </span>
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "rgba(240,235,227,0.30)",
-                          marginTop: 6,
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        Visibility momentum typically builds within the first 14 days of consistent review growth.
                       </div>
                     </div>
                     <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
