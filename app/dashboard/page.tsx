@@ -5480,7 +5480,7 @@ function DashboardContent() {
                               flexShrink: 0,
                             }}
                           >
-                            Get More Patients →
+                            How to Move Up →
                           </button>
                         )}
                       </div>
