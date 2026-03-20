@@ -5403,7 +5403,7 @@ function DashboardContent() {
                             fontWeight: 700,
                           }}
                         >
-                          See How to Move Up →
+                          Unlock Full Plan →
                         </span>
                       </div>
                     )}
