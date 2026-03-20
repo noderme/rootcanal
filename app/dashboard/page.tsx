@@ -2827,6 +2827,8 @@ function DashboardContent() {
           .rc-roadmap-rank-badge > div:first-child { margin-bottom: 0 !important; }
 
           /* ── REVIEW SECTION ── */
+          .rc-review-outer-grid { grid-template-columns: 1fr !important; }
+          .rc-review-top-grid { grid-template-columns: 1fr !important; }
           .rc-hero-review { flex-direction: column !important; align-items: stretch !important; }
           .rc-hero-review > div:last-child { min-width: unset !important; width: 100% !important; }
           .rc-hero-review-row { flex-direction: column !important; }
@@ -5651,6 +5653,7 @@ function DashboardContent() {
                 </div>
               ) : reviews?.analysis ? (
                 <div
+                  className="rc-review-outer-grid"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
@@ -5658,6 +5661,7 @@ function DashboardContent() {
                   }}
                 >
                   <div
+                    className="rc-review-top-grid"
                     style={{
                       gridColumn: "1 / -1",
                       display: "grid",
