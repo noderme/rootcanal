@@ -187,6 +187,34 @@ export async function GET(request: NextRequest) {
 
   const apiKey = process.env.GOOGLE_API_KEY || "";
 
+  // ── Check Supabase cache FIRST — before any expensive API calls ──
+  if (!force) {
+    try {
+      const earlyCacheKey = hasWebsite ? url.toLowerCase() : `${nameParam.toLowerCase()}-${cityParam.toLowerCase()}`;
+      const since = new Date(Date.now() - CACHE_TTL).toISOString();
+      const { data: cachedRow } = await supabase
+        .from("scans")
+        .select("result, scanned_at")
+        .eq("url", hasWebsite ? url : earlyCacheKey)
+        .not("result", "is", null)
+        .gte("scanned_at", since)
+        .order("scanned_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (cachedRow?.result) {
+        console.log("Early Supabase cache hit:", earlyCacheKey);
+        return NextResponse.json({
+          ...cachedRow.result,
+          cached: true,
+          lastUpdatedAt: cachedRow.scanned_at,
+        });
+      }
+    } catch {
+      // No cache hit — proceed with full audit
+    }
+  }
+
   // ── Dental clinic check — reject non-dental websites ──
   if (hasWebsite) try {
     const dentalKeywords = [
