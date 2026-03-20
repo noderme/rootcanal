@@ -1161,6 +1161,8 @@ function DashboardContent() {
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewVelocity, setReviewVelocity] = useState<{ gained: number; days: number } | null>(null);
+  const [baselineReviewCount, setBaselineReviewCount] = useState<number | null>(null);
+  const [baselineRecordedAt, setBaselineRecordedAt] = useState<string | null>(null);
   const [reviewPlatform, setReviewPlatform] = useState<
     "google" | "yelp" | "both"
   >("google");
@@ -1347,6 +1349,8 @@ function DashboardContent() {
       const data = await res.json();
       if (data.found) {
         applyPlan(data.plan as "pro" | "growth" | "trial", data.email);
+        if (data.baselineReviewCount != null) setBaselineReviewCount(data.baselineReviewCount);
+        if (data.baselineRecordedAt != null) setBaselineRecordedAt(data.baselineRecordedAt);
         return true;
       }
     } catch {}
@@ -1359,6 +1363,8 @@ function DashboardContent() {
       const data = await res.json();
       if (data.found) {
         applyPlan(data.plan as "pro" | "growth" | "trial", email);
+        if (data.baselineReviewCount != null) setBaselineReviewCount(data.baselineReviewCount);
+        if (data.baselineRecordedAt != null) setBaselineRecordedAt(data.baselineRecordedAt);
         return true;
       }
     } catch {}
@@ -1444,7 +1450,7 @@ function DashboardContent() {
     const trialRes = await fetch("/api/start-trial", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, clinicUrl: url ? normalizeUrl(url) : null }),
+      body: JSON.stringify({ email, clinicUrl: url ? normalizeUrl(url) : null, reviewCount: reviews?.total ?? data?.userReviewCount ?? 0 }),
     });
     const trialData = await trialRes.json();
 
@@ -1453,6 +1459,9 @@ function DashboardContent() {
     } else {
       setIsTrial(true);
       setIsPro(true);
+      // Set baseline locally so the stat shows immediately
+      const rc = reviews?.total ?? data?.userReviewCount ?? 0;
+      if (rc > 0) { setBaselineReviewCount(rc); setBaselineRecordedAt(new Date().toISOString()); }
     }
 
     setBannerOtpStep("email");
@@ -3686,6 +3695,20 @@ function DashboardContent() {
                   <div style={{ fontSize: 11, color: "#6B7B78", marginTop: 4 }}>
                     {topCompReviews > 0 ? `top competitor: ${topCompReviews}` : "Google reviews"}
                   </div>
+                  {(isTrial || isPro || isGrowth) && baselineReviewCount != null && (() => {
+                    const gained = myReviewCount - baselineReviewCount;
+                    if (gained < 0) return null;
+                    const joinedDate = baselineRecordedAt
+                      ? new Date(baselineRecordedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                      : null;
+                    return (
+                      <div style={{ fontSize: 11, marginTop: 5, color: gained > 0 ? "#1ABC9C" : "#6B7B78" }}>
+                        {gained > 0
+                          ? `+${gained} reviews since joining${joinedDate ? ` · ${joinedDate}` : ""}`
+                          : `No new reviews yet — send your first request`}
+                      </div>
+                    );
+                  })()}
                 </div>
                 {reviewRank != null && (
                   <div
@@ -6747,6 +6770,18 @@ function DashboardContent() {
           }}
           onSuccess={(plan, email) => {
             applyPlan(plan, email);
+            // Record baseline review count for new subscribers (only if not already set)
+            const rc = reviews?.total ?? data?.userReviewCount ?? 0;
+            if (rc > 0) {
+              setBaselineReviewCount(rc);
+              setBaselineRecordedAt(new Date().toISOString());
+              supabase
+                .from("subscribers")
+                .update({ baseline_review_count: rc, baseline_recorded_at: new Date().toISOString() })
+                .eq("email", email.toLowerCase().trim())
+                .is("baseline_review_count", null)
+                .then(() => {});
+            }
           }}
         />
       )}

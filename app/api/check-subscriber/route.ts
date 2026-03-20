@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     let query = supabase
       .from("subscribers")
-      .select("email, plan, status")
+      .select("email, plan, status, baseline_review_count, baseline_recorded_at")
       .in("status", ["active", "trialing"]);
 
     if (clinicUrl) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const { data } = await query.single();
     if (data) {
-      return NextResponse.json({ found: true, plan: data.plan, status: data.status, email: data.email });
+      return NextResponse.json({ found: true, plan: data.plan, status: data.status, email: data.email, baselineReviewCount: data.baseline_review_count ?? null, baselineRecordedAt: data.baseline_recorded_at ?? null });
     }
     return NextResponse.json({ found: false });
   } catch {

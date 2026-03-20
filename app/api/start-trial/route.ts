@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, clinicUrl } = await request.json();
+    const { email, clinicUrl, reviewCount } = await request.json();
     if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
 
     // Check if already a paying subscriber — don't downgrade
@@ -41,6 +41,15 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error("start-trial upsert error:", error);
       return NextResponse.json({ error: "DB error" }, { status: 500 });
+    }
+
+    // Set baseline review count only if not already recorded
+    if (reviewCount != null && reviewCount > 0) {
+      await supabase
+        .from("subscribers")
+        .update({ baseline_review_count: reviewCount, baseline_recorded_at: now })
+        .eq("email", email.toLowerCase().trim())
+        .is("baseline_review_count", null);
     }
 
     return NextResponse.json({ plan: "trial", trialEndsAt: trialEnds });

@@ -21,7 +21,7 @@ function normalizeUrl(url: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, priceId, clinicUrl } = await req.json();
+    const { email, priceId, clinicUrl, reviewCount } = await req.json();
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
@@ -48,6 +48,15 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error("❌ activate-plan upsert error:", error);
       return NextResponse.json({ error: "DB write failed" }, { status: 500 });
+    }
+
+    // Set baseline review count only if not already recorded
+    if (reviewCount != null && reviewCount > 0) {
+      await supabase
+        .from("subscribers")
+        .update({ baseline_review_count: reviewCount, baseline_recorded_at: new Date().toISOString() })
+        .eq("email", email.toLowerCase().trim())
+        .is("baseline_review_count", null);
     }
 
     console.log(`✅ Plan activated (client-side): ${email} → ${plan}`);
