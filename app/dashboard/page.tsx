@@ -1238,6 +1238,14 @@ function DashboardContent() {
     setShowUpgradeModal(true);
   };
 
+  const openReviewModal = () => {
+    setShowReviewModal(true);
+    setReviewSent(false);
+    setReviewError("");
+    setReviewContact("");
+    setReviewYelpUrl(data?.yelpUrl || "");
+  };
+
   // Pulse the sticky bar once after 30s if user hasn't clicked an upgrade CTA
   useEffect(() => {
     if (isPro || isGrowth) return;
@@ -2931,36 +2939,18 @@ function DashboardContent() {
               🚀 Growth Active
             </div>
           ) : isPro ? (
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <div
-                style={{
-                  background: "rgba(26,188,156,0.1)",
-                  border: "1px solid #1ABC9C",
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "#1ABC9C",
-                }}
-              >
-                ⭐ Pro Active
-              </div>
-              <button
-                onClick={() => openUpgradeModal()}
-                style={{
-                  background: "#D4A843",
-                  color: "#000",
-                  border: "none",
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
-              >
-                Get More Patient Bookings →
-              </button>
+            <div
+              style={{
+                background: "rgba(26,188,156,0.1)",
+                border: "1px solid #1ABC9C",
+                padding: "10px 20px",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#1ABC9C",
+              }}
+            >
+              ⭐ Pro Active
             </div>
           ) : (
             <button
@@ -3131,7 +3121,7 @@ function DashboardContent() {
                   The fastest way to improve your Google ranking.
                 </div>
                 <button
-                  onClick={() => { setShowReviewModal(true); setReviewSent(false); setReviewError(""); setReviewContact(""); setReviewYelpUrl(data?.yelpUrl || ""); }}
+                  onClick={() => openReviewModal()}
                   style={{
                     width: "100%",
                     padding: "8px 0",
@@ -3145,7 +3135,7 @@ function DashboardContent() {
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  Start Getting Reviews →
+                  Get More Reviews →
                 </button>
               </div>
             )}
@@ -3280,8 +3270,8 @@ function DashboardContent() {
                 const revHigh = lostHigh * patientValue;
                 const fmt = (n: number) => "$" + n.toLocaleString();
 
-                // Competitors tab: single-line compact strip
-                if (activeTab === "competitors") {
+                // Competitors + ROI Calculator tabs: single-line compact strip
+                if (activeTab === "competitors" || activeTab === "score") {
                   return (
                     <div
                       style={{
@@ -3301,27 +3291,23 @@ function DashboardContent() {
                         {" · "}
                         <span style={{ color: "#F0A500" }}>{fmt(revLow)}–{fmt(revHigh)} impact</span>
                       </span>
-                      {isTrial || isPro || isGrowth ? (
-                        <span style={{ fontSize: 12, color: "#1ABC9C", fontWeight: 600, flexShrink: 0 }}>✅ Full access active</span>
-                      ) : (
-                        <button
-                          onClick={() => openUpgradeModal()}
-                          style={{
-                            flexShrink: 0,
-                            background: "rgba(26,188,156,0.12)",
-                            border: "1px solid rgba(26,188,156,0.3)",
-                            borderRadius: 8,
-                            padding: "6px 14px",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: "#1ABC9C",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap" as const,
-                          }}
-                        >
-                          Start Free Trial — Full Access →
-                        </button>
-                      )}
+                      <button
+                        onClick={() => openReviewModal()}
+                        style={{
+                          flexShrink: 0,
+                          background: "rgba(26,188,156,0.12)",
+                          border: "1px solid rgba(26,188,156,0.3)",
+                          borderRadius: 8,
+                          padding: "6px 14px",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#1ABC9C",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap" as const,
+                        }}
+                      >
+                        Get More Reviews →
+                      </button>
                     </div>
                   );
                 }
@@ -3438,7 +3424,7 @@ function DashboardContent() {
                         <>
                           <span style={{ fontSize: 13, color: "#1ABC9C", fontWeight: 700 }}>✅ Full access active</span>
                           <button
-                            onClick={() => navigateToTab("reviews")}
+                            onClick={() => openReviewModal()}
                             style={{
                               background: "linear-gradient(135deg, #1ABC9C, #16a085)",
                               border: "none",
@@ -3453,7 +3439,7 @@ function DashboardContent() {
                               boxShadow: "0 4px 20px rgba(26,188,156,0.3)",
                             }}
                           >
-                            Send Review Requests →
+                            Get More Reviews →
                           </button>
                         </>
                       ) : (
@@ -4691,7 +4677,7 @@ function DashboardContent() {
                         and recapturing those bookings.
                       </div>
                       <button
-                        onClick={() => setActiveTab("reviews")}
+                        onClick={() => openReviewModal()}
                         style={{
                           background: "#1ABC9C",
                           color: "#000",
@@ -4703,7 +4689,7 @@ function DashboardContent() {
                           cursor: "pointer",
                         }}
                       >
-                        Start Getting Reviews →
+                        Get More Reviews →
                       </button>
                     </div>
                   );
