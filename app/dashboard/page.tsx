@@ -2995,9 +2995,8 @@ function DashboardContent() {
           {(
             [
               { id: "roadmap", label: "📈 Growth Plan", freeVisible: true },
-              { id: "reviews", label: "⭐ Reviews (G+Y)", freeVisible: true },
               { id: "competitors", label: "🏆 Competitors", freeVisible: true },
-              { id: "score", label: "🧠 Intelligence", freeVisible: false },
+              { id: "reviews", label: "⭐ Reviews (G+Y)", freeVisible: true },
               ...(hasWebsite
                 ? [
                     {
@@ -3007,6 +3006,7 @@ function DashboardContent() {
                     },
                   ]
                 : []),
+              { id: "score", label: "🧠 Intelligence", freeVisible: false },
             ] as const
           )
             .filter((item) => isPro || isGrowth || item.freeVisible)
@@ -3476,8 +3476,8 @@ function DashboardContent() {
             </div>
           </div>
 
-          {/* ── COMPETITORS: rank strip ──────────────────────── */}
-          {activeTab === "competitors" && (
+          {/* ── GROWTH PLAN: rank strip ──────────────────────── */}
+          {activeTab === "roadmap" && (
             <>
               <div
                 className="card"
@@ -3827,8 +3827,8 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* ── COMPETITORS TAB CONTENT ─────────────────────── */}
-          {activeTab === "competitors" && (
+          {/* ── GROWTH PLAN: rank warning cards ─────────────── */}
+          {activeTab === "roadmap" && (
             <>
               {/* NOT IN TOP 60 BANNER */}
               {userRank == null && (
