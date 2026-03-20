@@ -3107,90 +3107,51 @@ function DashboardContent() {
             ) : (
               <div
                 style={{
-                  background: isPro
-                    ? "linear-gradient(135deg, #2a1f0a, #1f1500)"
-                    : "linear-gradient(135deg, #0f2a20, #0D1F18)",
-                  border: isPro
-                    ? "1px solid rgba(212,168,67,0.25)"
-                    : "1px solid rgba(26,188,156,0.25)",
+                  background: "#0D0F0E",
+                  border: "1px solid #2A3330",
                   borderRadius: 12,
                   padding: "14px 12px",
                 }}
               >
                 <div
                   style={{
-                    fontSize: 11,
+                    fontSize: 13,
                     fontWeight: 700,
-                    color: isPro ? "#D4A843" : "#1ABC9C",
-                    marginBottom: 3,
+                    color: "#F0EBE3",
+                    marginBottom: 4,
                     fontFamily: "'DM Sans', sans-serif",
                   }}
                 >
-                  {isPro ? "Move to #1 Faster" : "Recover Lost Patients"}
+                  ⭐ Get More Reviews
                 </div>
                 <div
                   style={{
-                    fontSize: 10,
-                    color: "#4A5A57",
-                    marginBottom: 10,
+                    fontSize: 11,
+                    color: "#6B7B78",
+                    marginBottom: 12,
                     fontFamily: "'DM Sans', sans-serif",
                     lineHeight: 1.4,
                   }}
                 >
-                  {isPro ? "Accelerate to #1 faster" : "to nearby competitors."}
+                  The fastest way to improve your Google ranking.
                 </div>
-                {(isPro
-                  ? [
-                      { icon: "🛠️", title: "Done-For-You Fixes" },
-                      { icon: "📅", title: "Weekly Updates" },
-                      { icon: "👤", title: "Dedicated Manager" },
-                      { icon: "🔔", title: "Competitor Alerts" },
-                    ]
-                  : [
-                      { icon: "⭐", title: "Get More Reviews" },
-                      { icon: "📈", title: "Monthly Progress" },
-                      { icon: "🔔", title: "Competitor Alerts" },
-                      { icon: "💬", title: "Review Monitoring" },
-                      { icon: "🛠️", title: "Fix Guides" },
-                      { icon: "🏆", title: "Rank Tracking" },
-                    ]
-                ).map((f) => (
-                  <div
-                    key={f.title}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      marginBottom: 6,
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 8,
-                        flexShrink: 0,
-                        background: "#0D0F0E",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 13,
-                      }}
-                    >
-                      {f.icon}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "#B0BDB9",
-                      }}
-                    >
-                      {f.title}
-                    </div>
-                  </div>
-                ))}
+                <button
+                  onClick={() => { setShowReviewModal(true); setReviewSent(false); setReviewError(""); setReviewContact(""); setReviewYelpUrl(data?.yelpUrl || ""); }}
+                  style={{
+                    width: "100%",
+                    padding: "8px 0",
+                    borderRadius: 8,
+                    border: "none",
+                    background: "#1ABC9C",
+                    color: "#000",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  Start Getting Reviews →
+                </button>
               </div>
             )}
           </div>
@@ -3280,54 +3241,6 @@ function DashboardContent() {
             ref={heroRef}
             className={`rc-hero-sticky${compactHero ? " rc-hero-compact" : ""}`}
           >
-            {/* ── GLOBAL GROWTH ACTION BAR ────────────────────── */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, #121f1c 0%, #0e1b17 100%)",
-                border: "1px solid rgba(26,188,156,0.22)",
-                borderRadius: 16,
-                padding: "12px 20px",
-                marginBottom: 10,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 16,
-                flexWrap: "wrap" as const,
-                boxShadow: "0 0 18px rgba(26,188,156,0.06)",
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}>
-                  <span style={{ fontSize: 12, color: "#1ABC9C", fontWeight: 700, letterSpacing: 0.3 }}>
-                    ⭐ AI visibility recommendation
-                  </span>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3", marginBottom: 4 }}>
-                  Get more Google reviews this week to improve patient discovery
-                </div>
-                <div style={{ fontSize: 11, color: "rgba(240,235,227,0.35)", lineHeight: 1.4 }}>
-                  Clinics using automated review requests often begin improving local visibility within 2–4 weeks.
-                </div>
-              </div>
-              <button
-                onClick={() => { setShowReviewModal(true); setReviewSent(false); setReviewError(""); setReviewContact(""); setReviewYelpUrl(data?.yelpUrl || ""); }}
-                style={{
-                  background: "linear-gradient(135deg, #1ABC9C, #16a085)",
-                  border: "none",
-                  borderRadius: 10,
-                  padding: "11px 22px",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: "#000",
-                  cursor: "pointer",
-                  whiteSpace: "nowrap" as const,
-                  boxShadow: "0 4px 16px rgba(26,188,156,0.35)",
-                  flexShrink: 0,
-                }}
-              >
-                Start Getting More Reviews →
-              </button>
-            </div>
             {(userRank == null || userRank > 3) &&
               (() => {
                 const [lostLow, lostHigh] =
