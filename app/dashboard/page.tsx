@@ -1143,6 +1143,7 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshDone, setRefreshDone] = useState(false);
   const [refreshError, setRefreshError] = useState("");
   const [loadingStep, setLoadingStep] = useState(0);
   const [reviews, setReviews] = useState<ReviewData | null>(null);
@@ -1598,6 +1599,7 @@ function DashboardContent() {
   const handleRefresh = () => {
     if (refreshing) return;
     setRefreshing(true);
+    setRefreshDone(false);
     setRefreshError("");
     fetch(`${auditQuery}&force=true`)
       .then((res) => res.json())
@@ -1607,6 +1609,8 @@ function DashboardContent() {
           return;
         }
         setData(d);
+        setRefreshDone(true);
+        setTimeout(() => setRefreshDone(false), 3000);
       })
       .catch(() =>
         setRefreshError("Refresh unavailable — showing last known data."),
@@ -2059,7 +2063,7 @@ function DashboardContent() {
                 lineHeight: 1.4,
               }}
             >
-              We&apos;re analysing how patients discover your clinic online.
+              We&apos;re analysing your clinic — this usually takes under 30 seconds.
             </div>
           </div>
 
@@ -2210,7 +2214,7 @@ function DashboardContent() {
             maxWidth: 480,
           }}
         >
-          {error}
+          We couldn&apos;t find your clinic on Google Maps. Please check your website URL.
         </div>
         <div
           style={{
@@ -2219,24 +2223,41 @@ function DashboardContent() {
             maxWidth: 400,
           }}
         >
-          RootCanal is built for dental clinics. Enter your clinic&apos;s
-          website URL to get your free Google ranking report.
+          {error}
         </div>
-        <a
-          href="/"
-          style={{
-            background: "#1ABC9C",
-            color: "#000",
-            padding: "12px 28px",
-            borderRadius: 8,
-            fontWeight: 700,
-            textDecoration: "none",
-            fontSize: 14,
-            marginTop: 8,
-          }}
-        >
-          ← Enter Your Clinic URL
-        </a>
+        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: "#1ABC9C",
+              color: "#000",
+              padding: "12px 28px",
+              borderRadius: 8,
+              fontWeight: 700,
+              fontSize: 14,
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            Try Again
+          </button>
+          <a
+            href="/"
+            style={{
+              background: "transparent",
+              color: "#6B7B78",
+              padding: "12px 28px",
+              borderRadius: 8,
+              fontWeight: 600,
+              textDecoration: "none",
+              fontSize: 14,
+              border: "1px solid #2A3330",
+            }}
+          >
+            ← Enter Your Clinic URL
+          </a>
+        </div>
       </div>
     );
 
@@ -2958,7 +2979,7 @@ function DashboardContent() {
                 opacity: 0.8,
               }}
             >
-              Unlock Growth Plan
+              Start Free Trial — Full Access →
             </button>
           )}
         </div>
@@ -3010,10 +3031,10 @@ function DashboardContent() {
                     },
                   ]
                 : []),
-              { id: "score", label: "🧠 Intelligence", freeVisible: false },
+              { id: "score", label: "💰 ROI Calculator", freeVisible: false },
             ] as const
           )
-            .filter((item) => isPro || isGrowth || item.freeVisible)
+            .filter((item) => isTrial || isPro || isGrowth || item.freeVisible)
             .map((item) => (
               <button
                 key={item.id}
@@ -3280,23 +3301,27 @@ function DashboardContent() {
                         {" · "}
                         <span style={{ color: "#F0A500" }}>{fmt(revLow)}–{fmt(revHigh)} impact</span>
                       </span>
-                      <button
-                        onClick={() => openUpgradeModal()}
-                        style={{
-                          flexShrink: 0,
-                          background: "rgba(26,188,156,0.12)",
-                          border: "1px solid rgba(26,188,156,0.3)",
-                          borderRadius: 8,
-                          padding: "6px 14px",
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: "#1ABC9C",
-                          cursor: "pointer",
-                          whiteSpace: "nowrap" as const,
-                        }}
-                      >
-                        Unlock Growth Plan →
-                      </button>
+                      {isTrial || isPro || isGrowth ? (
+                        <span style={{ fontSize: 12, color: "#1ABC9C", fontWeight: 600, flexShrink: 0 }}>✅ Full access active</span>
+                      ) : (
+                        <button
+                          onClick={() => openUpgradeModal()}
+                          style={{
+                            flexShrink: 0,
+                            background: "rgba(26,188,156,0.12)",
+                            border: "1px solid rgba(26,188,156,0.3)",
+                            borderRadius: 8,
+                            padding: "6px 14px",
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: "#1ABC9C",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap" as const,
+                          }}
+                        >
+                          Start Free Trial — Full Access →
+                        </button>
+                      )}
                     </div>
                   );
                 }
@@ -3409,44 +3434,70 @@ function DashboardContent() {
                       </div>
                     </div>
                     <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                          border: "1px solid rgba(26,188,156,0.35)",
-                          borderRadius: 20,
-                          padding: "3px 10px",
-                          fontSize: 11,
-                          color: "#1ABC9C",
-                          fontWeight: 500,
-                          whiteSpace: "nowrap" as const,
-                        }}
-                      >
-                        Recommended next step → Send review requests
-                      </div>
-                      <button
-                        onClick={() => openUpgradeModal()}
-                        style={{
-                          background: "linear-gradient(135deg, #1ABC9C, #16a085)",
-                          border: "none",
-                          borderRadius: 10,
-                          padding: "14px 24px",
-                          fontSize: 15,
-                          fontWeight: 700,
-                          color: "#000",
-                          cursor: "pointer",
-                          fontFamily: "'DM Sans', sans-serif",
-                          whiteSpace: "nowrap" as const,
-                          boxShadow: "0 4px 20px rgba(26,188,156,0.3)",
-                          opacity: 0.85,
-                        }}
-                      >
-                        Unlock Growth Plan →
-                      </button>
-                      <div style={{ fontSize: 11, color: "rgba(240,235,227,0.30)", textAlign: "center" }}>
-                        Takes less than 2 minutes to start.
-                      </div>
+                      {isTrial || isPro || isGrowth ? (
+                        <>
+                          <span style={{ fontSize: 13, color: "#1ABC9C", fontWeight: 700 }}>✅ Full access active</span>
+                          <button
+                            onClick={() => navigateToTab("reviews")}
+                            style={{
+                              background: "linear-gradient(135deg, #1ABC9C, #16a085)",
+                              border: "none",
+                              borderRadius: 10,
+                              padding: "14px 24px",
+                              fontSize: 15,
+                              fontWeight: 700,
+                              color: "#000",
+                              cursor: "pointer",
+                              fontFamily: "'DM Sans', sans-serif",
+                              whiteSpace: "nowrap" as const,
+                              boxShadow: "0 4px 20px rgba(26,188,156,0.3)",
+                            }}
+                          >
+                            Send Review Requests →
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              border: "1px solid rgba(26,188,156,0.35)",
+                              borderRadius: 20,
+                              padding: "3px 10px",
+                              fontSize: 11,
+                              color: "#1ABC9C",
+                              fontWeight: 500,
+                              whiteSpace: "nowrap" as const,
+                            }}
+                          >
+                            Recommended next step → Send review requests
+                          </div>
+                          <button
+                            onClick={() => openUpgradeModal()}
+                            style={{
+                              background: "linear-gradient(135deg, #1ABC9C, #16a085)",
+                              border: "none",
+                              borderRadius: 10,
+                              padding: "14px 24px",
+                              fontSize: 15,
+                              fontWeight: 700,
+                              color: "#000",
+                              cursor: "pointer",
+                              fontFamily: "'DM Sans', sans-serif",
+                              whiteSpace: "nowrap" as const,
+                              boxShadow: "0 4px 20px rgba(26,188,156,0.3)",
+                              opacity: 0.85,
+                            }}
+                          >
+                            Start Free Trial — Full Access →
+                          </button>
+                          <div style={{ fontSize: 11, color: "rgba(240,235,227,0.30)", textAlign: "center" }}>
+                            Takes less than 2 minutes to start.
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
@@ -3508,7 +3559,7 @@ function DashboardContent() {
                   <polyline points="23 4 23 10 17 10" />
                   <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                 </svg>
-                {refreshing ? "Refreshing…" : "Refresh visibility data"}
+                {refreshing ? "Refreshing…" : refreshDone ? "Updated ✓" : "Refresh visibility data"}
               </button>
             </div>
           </div>
@@ -3906,8 +3957,8 @@ function DashboardContent() {
                 },
                 {
                   id: "score",
-                  label: "🧠",
-                  sublabel: "Intel",
+                  label: "💰",
+                  sublabel: "ROI",
                   freeVisible: false,
                 },
                 {
@@ -3918,7 +3969,7 @@ function DashboardContent() {
                 },
               ] as const
             )
-              .filter((tab) => isPro || isGrowth || tab.freeVisible)
+              .filter((tab) => isTrial || isPro || isGrowth || tab.freeVisible)
               .map((tab) => (
                 <button
                   key={tab.id}
@@ -4768,7 +4819,7 @@ function DashboardContent() {
                           0,
                           (reviews?.total || 0) - (comp.reviews || 0),
                         ); // review lead over this competitor
-                        const isLocked = !isPro;
+                        const isLocked = !isPro && !isTrial && !isGrowth;
                         const urgency =
                           gap <= 10 ? "high" : gap <= 30 ? "medium" : "low";
                         const catchUpTime =
@@ -4986,7 +5037,7 @@ function DashboardContent() {
 
                 const stepsToShow = pinnedAheadComps;
                 // Free users: show next step + 2 upcoming, collapse the rest
-                const freeUser = !isPro && !isGrowth;
+                const freeUser = !isPro && !isGrowth && !isTrial;
                 const visibleSteps = freeUser
                   ? stepsToShow.slice(0, 3)
                   : stepsToShow;
@@ -5271,7 +5322,7 @@ function DashboardContent() {
                           alignItems: "center",
                           gap: 14,
                           marginTop: 12,
-                          opacity: isPro ? 1 : 0.5,
+                          opacity: isPro || isTrial || isGrowth ? 1 : 0.5,
                         }}
                       >
                         <div
@@ -5304,15 +5355,9 @@ function DashboardContent() {
                               ? `Rank #1 in ${displayCity}`
                               : `Top 3 in ${displayCity}`}
                           </div>
-                          {isGrowth ? (
+                          {isGrowth || isTrial || isPro ? (
                             <div style={{ fontSize: 12, color: "#2ECC71" }}>
-                              ✅ Full growth plan is active — keep following the
-                              steps above!
-                            </div>
-                          ) : isPro ? (
-                            <div style={{ fontSize: 12, color: "#6B7B78" }}>
-                              🚀 Get a done-for-you plan to accelerate patient
-                              growth
+                              ✅ Full access active — keep following the steps above!
                             </div>
                           ) : (
                             <div style={{ fontSize: 12, color: "#6B7B78" }}>
@@ -5321,11 +5366,11 @@ function DashboardContent() {
                             </div>
                           )}
                         </div>
-                        {!isGrowth && (
+                        {!isGrowth && !isTrial && !isPro && (
                           <button
                             onClick={() => openUpgradeModal()}
                             style={{
-                              background: isPro ? "#D4A843" : "#2ECC71",
+                              background: "#2ECC71",
                               color: "#000",
                               border: "none",
                               padding: "8px 16px",
@@ -5337,9 +5382,7 @@ function DashboardContent() {
                               flexShrink: 0,
                             }}
                           >
-                            {isPro
-                              ? "See Full Growth Plan →"
-                              : "Unlock Your Growth Plan →"}
+                            Start Free Trial — Full Access →
                           </button>
                         )}
                       </div>
@@ -6037,7 +6080,7 @@ function DashboardContent() {
                     fontWeight: 700,
                   }}
                 >
-                  🧠 Growth Intelligence
+                  💰 ROI Calculator
                 </div>
                 <span
                   style={{
