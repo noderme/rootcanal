@@ -1149,7 +1149,7 @@ function DashboardContent() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "competitors" | "roadmap" | "reviews" | "score" | "health"
-  >("competitors");
+  >("roadmap");
   const [competitorPage, setCompetitorPage] = useState(0);
   const [compView, setCompView] = useState<"list" | "map">("map");
   const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
@@ -3005,7 +3005,7 @@ function DashboardContent() {
                 ? [
                     {
                       id: "health" as const,
-                      label: "🔧 Health",
+                      label: "🔍 Visibility Signals",
                       freeVisible: true,
                     },
                   ]
@@ -3045,38 +3045,8 @@ function DashboardContent() {
               </button>
             ))}
 
-          {/* GIVE FEEDBACK */}
-          <div className="rc-sidebar-feedback" style={{ padding: "0 12px 8px", marginTop: "auto" }}>
-            <button
-              onClick={() => setShowFeedbackModal(true)}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                background: "transparent",
-                border: "1px solid #2A3330",
-                borderRadius: 8,
-                color: "#4A5A57",
-                fontSize: 12,
-                cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                textAlign: "left",
-                transition: "all 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.target as HTMLButtonElement).style.color = "#6B7B78";
-                (e.target as HTMLButtonElement).style.borderColor = "#3A4A47";
-              }}
-              onMouseLeave={(e) => {
-                (e.target as HTMLButtonElement).style.color = "#4A5A57";
-                (e.target as HTMLButtonElement).style.borderColor = "#2A3330";
-              }}
-            >
-              💬 Give Feedback
-            </button>
-          </div>
-
-          {/* SIDEBAR FEATURE BLOCK */}
-          <div style={{ padding: "0 12px 12px" }}>
+          {/* SIDEBAR FEATURE BLOCK — sits directly below nav links */}
+          <div style={{ padding: "16px 12px 0" }}>
             {isGrowth ? (
               <div
                 style={{
@@ -3158,6 +3128,36 @@ function DashboardContent() {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* GIVE FEEDBACK — stays at bottom */}
+          <div className="rc-sidebar-feedback" style={{ padding: "0 12px 8px", marginTop: "auto" }}>
+            <button
+              onClick={() => setShowFeedbackModal(true)}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                background: "transparent",
+                border: "1px solid #2A3330",
+                borderRadius: 8,
+                color: "#4A5A57",
+                fontSize: 12,
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                textAlign: "left",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.color = "#6B7B78";
+                (e.target as HTMLButtonElement).style.borderColor = "#3A4A47";
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.color = "#4A5A57";
+                (e.target as HTMLButtonElement).style.borderColor = "#2A3330";
+              }}
+            >
+              💬 Give Feedback
+            </button>
           </div>
         </aside>
 
@@ -3243,7 +3243,7 @@ function DashboardContent() {
           {/* ── PATIENT LOSS HERO CARD ───────────────────────── */}
           <div
             ref={heroRef}
-            className={`rc-hero-sticky${(compactHero || activeTab === "competitors") ? " rc-hero-compact" : ""}`}
+            className={`rc-hero-sticky${compactHero ? " rc-hero-compact" : ""}`}
           >
             {(userRank == null || userRank > 3) &&
               (() => {
@@ -3258,6 +3258,49 @@ function DashboardContent() {
                 const revLow = lostLow * patientValue;
                 const revHigh = lostHigh * patientValue;
                 const fmt = (n: number) => "$" + n.toLocaleString();
+
+                // Competitors tab: single-line compact strip
+                if (activeTab === "competitors") {
+                  return (
+                    <div
+                      style={{
+                        background: "linear-gradient(135deg, #1a0a0a 0%, #200d00 100%)",
+                        border: "1px solid rgba(231,76,60,0.3)",
+                        borderRadius: 12,
+                        padding: "10px 18px",
+                        marginBottom: 10,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: "rgba(240,235,227,0.7)", whiteSpace: "nowrap" as const, overflow: "hidden", textOverflow: "ellipsis" }}>
+                        📍 <span style={{ color: "#E74C3C", fontWeight: 700 }}>{lostLow}–{lostHigh} patients/month missed</span>
+                        {" · "}
+                        <span style={{ color: "#F0A500" }}>{fmt(revLow)}–{fmt(revHigh)} impact</span>
+                      </span>
+                      <button
+                        onClick={() => openUpgradeModal()}
+                        style={{
+                          flexShrink: 0,
+                          background: "rgba(26,188,156,0.12)",
+                          border: "1px solid rgba(26,188,156,0.3)",
+                          borderRadius: 8,
+                          padding: "6px 14px",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#1ABC9C",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap" as const,
+                        }}
+                      >
+                        Unlock Growth Plan →
+                      </button>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     className="card rc-hero-card"
@@ -4081,8 +4124,8 @@ function DashboardContent() {
                 },
                 {
                   id: "health",
-                  label: "🔧",
-                  sublabel: "Health",
+                  label: "🔍",
+                  sublabel: "Signals",
                   freeVisible: false,
                 },
               ] as const
