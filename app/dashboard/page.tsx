@@ -4721,13 +4721,22 @@ function DashboardContent() {
 
                 // Competitors with lower googleRank number = ranked above user on Google.
                 // Sort: closest rank first (rank just below user → all the way to #1)
+                const myReviews = reviews?.total || 0;
+                const gapTier = (c: { reviews: number }) => {
+                  const gap = Math.max(0, (c.reviews || 0) - myReviews);
+                  return gap < 30 ? 0 : gap < 150 ? 1 : 2;
+                };
                 const aheadComps = [...data.competitors]
                   .filter((c) =>
                     typeof userRank === "number"
                       ? c.googleRank < userRank
                       : false,
                   )
-                  .sort((a, b) => b.googleRank - a.googleRank);
+                  .sort((a, b) => {
+                    const tierDiff = gapTier(a) - gapTier(b);
+                    if (tierDiff !== 0) return tierDiff; // easiest tier first
+                    return b.googleRank - a.googleRank;  // within tier: closest rank first
+                  });
 
                 // Competitors ranked below user — closest threat first (rank just below user)
                 const behindComps = [...data.competitors]
