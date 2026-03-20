@@ -54,6 +54,11 @@ interface AuditResult {
   scannedAt: string;
   userRank?: number;
   userReviewCount?: number;
+  userRating?: number;
+  gbpPhotoCount?: number;
+  gbpHasHours?: boolean;
+  gbpHasWebsite?: boolean;
+  gbpHasPhone?: boolean;
   yelpRating?: number;
   yelpReviewCount?: number;
   yelpUrl?: string;
@@ -597,8 +602,13 @@ export async function GET(request: NextRequest) {
     let clinicPlaceId = "";
     let clinicName: string | undefined;
     let clinicReviewCount: number | undefined;
+    let clinicRating: number | undefined;
     let clinicLat: number | undefined;
     let clinicLng: number | undefined;
+    let gbpPhotoCount = 0;
+    let gbpHasHours = false;
+    let gbpHasWebsite = false;
+    let gbpHasPhone = false;
     try {
       const clinicSearchName = hasWebsite
         ? url
@@ -653,6 +663,10 @@ export async function GET(request: NextRequest) {
         user_ratings_total?: number;
         formatted_address?: string;
         geometry?: { location?: { lat?: number; lng?: number } };
+        website?: string;
+        formatted_phone_number?: string;
+        opening_hours?: { periods?: unknown[] };
+        photos?: unknown[];
       } | null = null;
 
       // Strategy 0: reuse placeId already found during city detection (most reliable)
@@ -661,7 +675,7 @@ export async function GET(request: NextRequest) {
         if (matched) {
           // Fetch full details for this placeId
           const s0Res = await fetch(
-            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cityDetectionPlaceId}&fields=place_id,name,rating,user_ratings_total,formatted_address,geometry&key=${apiKey}`,
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${cityDetectionPlaceId}&fields=place_id,name,rating,user_ratings_total,formatted_address,geometry,website,formatted_phone_number,opening_hours,photos&key=${apiKey}`,
           );
           const s0Data = await s0Res.json();
           const s0Place = s0Data.result;
@@ -753,6 +767,23 @@ export async function GET(request: NextRequest) {
 
       console.log("🔑 Final placeId:", clinicPlaceId || "NOT FOUND");
 
+      // For strategies 1 & 2, the place object came from a search result which
+      // lacks extended fields. Fetch them now if we have a placeId and the
+      // extended fields aren't already present.
+      if (clinicPlaceId && place && !("opening_hours" in place) && !("photos" in place)) {
+        try {
+          const extRes = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${clinicPlaceId}&fields=website,formatted_phone_number,opening_hours,photos&key=${apiKey}`,
+          );
+          const extData = await extRes.json();
+          if (extData.result) {
+            place = { ...place, ...extData.result };
+          }
+        } catch {
+          // non-critical — GBP signals will just show as unknown
+        }
+      }
+
       if (!place?.place_id) {
         issues.push({
           title: "Google Business Profile not found",
@@ -777,8 +808,13 @@ export async function GET(request: NextRequest) {
       }
       if (place?.name) clinicName = place.name;
       if (place?.user_ratings_total != null) clinicReviewCount = place.user_ratings_total;
+      if (place?.rating != null) clinicRating = place.rating;
       if (place?.geometry?.location?.lat != null) clinicLat = place.geometry.location.lat;
       if (place?.geometry?.location?.lng != null) clinicLng = place.geometry.location.lng;
+      gbpPhotoCount = place?.photos ? (place.photos as unknown[]).length : 0;
+      gbpHasHours = !!(place?.opening_hours?.periods?.length);
+      gbpHasWebsite = !!(place?.website);
+      gbpHasPhone = !!(place?.formatted_phone_number);
     } catch (gbpError) {
       console.error("GBP check error:", gbpError);
     }
@@ -1089,6 +1125,11 @@ export async function GET(request: NextRequest) {
       userLng: clinicLng,
       userRank,
       userReviewCount: clinicReviewCount,
+      userRating: clinicRating,
+      gbpPhotoCount,
+      gbpHasHours,
+      gbpHasWebsite,
+      gbpHasPhone,
       yelpRating,
       yelpReviewCount,
       yelpUrl,
@@ -1222,6 +1263,46 @@ export async function GET(request: NextRequest) {
       else console.log("✅ Scan saved to Supabase:", url, city);
     } catch (dbErr) {
       console.error("Supabase error:", dbErr);
+    }
+
+    // ── 5b. REVIEW SNAPSHOTS (one row per clinic per day) ─────────────────
+    try {
+      const clinicKey = hasWebsite ? url : cacheKey;
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+      // Clinic snapshot — ignore conflict if already recorded today
+      if (clinicReviewCount != null) {
+        await supabase.from("review_snapshots").upsert(
+          {
+            clinic_url: clinicKey,
+            place_id: clinicPlaceId || null,
+            review_count: clinicReviewCount,
+            rating: clinicRating != null ? clinicRating : null,
+            snapshot_date: today,
+          },
+          { onConflict: "clinic_url,snapshot_date", ignoreDuplicates: true },
+        );
+      }
+
+      // Competitor snapshots — one row per competitor per day
+      for (const comp of competitors) {
+        await supabase.from("competitor_snapshots").upsert(
+          {
+            clinic_url: clinicKey,
+            competitor_name: comp.name,
+            place_id: null, // not fetched per-competitor during audit
+            review_count: comp.reviews ?? null,
+            rating: comp.rating ?? null,
+            google_rank: comp.googleRank ?? null,
+            snapshot_date: today,
+          },
+          { onConflict: "clinic_url,competitor_name,snapshot_date", ignoreDuplicates: true },
+        );
+      }
+
+      console.log("✅ Review snapshots saved for", clinicKey);
+    } catch (snapErr) {
+      console.error("Snapshot insert error:", snapErr);
     }
 
     result.lastUpdatedAt = result.scannedAt;

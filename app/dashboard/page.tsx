@@ -72,6 +72,11 @@ interface AuditData {
   userLng?: number;
   userRank?: number;
   userReviewCount?: number;
+  userRating?: number;
+  gbpPhotoCount?: number;
+  gbpHasHours?: boolean;
+  gbpHasWebsite?: boolean;
+  gbpHasPhone?: boolean;
   yelpRating?: number;
   yelpReviewCount?: number;
   yelpUrl?: string;
@@ -1154,6 +1159,7 @@ function DashboardContent() {
   const [reviewSending, setReviewSending] = useState(false);
   const [reviewSent, setReviewSent] = useState(false);
   const [reviewError, setReviewError] = useState("");
+  const [reviewVelocity, setReviewVelocity] = useState<{ gained: number; days: number } | null>(null);
   const [reviewPlatform, setReviewPlatform] = useState<
     "google" | "yelp" | "both"
   >("google");
@@ -1607,6 +1613,45 @@ function DashboardContent() {
       )
       .finally(() => setRefreshing(false));
   };
+
+  // Review velocity — fetch once when clinic URL is known
+  useEffect(() => {
+    if (!data?.url) return;
+    const clinicUrl = data.url;
+    (async () => {
+      // Most recent snapshot
+      const { data: recent } = await supabase
+        .from("review_snapshots")
+        .select("review_count, snapshot_date")
+        .eq("clinic_url", clinicUrl)
+        .order("snapshot_date", { ascending: false })
+        .limit(1)
+        .single();
+      if (!recent || recent.review_count == null) return;
+
+      const recentDate = new Date(recent.snapshot_date);
+      const cutoff = new Date(recentDate);
+      cutoff.setDate(cutoff.getDate() - 30);
+      const cutoffStr = cutoff.toISOString().split("T")[0];
+
+      const { data: older } = await supabase
+        .from("review_snapshots")
+        .select("review_count, snapshot_date")
+        .eq("clinic_url", clinicUrl)
+        .lte("snapshot_date", cutoffStr)
+        .order("snapshot_date", { ascending: false })
+        .limit(1)
+        .single();
+      if (!older || older.review_count == null) return;
+
+      const gained = recent.review_count - older.review_count;
+      const diffDays = Math.round(
+        (recentDate.getTime() - new Date(older.snapshot_date).getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+      setReviewVelocity({ gained, days: diffDays });
+    })();
+  }, [data?.url]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compact hero + scroll listener
   useEffect(() => {
@@ -2217,6 +2262,8 @@ function DashboardContent() {
   const failIssues = data.issues.filter((i) => i.status === "fail");
   const passIssues = data.issues.filter((i) => i.status === "pass");
   const warnIssues = data.issues.filter((i) => i.status === "warn");
+  // Full Health tab access: trial users, pro, and growth subscribers
+  const hasHealthAccess = isTrial || isPro || isGrowth;
 
   const userRank =
     data.userRank ??
@@ -2956,7 +3003,7 @@ function DashboardContent() {
                     {
                       id: "health" as const,
                       label: "🔧 Health",
-                      freeVisible: false,
+                      freeVisible: true,
                     },
                   ]
                 : []),
@@ -4249,15 +4296,28 @@ function DashboardContent() {
                         gap: 8,
                       }}
                     >
-                      <div
-                        style={{
-                          fontFamily: "'Playfair Display', serif",
-                          fontSize: 16,
-                          fontWeight: 700,
-                          color: "#F0EBE3",
-                        }}
-                      >
-                        Local Ranking
+                      <div>
+                        <div
+                          style={{
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: 16,
+                            fontWeight: 700,
+                            color: "#F0EBE3",
+                          }}
+                        >
+                          Local Ranking
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: "#4A5A58",
+                            marginTop: 3,
+                            maxWidth: 480,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          Rankings are measured within a 5km radius of your clinic. Google also weighs proximity and profile completeness — which is why some newer listings may rank above clinics with more reviews.
+                        </div>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
                         {competitionIntensity && (
@@ -4499,6 +4559,23 @@ function DashboardContent() {
                                   }}
                                 >
                                   Newly observed
+                                </span>
+                              )}
+                              {(!comp.reviews || comp.reviews === 0 || !comp.rating || comp.rating === 0) && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 500,
+                                    padding: "1px 6px",
+                                    borderRadius: 10,
+                                    background: "rgba(107,123,120,0.10)",
+                                    color: "#5A6B68",
+                                    fontFamily: "'DM Mono', monospace",
+                                    whiteSpace: "nowrap",
+                                    border: "1px solid rgba(107,123,120,0.18)",
+                                  }}
+                                >
+                                  New listing
                                 </span>
                               )}
                             </div>
@@ -5929,6 +6006,20 @@ function DashboardContent() {
                             <div style={{ fontSize: 11, color: "#6B7B78" }}>
                               Your reviews
                             </div>
+                            {reviewVelocity != null && (
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  marginTop: 4,
+                                  color: reviewVelocity.gained > 0 ? "#2ECC71" : "#6B7B78",
+                                  fontFamily: "'DM Mono', monospace",
+                                }}
+                              >
+                                {reviewVelocity.gained > 0
+                                  ? `+${reviewVelocity.gained} in last ${reviewVelocity.days}d`
+                                  : `0 new in last ${reviewVelocity.days}d`}
+                              </div>
+                            )}
                           </div>
                           <div style={{ fontSize: 20, color: "#2A3330" }}>
                             vs
@@ -6351,7 +6442,7 @@ function DashboardContent() {
                     fontWeight: 700,
                   }}
                 >
-                  🔧 Website Health Check
+                  🔧 Visibility Health Check
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {failIssues.length > 0 && (
@@ -6387,284 +6478,219 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {[...failIssues, ...warnIssues, ...passIssues].map((issue, i) => {
-                const dotColor =
-                  issue.status === "fail"
-                    ? "#E74C3C"
-                    : issue.status === "warn"
+              {/* ── GBP Signals card ── */}
+              {(() => {
+                const signals = [
+                  { label: "Photos uploaded", pass: (data.gbpPhotoCount ?? 0) > 0 },
+                  { label: "Business hours set", pass: !!data.gbpHasHours },
+                  { label: "Website linked", pass: !!data.gbpHasWebsite },
+                  { label: "Phone number set", pass: !!data.gbpHasPhone },
+                  { label: "15+ Google reviews", pass: (data.userReviewCount ?? 0) >= 15 },
+                ];
+                const score = signals.filter((s) => s.pass).length;
+                const borderColor =
+                  score === 5
+                    ? "#2ECC71"
+                    : score >= 3
                       ? "#F0A500"
-                      : "#2ECC71";
-                const isExpanded = expandedIssue === i;
+                      : "#E74C3C";
+                const scoreBg =
+                  score === 5
+                    ? "rgba(46,204,113,0.1)"
+                    : score >= 3
+                      ? "rgba(240,165,0,0.1)"
+                      : "rgba(231,76,60,0.1)";
                 return (
                   <div
-                    key={i}
-                    className="issue-row"
                     style={{
-                      padding: "14px 16px",
-                      borderRadius: 10,
-                      marginBottom: 4,
-                      cursor: "pointer",
-                      transition: "background 0.2s",
-                      background: isExpanded
-                        ? "rgba(26,188,156,0.04)"
-                        : "transparent",
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 12,
+                      padding: "16px 20px",
+                      marginBottom: 16,
+                      background: "#0D0F0E",
                     }}
-                    onClick={() => setExpandedIssue(isExpanded ? null : i)}
                   >
                     <div
-                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        marginBottom: 4,
+                        gap: 12,
+                      }}
                     >
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: "50%",
-                          background: dotColor,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <div style={{ flex: 1 }}>
+                      <div>
                         <div
                           style={{
-                            fontSize: 14,
-                            fontWeight: 600,
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: 15,
+                            fontWeight: 700,
                             color: "#F0EBE3",
                           }}
                         >
-                          {issue.title}
+                          Google Business Profile Signals
                         </div>
                         <div
                           style={{
-                            fontSize: 12,
+                            fontSize: 11,
                             color: "#6B7B78",
-                            marginTop: 2,
+                            marginTop: 3,
                           }}
                         >
-                          {issue.desc}
+                          These signals directly influence your Google Maps ranking
                         </div>
-                        {isExpanded && fixGuides[issue.title] && (
-                          <div
-                            style={{
-                              marginTop: 12,
-                              background: "#0D0F0E",
-                              borderRadius: 8,
-                              padding: 16,
-                              borderLeft: `3px solid ${dotColor}`,
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: "#1ABC9C",
-                                fontWeight: 600,
-                                marginBottom: 10,
-                              }}
-                            >
-                              🛠️ HOW TO FIX THIS
-                            </div>
-                            {fixGuides[issue.title].map((step, j) => (
-                              <div
-                                key={j}
-                                style={{
-                                  display: "flex",
-                                  gap: 10,
-                                  fontSize: 12,
-                                  color: "#F0EBE3",
-                                  marginBottom: 8,
-                                  lineHeight: 1.6,
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    color: "#1ABC9C",
-                                    fontWeight: 700,
-                                    flexShrink: 0,
-                                  }}
-                                >
-                                  {j + 1}.
-                                </span>
-                                {step}
-                              </div>
-                            ))}
-                          </div>
-                        )}
                       </div>
-                      {issue.status !== "pass" && (
-                        <span
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          padding: "4px 12px",
+                          borderRadius: 20,
+                          background: scoreBg,
+                          color: borderColor,
+                          fontFamily: "'DM Mono', monospace",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {score} / 5 signals
+                      </span>
+                    </div>
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                      {signals.map(({ label, pass }) => (
+                        <div
+                          key={label}
                           style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            padding: "3px 8px",
-                            borderRadius: 4,
-                            background:
-                              issue.priority === "HIGH"
-                                ? "rgba(231,76,60,0.12)"
-                                : "rgba(240,165,0,0.12)",
-                            color:
-                              issue.priority === "HIGH" ? "#E74C3C" : "#F0A500",
-                            fontFamily: "'DM Mono', monospace",
-                            flexShrink: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            fontSize: 13,
+                            color: pass ? "#C8BFB6" : "#6B7B78",
                           }}
                         >
-                          {issue.priority}
-                        </span>
-                      )}
+                          <span style={{ fontSize: 15, lineHeight: 1 }}>
+                            {pass ? "✅" : "❌"}
+                          </span>
+                          {label}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
-              })}
+              })()}
 
-              {/* Healthgrades check */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 12,
-                  padding: "14px 0",
-                  borderTop: "1px solid #1A2421",
-                }}
-              >
-                <div
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: data.healthgradesFound
-                      ? data.healthgradesClaimed === false
-                        ? "#F0A500"
-                        : "#2ECC71"
-                      : "#E74C3C",
-                    flexShrink: 0,
-                    marginTop: 4,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: data.healthgradesFound ? "#F0EBE3" : "#E74C3C",
-                    }}
-                  >
-                    {data.healthgradesFound
-                      ? data.healthgradesClaimed === false
-                        ? "⚠️ Healthgrades Profile Unclaimed"
-                        : "Found on Healthgrades ✅"
-                      : "❌ No Healthgrades Profile — Action Required"}
-                  </div>
-                  {data.healthgradesFound && (
-                    <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-                      {data.healthgradesRating != null && (
-                        <div>
-                          <div
-                            style={{
-                              fontSize: 18,
-                              fontWeight: 900,
-                              color: "#1ABC9C",
-                              fontFamily: "'Playfair Display', serif",
-                            }}
-                          >
-                            {data.healthgradesRating.toFixed(1)} ⭐
-                          </div>
-                          <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                            Healthgrades Rating
-                          </div>
+              {(() => {
+                const allIssues = [...failIssues, ...warnIssues, ...passIssues];
+                const renderIssue = (issue: typeof allIssues[0], i: number) => {
+                  const dotColor = issue.status === "fail" ? "#E74C3C" : issue.status === "warn" ? "#F0A500" : "#2ECC71";
+                  const isExpanded = expandedIssue === i;
+                  return (
+                    <div
+                      key={i}
+                      className="issue-row"
+                      style={{ padding: "14px 16px", borderRadius: 10, marginBottom: 4, cursor: "pointer", transition: "background 0.2s", background: isExpanded ? "rgba(26,188,156,0.04)" : "transparent" }}
+                      onClick={() => setExpandedIssue(isExpanded ? null : i)}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3" }}>{issue.title}</div>
+                          <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 2 }}>{issue.desc}</div>
+                          {isExpanded && fixGuides[issue.title] && (
+                            <div style={{ marginTop: 12, background: "#0D0F0E", borderRadius: 8, padding: 16, borderLeft: `3px solid ${dotColor}` }}>
+                              <div style={{ fontSize: 12, color: "#1ABC9C", fontWeight: 600, marginBottom: 10 }}>🛠️ HOW TO FIX THIS</div>
+                              {fixGuides[issue.title].map((step, j) => (
+                                <div key={j} style={{ display: "flex", gap: 10, fontSize: 12, color: "#F0EBE3", marginBottom: 8, lineHeight: 1.6 }}>
+                                  <span style={{ color: "#1ABC9C", fontWeight: 700, flexShrink: 0 }}>{j + 1}.</span>
+                                  {step}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {data.healthgradesReviews != null && (
-                        <div>
-                          <div
-                            style={{
-                              fontSize: 18,
-                              fontWeight: 900,
-                              color: "#1ABC9C",
-                              fontFamily: "'Playfair Display', serif",
-                            }}
+                        {issue.status !== "pass" && (
+                          <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: issue.priority === "HIGH" ? "rgba(231,76,60,0.12)" : "rgba(240,165,0,0.12)", color: issue.priority === "HIGH" ? "#E74C3C" : "#F0A500", fontFamily: "'DM Mono', monospace", flexShrink: 0 }}>
+                            {issue.priority}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                };
+                return (
+                  <>
+                    {/* First item — always visible */}
+                    {allIssues.slice(0, 1).map((issue) => renderIssue(issue, 0))}
+
+                    {/* Remaining items + Healthgrades — blurred for non-trial users */}
+                    <div style={{ position: "relative" }}>
+                      <div style={!hasHealthAccess ? { filter: "blur(4px)", pointerEvents: "none", userSelect: "none" } : {}}>
+                        {allIssues.slice(1).map((issue, idx) => renderIssue(issue, idx + 1))}
+
+                        {/* Healthgrades check */}
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 0", borderTop: "1px solid #1A2421" }}>
+                          <div style={{ width: 10, height: 10, borderRadius: "50%", background: data.healthgradesFound ? (data.healthgradesClaimed === false ? "#F0A500" : "#2ECC71") : "#E74C3C", flexShrink: 0, marginTop: 4 }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: data.healthgradesFound ? "#F0EBE3" : "#E74C3C" }}>
+                              {data.healthgradesFound ? (data.healthgradesClaimed === false ? "⚠️ Healthgrades Profile Unclaimed" : "Found on Healthgrades ✅") : "❌ No Healthgrades Profile — Action Required"}
+                            </div>
+                            {data.healthgradesFound && (
+                              <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
+                                {data.healthgradesRating != null && (
+                                  <div>
+                                    <div style={{ fontSize: 18, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>{data.healthgradesRating.toFixed(1)} ⭐</div>
+                                    <div style={{ fontSize: 11, color: "#6B7B78" }}>Healthgrades Rating</div>
+                                  </div>
+                                )}
+                                {data.healthgradesReviews != null && (
+                                  <div>
+                                    <div style={{ fontSize: 18, fontWeight: 900, color: "#1ABC9C", fontFamily: "'Playfair Display', serif" }}>{data.healthgradesReviews}</div>
+                                    <div style={{ fontSize: 11, color: "#6B7B78" }}>Healthgrades Reviews</div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 4 }}>
+                              {data.healthgradesFound ? (data.healthgradesClaimed === false ? "Unclaimed profiles lose ~15% of patient trust — anyone can edit yours and it appears abandoned. Claiming takes 5 minutes." : "A verified Healthgrades profile captures additional inquiries from the ~25% of patients who check it before booking.") : "1 in 4 patients checks Healthgrades before choosing a dentist. Without a profile, you're invisible to that entire audience."}
+                            </div>
+                            {data.healthgradesFound && data.healthgradesUrl && (
+                              <a href={data.healthgradesUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, fontSize: 11, fontWeight: 700, color: "#1ABC9C", textDecoration: "underline" }}>
+                                View your Healthgrades profile →
+                              </a>
+                            )}
+                            {!data.healthgradesFound && (
+                              <a href="https://www.healthgrades.com/office-registration" target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 6, fontSize: 11, fontWeight: 700, color: "#1ABC9C", textDecoration: "underline" }}>
+                                Create your free Healthgrades profile →
+                              </a>
+                            )}
+                          </div>
+                          {!data.healthgradesFound && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "rgba(231,76,60,0.12)", color: "#E74C3C", fontFamily: "'DM Mono', monospace", flexShrink: 0 }}>HIGH</span>
+                          )}
+                          {data.healthgradesClaimed === false && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: "rgba(240,165,0,0.12)", color: "#F0A500", fontFamily: "'DM Mono', monospace", flexShrink: 0 }}>MED</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Overlay CTA for non-trial users */}
+                      {!hasHealthAccess && (
+                        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, textAlign: "center", padding: 24, background: "rgba(13,15,14,0.82)", borderRadius: 10, backdropFilter: "blur(2px)" }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: "#F0EBE3" }}>
+                            Start your free 7-day trial to see your full health report
+                          </div>
+                          <button
+                            onClick={() => setShowSaveBanner(true)}
+                            style={{ padding: "9px 20px", borderRadius: 8, border: "none", background: "#1ABC9C", color: "#000", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
                           >
-                            {data.healthgradesReviews}
-                          </div>
-                          <div style={{ fontSize: 11, color: "#6B7B78" }}>
-                            Healthgrades Reviews
-                          </div>
+                            Start Free Trial →
+                          </button>
                         </div>
                       )}
                     </div>
-                  )}
-                  <div style={{ fontSize: 12, color: "#6B7B78", marginTop: 4 }}>
-                    {data.healthgradesFound
-                      ? data.healthgradesClaimed === false
-                        ? "Unclaimed profiles lose ~15% of patient trust — anyone can edit yours and it appears abandoned. Claiming takes 5 minutes."
-                        : "A verified Healthgrades profile captures additional inquiries from the ~25% of patients who check it before booking."
-                      : "1 in 4 patients checks Healthgrades before choosing a dentist. Without a profile, you're invisible to that entire audience."}
-                  </div>
-                  {data.healthgradesFound && data.healthgradesUrl && (
-                    <a
-                      href={data.healthgradesUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-block",
-                        marginTop: 6,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "#1ABC9C",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      View your Healthgrades profile →
-                    </a>
-                  )}
-                  {!data.healthgradesFound && (
-                    <a
-                      href="https://www.healthgrades.com/office-registration"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: "inline-block",
-                        marginTop: 6,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "#1ABC9C",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      Create your free Healthgrades profile →
-                    </a>
-                  )}
-                </div>
-                {!data.healthgradesFound && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: "3px 8px",
-                      borderRadius: 4,
-                      background: "rgba(231,76,60,0.12)",
-                      color: "#E74C3C",
-                      fontFamily: "'DM Mono', monospace",
-                      flexShrink: 0,
-                    }}
-                  >
-                    HIGH
-                  </span>
-                )}
-                {data.healthgradesClaimed === false && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      padding: "3px 8px",
-                      borderRadius: 4,
-                      background: "rgba(240,165,0,0.12)",
-                      color: "#F0A500",
-                      fontFamily: "'DM Mono', monospace",
-                      flexShrink: 0,
-                    }}
-                  >
-                    MED
-                  </span>
-                )}
-              </div>
+                  </>
+                );
+              })()}
 
               <div
                 style={{
@@ -6673,46 +6699,76 @@ function DashboardContent() {
                   borderTop: "1px solid #2A3330",
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 700,
-                    marginBottom: 16,
-                    color: "#F0A500",
-                  }}
-                >
-                  ⚡ Easy Wins — Do These This Week
-                </div>
-                {[
-                  "Add 'dentist + your city' to your homepage title — helps Google connect your site to local searches",
-                  "Complete your Google Business Profile — complete profiles attract significantly more clicks than incomplete ones",
-                  "Ask your last 10 patients for a Google review — consistent reviews are the fastest way to improve local visibility",
-                  "Add your clinic hours to Google — missing hours cause patients to choose a clinic they can verify is open",
-                  "Upload 10+ photos to Google Business — listings with photos consistently attract more engagement",
-                ].map((tip, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "flex-start",
-                      padding: "8px 0",
-                      fontSize: 13,
-                      color: "#6B7B78",
-                    }}
-                  >
-                    <span
+                {hasHealthAccess ? (
+                  <>
+                    <div
                       style={{
-                        color: "#1ABC9C",
+                        fontSize: 14,
                         fontWeight: 700,
-                        flexShrink: 0,
+                        marginBottom: 16,
+                        color: "#F0A500",
                       }}
                     >
-                      →
-                    </span>
-                    {tip}
+                      ⚡ Easy Wins — Do These This Week
+                    </div>
+                    {[
+                      "Add 'dentist + your city' to your homepage title — helps Google connect your site to local searches",
+                      "Complete your Google Business Profile — complete profiles attract significantly more clicks than incomplete ones",
+                      "Ask your last 10 patients for a Google review — consistent reviews are the fastest way to improve local visibility",
+                      "Add your clinic hours to Google — missing hours cause patients to choose a clinic they can verify is open",
+                      "Upload 10+ photos to Google Business — listings with photos consistently attract more engagement",
+                    ].map((tip, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          gap: 10,
+                          alignItems: "flex-start",
+                          padding: "8px 0",
+                          fontSize: 13,
+                          color: "#6B7B78",
+                        }}
+                      >
+                        <span style={{ color: "#1ABC9C", fontWeight: 700, flexShrink: 0 }}>→</span>
+                        {tip}
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <div
+                    style={{
+                      background: "#0D0F0E",
+                      border: "1px solid #2A3330",
+                      borderRadius: 12,
+                      padding: "18px 20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ fontSize: 14, color: "#6B7B78" }}>
+                      ⚡ Easy Wins unlocked with free trial — see exactly what to fix this week
+                    </div>
+                    <button
+                      onClick={() => setShowSaveBanner(true)}
+                      style={{
+                        padding: "8px 18px",
+                        borderRadius: 8,
+                        border: "none",
+                        background: "#1ABC9C",
+                        color: "#000",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Start Free Trial →
+                    </button>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
