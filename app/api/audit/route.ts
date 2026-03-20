@@ -229,38 +229,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (!domainIsDental && !pageIsDental) {
-      // Final fallback — check Google Places before rejecting
-      // Some dental clinics have non-obvious domain names
-      try {
-        const checkDomain = url
-          .replace(/https?:\/\//, "")
-          .replace(/^www\./, "")
-          .split("/")[0];
-        const placesCheckRes = await fetch(
-          `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(checkDomain)}&type=dentist&key=${apiKey}`,
-        );
-        const placesCheckData = await placesCheckRes.json();
-        const foundAsDentist = (placesCheckData.results?.length || 0) > 0;
-        console.log(
-          "🦷 Places dental check:",
-          foundAsDentist,
-          "for",
-          checkDomain,
-        );
-        if (!foundAsDentist) {
-          console.log("❌ Not a dental website:", url);
-          return NextResponse.json(
-            {
-              error: "not_dental",
-              message:
-                "This doesn't appear to be a dental clinic website. Please enter your clinic's URL (e.g. bestsmilesdental.com).",
-            },
-            { status: 400 },
-          );
-        }
-      } catch {
-        console.log("⚠️ Places dental check failed — allowing through");
-      }
+      // Domain name and page content don't have dental keywords.
+      // Allow through anyway — non-obvious domain names are common (e.g. drsmithseattle.com).
+      // The audit itself will fail gracefully if it truly can't find the clinic.
+      console.log("⚠️ No dental keywords found — allowing through for:", url);
     }
   } catch (e) {
     console.error("Dental check error:", e);
