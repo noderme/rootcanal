@@ -1444,7 +1444,6 @@ function DashboardContent() {
     }
     const email = bannerEmail.toLowerCase().trim();
     localStorage.setItem("rc_pro_email", email);
-    await supabase.from("leads").insert({ email, url: url || null });
 
     // Start trial via server-side route (uses service key — bypasses RLS)
     const trialRes = await fetch("/api/start-trial", {
